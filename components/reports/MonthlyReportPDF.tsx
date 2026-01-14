@@ -173,6 +173,12 @@ interface ReportData {
       challenge: boolean
     }>
   }[]
+  closure?: {
+    dataAssinaturaLider?: Date | string | null;
+    lider?: { nome?: string | null };
+    dataAssinaturaSupervisor?: Date | string | null;
+    supervisor?: { nome?: string | null };
+  } | null;
 }
 
 export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
