@@ -262,7 +262,7 @@ export async function addPaymentTransaction(
 
     const paidAmount = transactions._sum.amount || 0
     const price = registration.event.price
-    const remaining = Math.max(0, price - paidAmount)
+    const remaining = Math.max(0, Number(price) - Number(paidAmount || 0))
 
     await prisma.registration.update({
       where: { id: registrationId },
