@@ -23,7 +23,7 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  if (user.role === 'MIDIA') {
+  if (user?.role === 'MIDIA') {
     redirect('/admin/website')
   }
 
