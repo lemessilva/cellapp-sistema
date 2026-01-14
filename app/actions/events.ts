@@ -337,3 +337,25 @@ export async function getPublicEventDetails(id: string) {
     price: event.price
   }
 }
+
+// Atualizar status de pagamento manualmente
+export async function updateRegistrationPayment(registrationId: string, status: 'PENDING' | 'PAID' | 'CANCELED') {
+  try {
+    const registration = await prisma.registration.update({
+      where: { id: registrationId },
+      data: {
+        paymentStatus: status,
+        // Se marcar como PAGO, mantemos o valor (undefined não altera), se não, zeramos
+        paidAmount: status === 'PAID' ? undefined : 0,
+      },
+    })
+
+    revalidatePath('/admin/eventos')
+    revalidatePath(`/admin/eventos/${registration.eventId}`)
+    return { success: true, registration }
+
+  } catch (error) {
+    console.error("Erro ao atualizar pagamento:", error)
+    return { error: "Erro ao atualizar status" }
+  }
+}
