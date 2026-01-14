@@ -1,0 +1,485 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  LIDER
+  MEMBRO
+  MIDIA
+}
+
+enum MemberCategory {
+  ADULTO
+  CRIANCA
+}
+
+enum ReportStatus {
+  RASCUNHO
+  ENVIADO_LIDER
+  APROVADO
+  NAO_HOUVE
+}
+
+model User {
+  id              String    @id @default(cuid())
+  nome            String
+  email           String?   @unique
+  password        String? // Hash da senha
+  
+  // Perfil
+  telefone        String?
+  data_nascimento DateTime?
+  genero          String?   // 'M' | 'F'
+  data_batismo    DateTime?
+  endereco        String?
+  estado_civil    String?
+  conjuge_nome    String?
+  foto_url        String?
+  
+  dados_completos Boolean   @default(false)
+  role            Role      @default(MEMBRO)
+  categoria       MemberCategory @default(ADULTO)
+  
+  // Relacionamentos Hierárquicos
+  celulaLiderada  Cell?     @relation("LiderCelula")
+  celulaLiderada2 Cell?     @relation("Lider2Celula")
+  celulasSupervisionadas Cell[] @relation("SupervisorCelula")
+  celulasSupervisionadas2 Cell[] @relation("Supervisor2Celula")
+
+  // Família / Responsável (Para Crianças)
+  responsavelId   String?
+  responsavel     User?     @relation("Responsavel", fields: [responsavelId], references: [id])
+  dependentes     User[]    @relation("Responsavel")
+
+  // Cargos em Célula
+  celulaTesoureiro Cell[] @relation("TesoureiroCelula")
+  celulaIntercessor Cell[] @relation("IntercessorCelula")
+  celulaSecretario Cell[] @relation("SecretarioCelula")
+  celulaEventos    Cell[] @relation("EventosCelula")
+  celulaLouvor     Cell[] @relation("LouvorCelula")
+  celulaAnfitriao  Cell[] @relation("AnfitriaoCelula")
+  celulaMcp        Cell[] @relation("McpCelula")
+
+  // Escalas
+  rosterDirection  MeetingRoster[] @relation("RosterDirection")
+  rosterWorship    MeetingRoster[] @relation("RosterWorship")
+  rosterEvangelism MeetingRoster[] @relation("RosterEvangelism")
+  rosterHost       MeetingRoster[] @relation("RosterHost")
+  
+  // Relatórios (Escala Realizada)
+  reportDirection  MeetingReport[] @relation("ReportDirection")
+  reportWorship    MeetingReport[] @relation("ReportWorship")
+  reportEvangelism MeetingReport[] @relation("ReportEvangelism")
+  reportHost       MeetingReport[] @relation("ReportHost")
+  
+  // Membresia
+  celulaId        String?
+  celula          Cell?     @relation("MembrosCelula", fields: [celulaId], references: [id])
+  
+  // Funcionalidades
+  oikos           Oikos[]
+  prayerLogs      PrayerLog[]
+  invitesCriados  Invite[]  @relation("InviteCreator")
+  attendance      MeetingAttendance[]
+  kidsPillars     MeetingKidsPillars[]
+  
+  // Assinaturas de Fechamento Mensal
+  assinaturasLider MonthlyClosure[] @relation("LiderAssinatura")
+  assinaturasSupervisor MonthlyClosure[] @relation("SupervisorAssinatura")
+  assinaturasCoord MonthlyClosure[] @relation("CoordAssinatura")
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Growth Track
+  growthProgress MemberGrowthProgress[]
+  
+  // Notifications
+  notifications Notification[]
+
+  // Eventos
+  registrations Registration[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  price       Decimal  @default(0) // 0 = Gratuito
+  bannerUrl   String?  // Foto do evento
+  maxCapacity Int?     // Limite de vagas
+  isOpen      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  registrations Registration[]
+}
+
+model Registration {
+  id String @id @default(cuid())
+  eventId String
+  userId String?
+  guestName String?
+  status String @default("CONFIRMED") // 'CONFIRMED', 'CANCELED', 'WAITLIST'
+  paymentStatus String @default("PENDING") // 'PENDING', 'PAID', 'PARTIAL'
+  paidAmount Decimal @default(0)
+  checkIn Boolean @default(false) // Se compareceu no dia
+  checkInAt DateTime? // Data/hora do check-in
+  createdAt DateTime @default(now())
+  
+  transactions PaymentTransaction[]
+
+  event Event @relation(fields: [eventId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId]) // Não pode se inscrever 2x
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   // Quem recebe
+  title     String
+  message   String
+  type      String   @default("INFO") // 'INFO', 'SUCCESS', 'WARNING', 'ALERT'
+  read      Boolean  @default(false)
+  link      String?  // Url para redirecionar ao clicar (opcional)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model GrowthTrackStep {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  orderIndex  Int
+  isMandatory Boolean  @default(false)
+  
+  progressItems MemberGrowthProgress[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MemberGrowthProgress {
+  id        String   @id @default(cuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  stepId    String
+  step      GrowthTrackStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  
+  status    String   @default("PENDING") // 'PENDING' | 'COMPLETED'
+  completedAt DateTime?
+  
+  @@unique([userId, stepId])
+}
+
+model Cell {
+  id          String   @id @default(cuid())
+  nome        String
+  dia_reuniao String?  // Ex: "Quarta-feira"
+  horario     String?  // Ex: "20:00"
+  endereco    String?
+  
+  // Endereço Detalhado
+  addressStreet    String?
+  addressNumber    String?
+  addressComplement String?
+  addressDistrict  String?
+  addressCity      String?
+  addressState     String?
+  addressZip       String?
+  
+  // Liderança
+  liderId     String?  @unique
+  lider       User?    @relation("LiderCelula", fields: [liderId], references: [id])
+  
+  lider2Id    String?  @unique
+  lider2      User?    @relation("Lider2Celula", fields: [lider2Id], references: [id])
+
+  supervisorId String?
+  supervisor  User?    @relation("SupervisorCelula", fields: [supervisorId], references: [id])
+  
+  supervisor2Id String?
+  supervisor2 User?    @relation("Supervisor2Celula", fields: [supervisor2Id], references: [id])
+
+  // Cargos
+  tesoureiroId String?
+  tesoureiro   User?   @relation("TesoureiroCelula", fields: [tesoureiroId], references: [id])
+
+  intercessorId String?
+  intercessor   User?   @relation("IntercessorCelula", fields: [intercessorId], references: [id])
+
+  secretarioId  String?
+  secretario    User?   @relation("SecretarioCelula", fields: [secretarioId], references: [id])
+
+  eventosId     String?
+  eventos       User?   @relation("EventosCelula", fields: [eventosId], references: [id])
+
+  louvorId      String?
+  louvor        User?   @relation("LouvorCelula", fields: [louvorId], references: [id])
+
+  anfitriaoId   String?
+  anfitriao     User?   @relation("AnfitriaoCelula", fields: [anfitriaoId], references: [id])
+  
+  mcpId         String?
+  mcp           User?   @relation("McpCelula", fields: [mcpId], references: [id])
+
+  // Membros
+  membros     User[]   @relation("MembrosCelula")
+  
+  // Relatórios
+  reports     MeetingReport[]
+  monthlyClosures MonthlyClosure[]
+  rosters     MeetingRoster[]
+
+  // Convites vinculados a esta célula
+  invites     Invite[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MeetingReport {
+  id              String       @id @default(cuid())
+  date            DateTime
+  startTime       String?      // "HH:mm"
+  endTime         String?      // "HH:mm"
+  studyTheme      String?
+  observations    String?      // Observações gerais
+  cancelReason    String?      // Se status == NAO_HOUVE
+  
+  // Escala Realizada
+  hostId           String?
+  host             User?    @relation("ReportHost", fields: [hostId], references: [id])
+  directionId      String?
+  direction        User?    @relation("ReportDirection", fields: [directionId], references: [id])
+  worshipId        String?
+  worship          User?    @relation("ReportWorship", fields: [worshipId], references: [id])
+  evangelismId     String?
+  evangelism       User?    @relation("ReportEvangelism", fields: [evangelismId], references: [id])
+
+  status          ReportStatus @default(RASCUNHO)
+  
+  // Financeiro Consolidado (Cache)
+  offerValue      Float        @default(0) // Total Oferta
+  missionsValue   Float        @default(0) // Total Missões
+  
+  attendance      MeetingAttendance[]
+  presentMembers  Int          @default(0) // Cache para total de membros presentes
+  visitors        MeetingVisitor[]
+  visitorsCount   Int          @default(0) // Cache para total de visitantes
+  kidsPillars     MeetingKidsPillars[]
+
+  cellId          String
+  cell            Cell         @relation(fields: [cellId], references: [id])
+  
+  createdAt       DateTime     @default(now())
+}
+
+model MeetingAttendance {
+  id              String   @id @default(cuid())
+  
+  status          String   @default("P") // "P", "F", "FJ"
+  absenceReason   String?  // Motivo da falta se F/FJ
+
+  offerValue      Float    @default(0)
+  titheValue      Float    @default(0)
+  missionsValue   Float    @default(0)
+  otherValue      Float    @default(0)
+
+  reportId        String
+  report          MeetingReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@unique([reportId, userId]) // Um usuário só pode ter um registro por relatório
+}
+
+model MeetingVisitor {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  type      String   // "Visitante", "Primeira Vez", etc.
+
+  reportId  String
+  report    MeetingReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model MeetingKidsPillars {
+  id              String   @id @default(cuid())
+  
+  church          Boolean  @default(false) // ⛪ Igreja
+  cell            Boolean  @default(false) // 🏠 Célula
+  homeWorship     Boolean  @default(false) // 🙏 Culto Doméstico
+  devotional      Boolean  @default(false) // 📖 Devocional
+  challenge       Boolean  @default(false) // 🎯 Desafio
+
+  // Financeiro Kids
+  offerValue      Float    @default(0)
+  titheValue      Float    @default(0)
+  missionsValue   Float    @default(0)
+  otherValue      Float    @default(0)
+
+  reportId        String
+  report          MeetingReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@unique([reportId, userId])
+}
+
+model Oikos {
+  id        String   @id @default(cuid())
+  nome      String
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(uuid())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  
+  // Quem criou o convite (Geralmente o Líder)
+  createdById String
+  createdBy   User     @relation("InviteCreator", fields: [createdById], references: [id])
+  
+  // Para qual célula o convite é
+  cellId      String
+  cell        Cell     @relation(fields: [cellId], references: [id])
+  
+  createdAt   DateTime @default(now())
+}
+
+model PrayerLog {
+  id        String   @id @default(cuid())
+  date      DateTime // Apenas a data (hora zerada ou ignorada na lógica)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+enum MonthlyClosureStatus {
+  ABERTO
+  AGUARDANDO_LIDER
+  AGUARDANDO_SUPERVISOR
+  AGUARDANDO_COORDENACAO
+  CONCLUIDO
+}
+
+model MonthlyClosure {
+  id              String   @id @default(cuid())
+  
+  cellId          String
+  cell            Cell     @relation(fields: [cellId], references: [id])
+  
+  month           Int      // 1-12
+  year            Int      // 2024, etc
+  
+  status          MonthlyClosureStatus @default(ABERTO)
+  
+  // Totais do mês
+  totalMeetings   Int      @default(0)
+  totalOffer      Float    @default(0)
+  totalMissions   Float    @default(0)
+  avgAttendance   Float    @default(0)
+  
+  // Assinaturas (Datas)
+  liderSignedAt      DateTime?
+  supervisorSignedAt DateTime?
+  coordSignedAt      DateTime?
+  
+  // Quem assinou
+  liderId            String?
+  lider              User?    @relation("LiderAssinatura", fields: [liderId], references: [id])
+  
+  supervisorId       String?
+  supervisor         User?    @relation("SupervisorAssinatura", fields: [supervisorId], references: [id])
+  
+  coordId            String?
+  coord              User?    @relation("CoordAssinatura", fields: [coordId], references: [id])
+
+  // Motivo de Correção (se status voltar)
+  correctionReason   String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([cellId, month, year])
+}
+
+model MeetingRoster {
+  id          String   @id @default(cuid())
+  date        DateTime // Data da reunião
+  
+  cellId      String
+  cell        Cell     @relation(fields: [cellId], references: [id])
+  
+  // Funções
+  directionId String?
+  direction   User?    @relation("RosterDirection", fields: [directionId], references: [id])
+  
+  worshipId   String?
+  worship     User?    @relation("RosterWorship", fields: [worshipId], references: [id])
+  
+  evangelismId String?
+  evangelism  User?    @relation("RosterEvangelism", fields: [evangelismId], references: [id])
+  
+  hostId      String?
+  host        User?    @relation("RosterHost", fields: [hostId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([cellId, date])
+  @@map("meeting_rosters")
+}
+
+model SiteConfiguration {
+  id              Int      @id @default(1)
+  
+  heroTitle       String?
+  heroSubtitle    String?
+  heroBgImage     String?
+  heroCtaText     String?
+  heroCtaLink     String?
+  
+  weeklySchedule  String? // JSON
+  
+  contactWhatsapp String?
+  socialInstagram String?
+  footerAddress   String?
+  
+  updatedAt       DateTime @updatedAt
+}
+
+model PaymentTransaction {
+  id             String       @id @default(cuid())
+  registrationId String
+  amount         Decimal
+  date           DateTime     @default(now())
+  notes          String?      // Ex: "Pix", "Dinheiro na mão"
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
