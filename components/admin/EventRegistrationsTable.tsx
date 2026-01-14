@@ -109,7 +109,7 @@ export function EventRegistrationsTable({ registrations, eventPrice, eventTitle 
                         {/* Copy Email */}
                         <button
                             onClick={() => {
-                                navigator.clipboard.writeText(reg.user.email || '')
+                                navigator.clipboard.writeText(reg.user?.email || '')
                                 toast.success('Email copiado!')
                             }}
                             className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
