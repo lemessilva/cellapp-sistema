@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit, Shield, User, Users, Star, Printer } from 'lucide-react'
+import { Edit, Shield, User, Users, Star, Printer, Clapperboard } from 'lucide-react'
 import EditUserModal from './EditUserModal'
 import PrintReportModal from './PrintReportModal'
 import { Role } from '@prisma/client'
@@ -35,6 +35,7 @@ const roleConfig = {
   SUPERVISOR: { label: 'Supervisor', color: 'text-purple-600 bg-purple-50', icon: Star },
   LIDER: { label: 'Líder', color: 'text-indigo-600 bg-indigo-50', icon: Users },
   MEMBRO: { label: 'Membro', color: 'text-slate-600 bg-slate-50', icon: User },
+  MIDIA: { label: 'Mídia / Tech', color: 'text-purple-600 bg-purple-50', icon: Clapperboard },
 }
 
 export default function UserManagementTable({ users, cells }: UserManagementTableProps) {
