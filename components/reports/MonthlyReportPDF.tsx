@@ -178,6 +178,8 @@ interface ReportData {
     lider?: { nome?: string | null };
     dataAssinaturaSupervisor?: Date | string | null;
     supervisor?: { nome?: string | null };
+    dataAssinaturaCoord?: Date | string | null;
+    coord?: { nome?: string | null };
   } | null;
 }
 
