@@ -17,15 +17,24 @@ export async function getRoster(cellId: string, month: number, year: number) {
         }
       },
       include: {
-        directionMember: { select: { nome: true } },
-        worshipMember: { select: { nome: true } },
-        evangelismMember: { select: { nome: true } },
-        hostMember: { select: { nome: true } }
+        direction: { select: { nome: true } },
+        worship: { select: { nome: true } },
+        evangelism: { select: { nome: true } },
+        host: { select: { nome: true } }
       },
       orderBy: { date: 'asc' }
     })
 
-    return { rosters }
+    // Map Prisma fields (directionId) to Frontend fields (directionMemberId)
+    const mappedRosters = rosters.map(r => ({
+      ...r,
+      directionMemberId: r.directionId,
+      worshipMemberId: r.worshipId,
+      evangelismMemberId: r.evangelismId,
+      hostMemberId: r.hostId,
+    }))
+
+    return { rosters: mappedRosters }
   } catch (error) {
     console.error('Erro ao buscar escala:', error)
     return { error: 'Erro ao carregar escala.' }
@@ -54,28 +63,26 @@ export async function upsertRoster(data: {
     })
 
     if (existing) {
-        await prisma.meetingRoster.update({
-            where: { id: existing.id },
-            data: {
-                directionMemberId: data.directionMemberId || null,
-                worshipMemberId: data.worshipMemberId || null,
-                evangelismMemberId: data.evangelismMemberId || null,
-                hostMemberId: data.hostMemberId || null,
-                customAddress: data.customAddress || null
-            }
-        })
+      await prisma.meetingRoster.update({
+        where: { id: existing.id },
+        data: {
+          directionId: data.directionMemberId || null,
+          worshipId: data.worshipMemberId || null,
+          evangelismId: data.evangelismMemberId || null,
+          hostId: data.hostMemberId || null
+        }
+      })
     } else {
-        await prisma.meetingRoster.create({
-            data: {
-                cellId: data.cellId,
-                date: data.date,
-                directionMemberId: data.directionMemberId || null,
-                worshipMemberId: data.worshipMemberId || null,
-                evangelismMemberId: data.evangelismMemberId || null,
-                hostMemberId: data.hostMemberId || null,
-                customAddress: data.customAddress || null
-            }
-        })
+      await prisma.meetingRoster.create({
+        data: {
+          cellId: data.cellId,
+          date: data.date,
+          directionId: data.directionMemberId || null,
+          worshipId: data.worshipMemberId || null,
+          evangelismId: data.evangelismMemberId || null,
+          hostId: data.hostMemberId || null
+        }
+      })
     }
 
     revalidatePath('/app/lideranca')
@@ -105,7 +112,16 @@ export async function getRosterForDate(cellId: string, date: Date) {
             }
         })
         
-        return roster
+        if (!roster) return null
+
+        // Map for compatibility
+        return {
+          ...roster,
+          directionMemberId: roster.directionId,
+          worshipMemberId: roster.worshipId,
+          evangelismMemberId: roster.evangelismId,
+          hostMemberId: roster.hostId
+        }
     } catch (error) {
         return null
     }
