@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Check } from 'lucide-react'
 import { updateUserRoleAndCells } from '@/app/(protected)/admin/actions'
 import { toast } from 'sonner'
+import { Role, User as PrismaUser } from '@prisma/client'
 
 type Cell = {
   id: string
@@ -12,12 +13,7 @@ type Cell = {
   supervisorId: string | null
 }
 
-type User = {
-  id: string
-  nome: string
-  email: string
-  role: 'ADMIN' | 'SUPERVISOR' | 'LIDER' | 'MEMBRO'
-  celulaId: string | null
+type User = Pick<PrismaUser, 'id' | 'nome' | 'email' | 'role' | 'celulaId'> & {
   celulaLiderada: { id: string } | null
   celulasSupervisionadas: { id: string }[]
 }
@@ -30,7 +26,7 @@ interface EditUserModalProps {
 }
 
 export default function EditUserModal({ user, cells, isOpen, onClose }: EditUserModalProps) {
-  const [role, setRole] = useState(user.role)
+  const [role, setRole] = useState<Role>(user.role)
   const [celulaId, setCelulaId] = useState(user.celulaId || '')
   const [liderancaCellId, setLiderancaCellId] = useState(user.celulaLiderada?.id || '')
   const [supervisaoCellIds, setSupervisaoCellIds] = useState<string[]>(
@@ -113,13 +109,14 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
             <label className="block text-sm font-medium text-gray-700 mb-1">Cargo (Role)</label>
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as any)}
+              onChange={(e) => setRole(e.target.value as Role)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               <option value="MEMBRO">Membro</option>
               <option value="LIDER">Líder</option>
               <option value="SUPERVISOR">Supervisor</option>
               <option value="ADMIN">Admin</option>
+              <option value="MIDIA">Mídia / Tech</option>
             </select>
           </div>
 
