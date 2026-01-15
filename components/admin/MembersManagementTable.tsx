@@ -26,7 +26,7 @@ type Member = {
   celula: { nome: string } | null
   prayerTotalDays: number
   lastPrayerDate: string | Date | null
-  prayerFrequency: 'Alta' | 'Baixa'
+  prayerFrequency: string
 }
 
 function parseDate(value: string | Date | null | undefined) {
@@ -321,4 +321,3 @@ export default function MembersManagementTable({ members }: Props) {
     </>
   )
 }
-
