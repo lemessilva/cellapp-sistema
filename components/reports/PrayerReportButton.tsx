@@ -41,7 +41,7 @@ export default function PrayerReportButton({ data }: { data: ReportData | null |
           ) : (
             <>
               <FileText className="w-5 h-5" />
-              Baixar Histórico de Oração (PDF)
+              Baixar Calendário (PDF)
             </>
           )
         }

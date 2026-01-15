@@ -11,6 +11,9 @@ import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 export default function ProfileScreen({ user, reportData }: { user: any, reportData?: ReportData }) {
   const [loading, setLoading] = useState(false)
   const [oikosName, setOikosName] = useState('')
+  const [estadoCivil, setEstadoCivil] = useState(
+    (user.estadoCivil || user.estado_civil || '') as string
+  )
 
   const handleUpdateProfile = async (formData: FormData) => {
     setLoading(true)
@@ -67,7 +70,6 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
         </button>
       </header>
 
-      {/* Dados Pessoais */}
       <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
         <div className="flex items-center gap-2 text-indigo-600 mb-2">
           <User className="w-5 h-5" />
@@ -124,27 +126,230 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Whatsapp</label>
+              <input
+                name="whatsapp"
+                defaultValue={user.whatsapp || user.telefone || ''}
+                placeholder="(00) 00000-0000"
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" /> Data de Nascimento
                 </label>
                 <input 
                 name="data_nascimento" 
                 type="date"
-                defaultValue={user.data_nascimento ? new Date(user.data_nascimento).toISOString().split('T')[0] : ''} 
+                defaultValue={
+                  user.dataNascimento || user.data_nascimento
+                    ? new Date(user.dataNascimento || user.data_nascimento)
+                        .toISOString()
+                        .split('T')[0]
+                    : ''
+                }
                 className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Sexo</label>
+              <select
+                name="sexo"
+                defaultValue={user.sexo || user.genero || ''}
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Selecione</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Escolaridade</label>
+              <select
+                name="escolaridade"
+                defaultValue={user.escolaridade || ''}
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Selecione</option>
+                <option value="FUNDAMENTAL">Ensino Fundamental</option>
+                <option value="MEDIO">Ensino Médio</option>
+                <option value="SUPERIOR">Ensino Superior</option>
+                <option value="POS">Pós-Graduação</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> Endereço
-            </label>
-            <input 
-              name="endereco" 
-              defaultValue={user.endereco || ''} 
-              className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Naturalidade</label>
+              <input
+                name="naturalidade"
+                defaultValue={user.naturalidade || ''}
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">UF Nascimento</label>
+              <input
+                name="ufNascimento"
+                defaultValue={user.ufNascimento || ''}
+                maxLength={2}
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Profissão</label>
+              <input
+                name="profissao"
+                defaultValue={user.profissao || ''}
+                className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+            <div className="flex items-center gap-2 text-slate-700">
+              <MapPin className="w-4 h-4 text-slate-500" />
+              <h3 className="font-semibold text-sm">Endereço</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
+                <input
+                  name="cep"
+                  defaultValue={user.cep || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Endereço (Rua)</label>
+                <input
+                  name="endereco"
+                  defaultValue={user.endereco || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
+                <input
+                  name="numero"
+                  defaultValue={user.numero || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
+                <input
+                  name="bairro"
+                  defaultValue={user.bairro || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Ponto de Referência</label>
+                <input
+                  name="pontoReferencia"
+                  defaultValue={user.pontoReferencia || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+            <h3 className="font-semibold text-sm text-slate-700">Família</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Pai</label>
+                <input
+                  name="nomePai"
+                  defaultValue={user.nomePai || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Mãe</label>
+                <input
+                  name="nomeMae"
+                  defaultValue={user.nomeMae || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Estado Civil</label>
+                <select
+                  name="estadoCivil"
+                  value={estadoCivil}
+                  onChange={(e) => setEstadoCivil(e.target.value)}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Selecione</option>
+                  <option value="SOLTEIRO">Solteiro(a)</option>
+                  <option value="CASADO">Casado(a)</option>
+                  <option value="VIUVO">Viúvo(a)</option>
+                  <option value="DIVORCIADO">Divorciado(a)</option>
+                </select>
+              </div>
+
+              {estadoCivil === 'CASADO' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Cônjuge</label>
+                  <input
+                    name="nomeConjuge"
+                    defaultValue={user.nomeConjuge || user.conjuge_nome || ''}
+                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 pt-4 mt-2 space-y-4">
+            <h3 className="font-semibold text-sm text-slate-700">Dados Eclesiásticos</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Data de Conversão</label>
+                <input
+                  name="dataConversao"
+                  type="date"
+                  defaultValue={
+                    user.dataConversao
+                      ? new Date(user.dataConversao).toISOString().split('T')[0]
+                      : ''
+                  }
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Igreja Anterior</label>
+                <input
+                  name="igrejaAnterior"
+                  defaultValue={user.igrejaAnterior || ''}
+                  className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
           </div>
 
           <button 

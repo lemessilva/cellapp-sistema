@@ -7,14 +7,27 @@ import { Prisma } from '@prisma/client'
 
 import { uploadFile } from '@/lib/supabase'
 
-export async function updateProfile(formData: FormData) {
-  const user = await getUser()
-  if (!user) return { error: 'Não autorizado.' }
-  
-  const userId = formData.get('userId') as string
-  if (user.id !== userId && user.role !== 'ADMIN') return { error: 'Não autorizado.' }
+function safeDate(dateStr: string | null | undefined): Date | null {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    return isNaN(d.getTime()) ? null : d
+}
 
+export async function updateProfile(formData: FormData) {
   try {
+    const user = await getUser()
+    if (!user) return { error: 'Não autorizado.' }
+    
+    const userId = formData.get('userId') as string
+    
+    // Fallback: se não vier no form, usa o da sessão (segurança)
+    const targetId = userId || user.id
+
+    // Se tentar editar outro user e não for ADMIN, bloqueia
+    if (user.id !== targetId && user.role !== 'ADMIN') {
+        return { error: 'Não autorizado.' }
+    }
+
     const photoFile = formData.get('foto_url') as File | null
     let foto_url = undefined
 
@@ -24,22 +37,70 @@ export async function updateProfile(formData: FormData) {
     }
 
     const data_nascimento = formData.get('data_nascimento') as string
+    const whatsapp = formData.get('whatsapp') as string
+    const sexo = formData.get('sexo') as string
+    const naturalidade = formData.get('naturalidade') as string
+    const ufNascimento = formData.get('ufNascimento') as string
+    const escolaridade = formData.get('escolaridade') as string
+    const profissao = formData.get('profissao') as string
+    const cep = formData.get('cep') as string
+    const numero = formData.get('numero') as string
+    const bairro = formData.get('bairro') as string
+    const pontoReferencia = formData.get('pontoReferencia') as string
+    const nomePai = formData.get('nomePai') as string
+    const nomeMae = formData.get('nomeMae') as string
+    const estadoCivil = formData.get('estadoCivil') as string
+    const nomeConjuge = formData.get('nomeConjuge') as string
+    const dataConversao = formData.get('dataConversao') as string
+    const igrejaAnterior = formData.get('igrejaAnterior') as string
+
+    // Parse Dates Safely
+    const dateNasc = safeDate(data_nascimento)
+    const dateConv = safeDate(dataConversao)
 
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: targetId },
       data: {
         nome: formData.get('nome') as string,
         telefone: formData.get('telefone') as string,
         endereco: formData.get('endereco') as string,
-        data_nascimento: data_nascimento ? new Date(data_nascimento) : null,
+        
+        data_nascimento: dateNasc,
+        dataNascimento: dateNasc,
+        
+        whatsapp: whatsapp || null,
+        sexo: sexo || null,
+        genero: sexo || null,
+        naturalidade: naturalidade || null,
+        ufNascimento: ufNascimento || null,
+        escolaridade: escolaridade || null,
+        profissao: profissao || null,
+        
+        cep: cep || null,
+        numero: numero || null,
+        bairro: bairro || null,
+        pontoReferencia: pontoReferencia || null,
+        
+        nomePai: nomePai || null,
+        nomeMae: nomeMae || null,
+        estadoCivil: estadoCivil || null,
+        estado_civil: estadoCivil || null,
+        nomeConjuge: nomeConjuge || null,
+        conjuge_nome: nomeConjuge || null,
+        
+        dataConversao: dateConv,
+        igrejaAnterior: igrejaAnterior || null,
+        
         ...(foto_url && { foto_url })
       }
     })
+    
     revalidatePath('/app/perfil')
     return { success: true }
+
   } catch (e) {
-    console.error(e)
-    return { error: 'Erro ao atualizar perfil.' }
+    console.error('Update Profile Error:', e)
+    return { error: 'Erro ao atualizar perfil. Verifique os dados.' }
   }
 }
 
