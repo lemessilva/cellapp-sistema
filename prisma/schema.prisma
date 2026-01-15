@@ -33,6 +33,8 @@ model User {
   nome            String
   email           String?   @unique
   password        String? // Hash da senha
+  resetToken      String?
+  resetTokenExpiry DateTime?
   
   // Perfil
   telefone        String?
@@ -43,6 +45,23 @@ model User {
   estado_civil    String?
   conjuge_nome    String?
   foto_url        String?
+  whatsapp        String?
+  sexo            String?
+  dataNascimento  DateTime?
+  naturalidade    String?
+  ufNascimento    String?
+  numero          String?
+  bairro          String?
+  cep             String?
+  pontoReferencia String?
+  nomePai         String?
+  nomeMae         String?
+  estadoCivil     String?
+  nomeConjuge     String?
+  escolaridade    String?
+  profissao       String?
+  dataConversao   DateTime?
+  igrejaAnterior  String?
   
   dados_completos Boolean   @default(false)
   role            Role      @default(MEMBRO)

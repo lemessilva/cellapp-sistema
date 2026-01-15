@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { ArrowRight, MapPin, Calendar, Menu, X, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music, LayoutDashboard, User } from 'lucide-react'
+import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music } from 'lucide-react'
 import { getSiteConfiguration } from '@/app/actions/website'
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
+import { LandingNavbar } from '@/components/LandingNavbar'
 
 export default async function LandingPage() {
   const user = await getUser()
@@ -30,57 +31,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
-      {/* 1. Navbar (Menu Fixo) */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="font-bold text-white text-lg">C</span>
-              </div>
-              <span className="font-bold text-xl tracking-tight">CellApp</span>
-            </div>
-
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="#" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Início</Link>
-              <Link href="#sobre" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Sobre</Link>
-              <Link href="#celulas" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Células</Link>
-              <Link href="#agenda" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Agenda</Link>
-              <Link href="#contato" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Contato</Link>
-            </div>
-
-            {/* Botão de Destaque */}
-            <div className="hidden md:block">
-              {user ? (
-                <Link 
-                  href="/app" 
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/20 gap-2"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Ir para o Painel
-                </Link>
-              ) : (
-                <Link 
-                  href="/login" 
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/20 gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  Área de Membros
-                </Link>
-              )}
-            </div>
-
-            {/* Mobile Menu Button (Placeholder functionality) */}
-            <div className="md:hidden">
-              <button className="text-slate-300 hover:text-white p-2">
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <LandingNavbar isAuthenticated={!!user} />
 
       {/* 2. Hero Section (A Capa) */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">

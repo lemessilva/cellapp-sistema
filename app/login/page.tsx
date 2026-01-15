@@ -4,9 +4,11 @@ import { useState, Suspense } from 'react'
 import { login } from './actions'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
 
 function LoginContent() {
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const searchParams = useSearchParams()
   const registered = searchParams.get('registered')
 
@@ -25,35 +27,69 @@ function LoginContent() {
       </div>
 
       {registered && (
-          <div className="bg-green-50 text-green-700 p-4 rounded-2xl text-center border border-green-100">
-              Cadastro realizado com sucesso! <br/> Faça login para continuar.
-          </div>
+        <div className="bg-green-50 text-green-700 p-4 rounded-2xl text-center border border-green-100">
+          Cadastro realizado com sucesso! <br /> Faça login para continuar.
+        </div>
       )}
 
       <form action={handleSubmit} className="card space-y-6">
-          {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm text-center">
-                  {error}
-              </div>
-          )}
-          
-          <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input name="email" type="email" required className="input-field" placeholder="seu@email.com" />
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm text-center">
+            {error}
           </div>
+        )}
 
-          <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-              <input name="password" type="password" required className="input-field" placeholder="******" />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input
+            name="email"
+            type="email"
+            required
+            className="input-field"
+            placeholder="seu@email.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+          <div className="relative">
+            <input
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              className="input-field pr-11"
+              placeholder="******"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
           </div>
+          <div className="mt-2 flex justify-end">
+            <Link
+              href="/esqueci-senha?from=login"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
+        </div>
 
-          <button type="submit" className="btn-primary">
-              Entrar
-          </button>
+        <button type="submit" className="btn-primary">
+          Entrar
+        </button>
       </form>
-      
+
       <p className="text-center text-sm text-gray-500">
-          Não tem conta? Peça um convite ao seu líder.
+        Não tem conta? Peça um convite ao seu líder.
       </p>
     </div>
   )
