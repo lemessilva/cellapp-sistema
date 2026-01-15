@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { SignJWT } from 'jose'
 import { cookies } from 'next/headers'
+import { compare } from 'bcryptjs'
 
 const JWT_SECRET = new TextEncoder().encode('super-secret-key-change-in-prod')
 
@@ -20,8 +21,12 @@ export async function login(formData: FormData) {
             where: { email } 
         })
 
-        // Nota: Password está em plaintext conforme cadastro/actions.ts
-        if (!user || user.password !== password) {
+        if (!user || !user.password) {
+            return { error: 'Credenciais inválidas.' }
+        }
+
+        const isValid = await compare(password, user.password)
+        if (!isValid) {
             return { error: 'Credenciais inválidas.' }
         }
 

@@ -2,12 +2,10 @@
 
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { hash } from 'crypto' // Em prod usar bcrypt/argon2, aqui simplificando ou usando web crypto se edge
+import { hash } from 'bcryptjs'
 
-// Função auxiliar para hash simples (apenas MVP)
 async function hashPassword(password: string) {
-    // Em um app real, use bcrypt ou argon2
-    return password // Placeholder
+    return hash(password, 10)
 }
 
 export async function validateInviteToken(token: string) {
