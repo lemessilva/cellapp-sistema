@@ -18,17 +18,25 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
   const user = await getUser()
   const config = await getSiteConfiguration()
 
+  const backLinkHref = user 
+    ? (user.role === 'ADMIN' ? '/admin' : '/dashboard') 
+    : '/'
+  
+  const backLinkText = user 
+    ? (user.role === 'ADMIN' ? 'Voltar para Admin' : 'Voltar para Dashboard') 
+    : 'Voltar para Home'
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
       <LandingNavbar isAuthenticated={!!user} isLive={config.isLive} />
 
       <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <Link 
-          href="/" 
+          href={backLinkHref}
           className="inline-flex items-center text-slate-500 hover:text-indigo-600 mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Home
+          {backLinkText}
         </Link>
 
         <article className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">

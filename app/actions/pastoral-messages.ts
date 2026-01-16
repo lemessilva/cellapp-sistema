@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { uploadFile } from '@/lib/supabase'
+import { uploadToMidiaBucket } from '@/lib/supabase'
 import { getUser } from '@/lib/auth'
 
 export async function getPastoralMessages() {
@@ -42,7 +42,7 @@ export async function createPastoralMessage(formData: FormData) {
     let imageUrl = null
 
     if (imageFile && imageFile.size > 0) {
-      const url = await uploadFile(imageFile, 'midia')
+      const url = await uploadToMidiaBucket(imageFile)
       if (url) imageUrl = url
     }
 
@@ -82,7 +82,7 @@ export async function updatePastoralMessage(id: string, formData: FormData) {
     let imageUrl = formData.get('imageUrl') as string | null
 
     if (imageFile && imageFile.size > 0) {
-      const url = await uploadFile(imageFile, 'midia')
+      const url = await uploadToMidiaBucket(imageFile)
       if (url) imageUrl = url
     }
 
