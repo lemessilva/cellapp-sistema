@@ -7,6 +7,7 @@ import { User, Save, Trash2, Plus, Phone, MapPin, Calendar, Heart, LogOut, FileT
 import { logout } from '@/app/actions/auth'
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
+import { PhoneInput } from '@/components/ui/phone-input'
 
 export default function ProfileScreen({ user, reportData }: { user: any, reportData?: ReportData }) {
   const [loading, setLoading] = useState(false)
@@ -117,7 +118,7 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
                 <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-1">
                 <Phone className="w-3 h-3" /> Telefone
                 </label>
-                <input 
+                <PhoneInput 
                 name="telefone" 
                 defaultValue={user.telefone || ''} 
                 placeholder="(00) 00000-0000"
@@ -127,7 +128,7 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Whatsapp</label>
-              <input
+              <PhoneInput
                 name="whatsapp"
                 defaultValue={user.whatsapp || user.telefone || ''}
                 placeholder="(00) 00000-0000"

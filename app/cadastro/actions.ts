@@ -3,6 +3,10 @@
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { hash } from 'bcryptjs'
+import { SignJWT } from 'jose'
+import { cookies } from 'next/headers'
+
+const JWT_SECRET = new TextEncoder().encode('super-secret-key-change-in-prod')
 
 async function hashPassword(password: string) {
     return hash(password, 10)

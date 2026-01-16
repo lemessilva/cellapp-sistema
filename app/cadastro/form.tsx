@@ -41,7 +41,7 @@ export default function CadastroForm({ token }: { token: string }) {
             
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-                <input name="telefone" type="tel" required className="input-field" placeholder="(11) 99999-9999" />
+                <PhoneInput name="telefone" required className="input-field" placeholder="(11) 99999-9999" />
             </div>
 
             <div>
