@@ -8,10 +8,11 @@ import { createClient } from '@supabase/supabase-js'
 async function uploadToSupabase(file: File): Promise<string | null> {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // Usar Service Role Key para ignorar RLS (Admin Client)
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase credentials missing')
+      console.error('Supabase credentials missing (Service Role Key)')
       throw new Error('Supabase credentials missing')
     }
 

@@ -1,12 +1,15 @@
+'use server'
+
 export async function uploadFile(file: File, bucket: string = 'uploads') {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // Use Service Role Key to bypass RLS
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('As variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não estão definidas.')
+      console.error('As variáveis NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY não estão definidas.')
       throw new Error(
-        'Configuração de armazenamento indisponível. Verifique as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+        'Configuração de armazenamento indisponível.'
       )
     }
 
@@ -17,20 +20,32 @@ export async function uploadFile(file: File, bucket: string = 'uploads') {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `${fileName}`
 
+    // Convert to Buffer to avoid Node.js File issues
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file)
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: true
+      })
 
     if (uploadError) {
+      console.error('ERRO SUPABASE (Lib):', uploadError)
       throw uploadError
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath)
 
+    if (!data.publicUrl) {
+       throw new Error('URL pública gerada é vazia')
+    }
+
     return data.publicUrl
   } catch (error) {
     console.error('Erro no upload para Supabase:', error)
-    return null
+    throw error
   }
 }
 
