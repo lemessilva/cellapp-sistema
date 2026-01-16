@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PlusCircle, Settings } from 'lucide-react'
 
+import { Bug } from 'lucide-react'
+
 export default async function AdminPage() {
   const user = await getUser()
   if (!user || user.role !== 'ADMIN') {
@@ -24,6 +26,12 @@ export default async function AdminPage() {
           <p className="text-slate-500 mt-2">Visão geral da saúde e crescimento da igreja.</p>
         </div>
         <div className="flex items-center gap-4">
+            <Link href="/admin/feedbacks">
+                <Button variant="outline" className="border-slate-200 hover:bg-slate-50 text-slate-700">
+                    <Bug className="w-4 h-4 mr-2 text-red-500" />
+                    Feedbacks
+                </Button>
+            </Link>
             <Link href="/admin/celulas">
                 <Button className="bg-indigo-600 text-white hover:bg-indigo-700">
                     <PlusCircle className="w-5 h-5 mr-2" />

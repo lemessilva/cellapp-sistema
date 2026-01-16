@@ -48,19 +48,31 @@ export async function getSystemFeedbacks() {
   }
 
   const feedbacks = await prisma.systemFeedback.findMany({
-    orderBy: { createdAt: 'desc' },
     include: {
-      user: {
-        select: {
-          id: true,
-          nome: true,
-          foto_url: true,
-        },
-      },
+      user: true, // Necessário para mostrar foto e nome de quem enviou
+    },
+    orderBy: {
+      createdAt: 'desc', // Mais recentes primeiro
     },
   })
 
   return feedbacks
+}
+
+export async function getSystemFeedbackById(id: string) {
+  const user = await getUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Não autorizado')
+  }
+
+  const feedback = await prisma.systemFeedback.findUnique({
+    where: { id },
+    include: {
+      user: true,
+    },
+  })
+
+  return feedback
 }
 
 export async function updateFeedbackStatus(formData: FormData): Promise<void> {

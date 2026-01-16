@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/auth'
-import { getSystemFeedbacks, updateFeedbackStatus } from '@/app/actions/feedback'
-import Image from 'next/image'
+import { getSystemFeedbacks } from '@/app/actions/feedback'
+import FeedbackRow from '@/components/admin/FeedbackRow'
+
+export const dynamic = 'force-dynamic'
 
 export default async function AdminFeedbacksPage() {
   const user = await getUser()
@@ -10,6 +12,7 @@ export default async function AdminFeedbacksPage() {
   }
 
   const feedbacks = await getSystemFeedbacks()
+  console.log('Feedbacks encontrados:', feedbacks.length)
 
   return (
     <div className="space-y-6">
@@ -58,112 +61,9 @@ export default async function AdminFeedbacksPage() {
               </tr>
             )}
 
-            {feedbacks.map((feedback: any) => {
-              const isBug = feedback.tipo === 'BUG'
-              const isResolved = feedback.status === 'RESOLVIDO'
-              const isInAnalysis = feedback.status === 'EM_ANALISE'
-
-              const rowClass = isResolved
-                ? 'bg-emerald-50'
-                : isInAnalysis
-                ? 'bg-amber-50'
-                : ''
-
-              return (
-                <tr
-                  key={feedback.id}
-                  className={rowClass}
-                >
-                  <td className="px-4 py-3 text-sm text-slate-700">
-                    {new Date(feedback.createdAt).toLocaleString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-slate-700">
-                        {feedback.user.foto_url ? (
-                          <Image
-                            src={feedback.user.foto_url}
-                            alt={feedback.user.nome}
-                            width={32}
-                            height={32}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          feedback.user.nome.charAt(0)
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-slate-900">
-                          {feedback.user.nome}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        isBug
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {isBug ? 'Bug' : 'Sugestão'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-slate-800">
-                    {feedback.titulo}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        isResolved
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : isInAnalysis
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {feedback.status === 'PENDENTE' && 'Pendente'}
-                      {feedback.status === 'EM_ANALISE' && 'Em Análise'}
-                      {feedback.status === 'RESOLVIDO' && 'Resolvido'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right text-sm">
-                    <form
-                      action={updateFeedbackStatus}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <input
-                        type="hidden"
-                        name="id"
-                        value={feedback.id}
-                      />
-                      <select
-                        name="status"
-                        defaultValue={feedback.status}
-                        className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="PENDENTE">Pendente</option>
-                        <option value="EM_ANALISE">Em Análise</option>
-                        <option value="RESOLVIDO">Resolvido</option>
-                      </select>
-                      <button
-                        type="submit"
-                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                      >
-                        Atualizar
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-              )
-            })}
+            {feedbacks.map((feedback: any) => (
+              <FeedbackRow key={feedback.id} feedback={feedback} />
+            ))}
           </tbody>
         </table>
       </div>
