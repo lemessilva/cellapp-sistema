@@ -246,34 +246,51 @@ export async function addPaymentTransaction(
       return { error: 'Inscrição não encontrada.' }
     }
 
+    const priceNumber = Number(registration.event.price)
+    const value = Number(amount)
+
+    if (!value || isNaN(value) || value <= 0) {
+      return { error: 'Valor inválido.' }
+    }
+
+    const aggregate = await prisma.paymentTransaction.aggregate({
+      where: { registrationId },
+      _sum: { amount: true }
+    })
+
+    const alreadyPaidNumber = Number(aggregate._sum.amount || 0)
+    const newTotal = alreadyPaidNumber + value
+
+    if (newTotal > priceNumber) {
+      const restante = Math.max(0, priceNumber - alreadyPaidNumber)
+      return {
+        error: `Valor excede o total do evento. Restante a pagar: R$ ${restante
+          .toFixed(2)
+          .replace('.', ',')}`
+      }
+    }
+
     await prisma.paymentTransaction.create({
       data: {
         registrationId,
-        amount,
+        amount: value,
         notes: notes || null,
         date: new Date()
       }
     })
 
-    const transactions = await prisma.paymentTransaction.aggregate({
-      where: { registrationId },
-      _sum: { amount: true }
-    })
-
-    const paidAmount = transactions._sum.amount || 0
-    const price = registration.event.price
-    const remaining = Math.max(0, Number(price) - Number(paidAmount || 0))
+    const remaining = Math.max(0, priceNumber - newTotal)
 
     await prisma.registration.update({
       where: { id: registrationId },
       data: {
-        paidAmount,
+        paidAmount: newTotal,
         paymentStatus: remaining <= 0 ? 'PAID' : 'PARTIAL'
       }
     })
 
     revalidatePath(`/admin/eventos/${registration.eventId}`)
-    return { success: true }
+    return { success: true, paidAmount: newTotal, remaining }
   } catch (error) {
     console.error('Erro ao registrar transação de pagamento:', error)
     return { error: 'Erro ao registrar pagamento.' }

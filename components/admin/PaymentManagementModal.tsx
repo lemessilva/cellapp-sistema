@@ -39,13 +39,18 @@ export default function PaymentManagementModal({ isOpen, onClose, registration, 
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [notes, setNotes] = useState('')
+  const [currentPaid, setCurrentPaid] = useState(registration.paidAmount)
+  const [receiptInfo, setReceiptInfo] = useState<{ amount: number; totalPaid: number } | null>(null)
 
   if (!isOpen) return null
 
   const price = registration.event.price
-  const paid = registration.paidAmount
+  const paid = currentPaid
   const remaining = Math.max(0, price - paid)
   const displayName = registration.user?.nome || registration.guestName || 'Visitante'
+
+  const parsedAmount = Number(amount || 0)
+  const remainingAfterInput = Math.max(0, price - (paid + (isNaN(parsedAmount) ? 0 : parsedAmount)))
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,13 +59,32 @@ export default function PaymentManagementModal({ isOpen, onClose, registration, 
       return
     }
 
+    const value = Number(amount)
+    const newTotalLocal = paid + value
+
+    if (newTotalLocal > price) {
+      const restanteLocal = Math.max(0, price - paid)
+      toast.error(
+        `Valor excede o total do evento. Restante a pagar: R$ ${restanteLocal
+          .toFixed(2)
+          .replace('.', ',')}`
+      )
+      return
+    }
+
     setLoading(true)
     try {
-      const result = await addPaymentTransaction(registration.id, Number(amount), notes)
+      const result = await addPaymentTransaction(registration.id, value, notes)
       if (result.error) {
         toast.error(result.error)
       } else {
         toast.success('Pagamento registrado!')
+        const totalPagoServidor = typeof result.paidAmount === 'number' ? result.paidAmount : newTotalLocal
+        setCurrentPaid(totalPagoServidor)
+        setReceiptInfo({
+          amount: value,
+          totalPaid: totalPagoServidor
+        })
         setAmount('')
         setNotes('')
         onUpdate()
@@ -72,22 +96,47 @@ export default function PaymentManagementModal({ isOpen, onClose, registration, 
     }
   }
 
-  // WhatsApp Message Generator
-  const whatsappMessage = `Olá ${displayName.split(' ')[0]}! Recebemos seu pagamento de R$ ${Number(amount || 0).toFixed(2).replace('.', ',')} referente ao ${registration.event.title}.
-✅ Total Pago: R$ ${(paid + Number(amount || 0)).toFixed(2).replace('.', ',')}
-⏳ Resta Pagar: R$ ${(Math.max(0, price - (paid + Number(amount || 0)))).toFixed(2).replace('.', ',')}
+  const handleCopyMessage = () => {
+    if (!receiptInfo) {
+      toast.error('Registre o pagamento antes de gerar o comprovante.')
+      return
+    }
+
+    const restante = Math.max(0, price - receiptInfo.totalPaid)
+    const whatsappMessage = `Olá ${
+      displayName.split(' ')[0]
+    }! Recebemos seu pagamento de R$ ${receiptInfo.amount
+      .toFixed(2)
+      .replace('.', ',')} referente ao ${registration.event.title}.
+✅ Total Pago: R$ ${receiptInfo.totalPaid.toFixed(2).replace('.', ',')}
+⏳ Resta Pagar: R$ ${restante.toFixed(2).replace('.', ',')}
 Deus abençoe!`
 
-  const handleCopyMessage = () => {
     navigator.clipboard.writeText(whatsappMessage)
     toast.success('Mensagem copiada!')
   }
 
   const handleOpenWhatsApp = () => {
+    if (!receiptInfo) {
+      toast.error('Registre o pagamento antes de abrir o WhatsApp.')
+      return
+    }
+
     if (!registration.user?.telefone) {
       toast.error('Usuário sem telefone cadastrado')
       return
     }
+
+    const restante = Math.max(0, price - receiptInfo.totalPaid)
+    const whatsappMessage = `Olá ${
+      displayName.split(' ')[0]
+    }! Recebemos seu pagamento de R$ ${receiptInfo.amount
+      .toFixed(2)
+      .replace('.', ',')} referente ao ${registration.event.title}.
+✅ Total Pago: R$ ${receiptInfo.totalPaid.toFixed(2).replace('.', ',')}
+⏳ Resta Pagar: R$ ${restante.toFixed(2).replace('.', ',')}
+Deus abençoe!`
+
     const phone = registration.user.telefone.replace(/\D/g, '')
     const url = `https://wa.me/55${phone}?text=${encodeURIComponent(whatsappMessage)}`
     window.open(url, '_blank')
@@ -146,6 +195,13 @@ Deus abençoe!`
                       className="w-full pl-9 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Restante a pagar:{' '}
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(remainingAfterInput)}
+                  </p>
                 </div>
                 <button
                   type="submit"

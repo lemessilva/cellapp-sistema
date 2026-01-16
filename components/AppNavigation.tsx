@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
@@ -22,6 +22,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string, isS
     links = [
       { href: '/app', label: 'Início', icon: Home },
       { href: '/app/oracao', label: 'Oração Diária', icon: Heart },
+      { href: '/app/meus-ingressos', label: 'Meus Ingressos', icon: Ticket },
       { href: '/app/perfil', label: 'Perfil', icon: User },
     ]
 
@@ -40,6 +41,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string, isS
     
     if (role === 'ADMIN') {
         links.push({ href: '/admin', label: 'Admin', icon: Shield })
+        links.push({ href: '/admin/membros', label: 'Gerenciar Membros', icon: Users })
         links.push({ href: '/admin/website', label: 'Website', icon: Globe })
         links.push({ href: '/admin/trilho', label: 'Trilho', icon: BarChart3 })
         links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Calendar })
