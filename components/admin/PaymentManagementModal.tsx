@@ -52,6 +52,13 @@ export default function PaymentManagementModal({ isOpen, onClose, registration, 
   const parsedAmount = Number(amount || 0)
   const remainingAfterInput = Math.max(0, price - (paid + (isNaN(parsedAmount) ? 0 : parsedAmount)))
 
+  const whatsappMessage =
+    receiptInfo && receiptInfo.amount > 0
+      ? `Olá ${displayName.split(' ')[0]}, confirmamos o pagamento de R$ ${receiptInfo.amount
+          .toFixed(2)
+          .replace('.', ',')} referente ao evento ${registration.event.title}.`
+      : ''
+
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -214,7 +221,7 @@ Deus abençoe!`
               </div>
               
               {/* WhatsApp Generator Preview */}
-              {amount && Number(amount) > 0 && (
+              {receiptInfo && whatsappMessage && (
                 <div className="bg-green-50 p-4 rounded-lg border border-green-100 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-green-800 uppercase flex items-center gap-1">
@@ -240,7 +247,7 @@ Deus abençoe!`
                         </div>
                     </div>
                     <p className="text-sm text-green-900 whitespace-pre-wrap font-mono bg-white/50 p-2 rounded border border-green-100/50">
-                        {whatsappMessage}
+                      {whatsappMessage}
                     </p>
                 </div>
               )}
