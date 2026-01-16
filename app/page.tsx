@@ -6,6 +6,7 @@ import { getUser } from '@/lib/auth'
 import { LandingNavbar } from '@/components/LandingNavbar'
 import { getYouTubeId } from '@/lib/utils'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
+import { FindCellSection } from '@/components/home/FindCellSection'
 
 export default async function LandingPage() {
   const user = await getUser()
@@ -152,6 +153,9 @@ export default async function LandingPage() {
            </div>
         </section>
       )}
+
+      {/* 2.8 Seção Encontre uma Célula */}
+      <FindCellSection />
 
       {/* 3. Seção 'Nossa Programação' */}
       <section id="agenda" className="py-20 bg-slate-950">

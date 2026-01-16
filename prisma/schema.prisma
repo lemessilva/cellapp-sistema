@@ -238,10 +238,18 @@ model Cell {
   id          String   @id @default(cuid())
   nome        String
   dia_reuniao String?  // Ex: "Quarta-feira"
+  diaSemana   String?  // Ex: "QUARTA", "QUINTA" (Normalizado para filtro)
   horario     String?  // Ex: "20:00"
   endereco    String?
   
-  // Endereço Detalhado
+  // Campos para Busca Pública (Geolocalização)
+  enderecoBase String? // Endereço completo usado apenas para gerar as coordenadas
+  bairro       String? // O dado que será público
+  cidade       String?
+  latitude     Float?
+  longitude    Float?
+  
+  // Endereço Detalhado (Legado/Administrativo)
   addressStreet    String?
   addressNumber    String?
   addressComplement String?
