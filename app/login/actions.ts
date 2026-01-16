@@ -25,6 +25,10 @@ export async function login(formData: FormData) {
             return { error: 'Credenciais inválidas.' }
         }
 
+        if (!user.ativo) {
+            return { error: 'Sua conta está inativa. Procure a administração.' }
+        }
+
         const isValid = await compare(password, user.password)
         if (!isValid) {
             return { error: 'Credenciais inválidas.' }

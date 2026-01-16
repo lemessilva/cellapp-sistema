@@ -13,6 +13,7 @@ import {
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { getPrayerReportData } from '@/app/actions/report'
+import { toggleUserActiveStatus } from '@/app/(protected)/admin/actions'
 
 type Member = {
   id: string
@@ -23,6 +24,7 @@ type Member = {
   telefone: string | null
   whatsapp: string | null
   bairro: string | null
+  ativo: boolean
   celula: { nome: string } | null
   prayerTotalDays: number
   lastPrayerDate: string | Date | null
@@ -77,6 +79,7 @@ export default function MembersManagementTable({ members }: Props) {
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
   const [reportError, setReportError] = useState('')
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const rows = useMemo(() => members, [members])
 
@@ -119,6 +122,7 @@ export default function MembersManagementTable({ members }: Props) {
                 <th className="p-4">Célula</th>
                 <th className="p-4">Telefone</th>
                 <th className="p-4">Bairro</th>
+                <th className="p-4">Status</th>
                 <th className="p-4 text-right">Ações</th>
               </tr>
             </thead>
@@ -135,7 +139,7 @@ export default function MembersManagementTable({ members }: Props) {
                 return (
                   <tr
                     key={member.id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className={`hover:bg-slate-50 transition-colors ${member.ativo ? '' : 'opacity-60'}`}
                   >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -188,6 +192,37 @@ export default function MembersManagementTable({ members }: Props) {
                     </td>
                     <td className="p-4 text-slate-600">
                       {member.bairro || '-'}
+                    </td>
+                    <td className="p-4">
+                      <button
+                        disabled={togglingId === member.id}
+                        onClick={async () => {
+                          try {
+                            setTogglingId(member.id)
+                            const next = !member.ativo
+                            const res = await toggleUserActiveStatus(member.id, next)
+                            if (res?.error) {
+                              toast.error(res.error)
+                            } else {
+                              toast.success(next ? 'Membro ativado.' : 'Membro inativado.')
+                            }
+                          } catch {
+                            toast.error('Erro ao atualizar status.')
+                          } finally {
+                            setTogglingId(null)
+                          }
+                        }}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                          member.ativo
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        } ${togglingId === member.id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      >
+                        {togglingId === member.id && (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        )}
+                        {member.ativo ? 'Ativo' : 'Inativo'}
+                      </button>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">

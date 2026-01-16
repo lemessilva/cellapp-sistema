@@ -17,6 +17,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string, isS
     links = [
       { href: '/admin/website', label: 'Website', icon: Globe },
       { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
+      { href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText },
       { href: '/app/perfil', label: 'Perfil', icon: User },
     ]
   } else {
@@ -44,6 +45,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string, isS
         links.push({ href: '/admin', label: 'Admin', icon: Shield })
         links.push({ href: '/admin/membros', label: 'Gerenciar Membros', icon: Users })
         links.push({ href: '/admin/website', label: 'Website', icon: Globe })
+        links.push({ href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText })
         links.push({ href: '/admin/trilho', label: 'Trilho', icon: BarChart3 })
         links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Calendar })
     }

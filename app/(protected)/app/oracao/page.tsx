@@ -19,6 +19,7 @@ export default async function PrayerPage() {
       celula: {
         include: {
           membros: {
+            where: { ativo: true },
             include: { oikos: true }
           }
         }
@@ -26,6 +27,7 @@ export default async function PrayerPage() {
       celulaLiderada: {
         include: {
           membros: {
+            where: { ativo: true },
             include: { oikos: true }
           }
         }

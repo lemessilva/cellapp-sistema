@@ -1,8 +1,9 @@
 import { getUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Heart, MessageSquare, Bell, Flame } from 'lucide-react'
+import { Calendar, Heart, MessageSquare, Bell, Flame, User } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 
 export default async function DashboardPage() {
   const sessionUser = await getUser()
@@ -85,6 +86,8 @@ export default async function DashboardPage() {
     orderBy: { date: 'asc' }
   })
 
+  const pastoralMessage = await getActivePastoralMessage()
+
   return (
     <div className="space-y-6">
       {/* Greeting */}
@@ -110,6 +113,37 @@ export default async function DashboardPage() {
           Aqui está o resumo da sua caminhada com Cristo.
         </p>
       </div>
+
+      {pastoralMessage && (
+        <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-white/10 transition-colors"></div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium">
+                            <User className="w-3 h-3" />
+                            <span>Palavra do Pastor</span>
+                        </div>
+                        {new Date(pastoralMessage.publishedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold uppercase tracking-wide animate-pulse">
+                                Nova
+                            </span>
+                        )}
+                    </div>
+                    <h3 className="text-xl font-bold">{pastoralMessage.titulo}</h3>
+                    <p className="text-indigo-100 text-sm line-clamp-1 max-w-xl">{pastoralMessage.conteudo}</p>
+                </div>
+                
+                <Link 
+                    href={`/mensagem/${pastoralMessage.id}`}
+                    className="shrink-0 px-4 py-2 bg-white text-indigo-600 text-sm font-bold rounded-lg hover:bg-indigo-50 transition-colors"
+                >
+                    Ler Mensagem
+                </Link>
+            </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

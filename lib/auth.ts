@@ -19,16 +19,24 @@ export async function getUser() {
             where: { id: payload.sub as string },
             include: { 
                 oikos: true, 
-                celulaLiderada: { include: { membros: true } },
+                celulaLiderada: { 
+                    include: { 
+                        membros: { where: { ativo: true } } 
+                    } 
+                },
                 celula: { 
                     include: { 
-                        membros: true,
+                        membros: { where: { ativo: true } },
                         lider: true 
                     } 
                 }
             }
         })
         
+        if (!user || !user.ativo) {
+            return null
+        }
+
         return user
     } catch (error) {
         console.error('Auth error:', error)

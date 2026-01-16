@@ -124,13 +124,17 @@ export async function getMeetingData(userId: string) {
       include: {
         celulaLiderada: {
           include: {
-            membros: true,
+            membros: {
+              where: { ativo: true }
+            },
             supervisor: true
           }
         },
         celula: {
           include: {
-            membros: true,
+            membros: {
+              where: { ativo: true }
+            },
             lider: true,
             supervisor: true
           }

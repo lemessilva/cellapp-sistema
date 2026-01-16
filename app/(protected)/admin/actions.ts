@@ -117,3 +117,18 @@ export async function updateUserRoleAndCells({
     return { error: 'Falha ao atualizar permissões do usuário.' }
   }
 }
+
+export async function toggleUserActiveStatus(userId: string, ativo: boolean) {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { ativo }
+    })
+
+    revalidatePath('/admin/membros')
+    return { success: true }
+  } catch (error) {
+    console.error('Erro ao atualizar status do usuário:', error)
+    return { error: 'Erro ao atualizar status do usuário.' }
+  }
+}

@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { uploadFile } from '@/lib/supabase'
+import { uploadFile, uploadToMidiaBucket } from '@/lib/supabase'
 import { getUser } from '@/lib/auth'
 
 // Get ticket details for check-in

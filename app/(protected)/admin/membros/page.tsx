@@ -25,6 +25,7 @@ async function getMembersWithPrayerStats() {
       telefone: true,
       whatsapp: true,
       bairro: true,
+      ativo: true,
       celula: {
         select: {
           nome: true,
@@ -119,4 +120,3 @@ export default async function MembersAdminPage() {
     </div>
   )
 }
-

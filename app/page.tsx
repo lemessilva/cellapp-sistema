@@ -1,14 +1,16 @@
 import Link from 'next/link'
-import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music } from 'lucide-react'
+import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music, User } from 'lucide-react'
 import { getSiteConfiguration } from '@/app/actions/website'
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
 import { LandingNavbar } from '@/components/LandingNavbar'
 import { getYouTubeId } from '@/lib/utils'
+import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 
 export default async function LandingPage() {
   const user = await getUser()
   const config = await getSiteConfiguration()
+  const pastoralMessage = await getActivePastoralMessage()
   const schedule = config.weeklySchedule ? JSON.parse(config.weeklySchedule) : []
   
   const upcomingEvents = await prisma.event.findMany({
@@ -106,6 +108,46 @@ export default async function LandingPage() {
                        <p>Link de transmissão inválido.</p>
                     </div>
                  )}
+              </div>
+           </div>
+        </section>
+      )}
+
+      {/* 2.5 Pastoral Message Section */}
+      {pastoralMessage && (
+        <section className="py-20 bg-white border-b border-slate-100">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                 <div className="order-2 lg:order-1 relative aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/10 bg-slate-100">
+                    {pastoralMessage.imageUrl ? (
+                       <img src={pastoralMessage.imageUrl} alt={pastoralMessage.titulo} className="w-full h-full object-cover" />
+                    ) : (
+                       <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <MessageCircle className="w-20 h-20" />
+                       </div>
+                    )}
+                 </div>
+                 <div className="order-1 lg:order-2 space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium">
+                       <User className="w-4 h-4" />
+                       <span>Palavra do Pastor</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
+                       {pastoralMessage.titulo}
+                    </h2>
+                    <p className="text-lg text-slate-600 leading-relaxed line-clamp-4 whitespace-pre-line">
+                       {pastoralMessage.conteudo}
+                    </p>
+                    <div className="pt-4">
+                       <Link 
+                         href={`/mensagem/${pastoralMessage.id}`}
+                         className="inline-flex items-center justify-center px-6 py-3 text-base font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 group"
+                       >
+                         Ler Mensagem Completa
+                         <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                       </Link>
+                    </div>
+                 </div>
               </div>
            </div>
         </section>

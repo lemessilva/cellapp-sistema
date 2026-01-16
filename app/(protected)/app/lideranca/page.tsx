@@ -53,7 +53,7 @@ export default async function LeaderPage() {
   const startOfYear = new Date(new Date().getFullYear(), 0, 1)
 
   const members = await prisma.user.findMany({
-      where: { celulaId: cellId },
+      where: { celulaId: cellId, ativo: true },
       include: {
           prayerLogs: {
               where: {

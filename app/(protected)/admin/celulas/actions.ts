@@ -258,6 +258,9 @@ export async function deleteCell(id: string) {
 
 export async function getUsersForSelection() {
   return await prisma.user.findMany({
+    where: {
+      ativo: true
+    },
     select: {
       id: true,
       nome: true,
