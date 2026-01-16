@@ -12,6 +12,7 @@ import RosterManager from '@/components/roster/RosterManager'
 import { PrayerCalendarPDF } from '@/components/reports/PrayerCalendarPDF'
 import MemberGrowthModal from '@/components/growth/MemberGrowthModal'
 import dynamic from 'next/dynamic'
+import { PhoneInput } from '@/components/ui/phone-input'
 
 const PDFDownloadLink = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFDownloadLink), { ssr: false })
 
@@ -346,7 +347,7 @@ export default function LeaderScreen({ user, members, pendingReports = [] }: { u
                           </div>
                           <div>
                               <label className="block text-sm font-medium text-slate-700 mb-1">Telefone (WhatsApp)</label>
-                              <input name="telefone" type="tel" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="(00) 00000-0000" />
+                              <PhoneInput name="telefone" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="(00) 00000-0000" />
                           </div>
                           <div className="p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-100">
                               O membro receberá instruções para definir sua senha no primeiro acesso (Feature futura). Por enquanto, cadastre e oriente.

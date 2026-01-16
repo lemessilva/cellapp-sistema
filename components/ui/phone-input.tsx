@@ -24,14 +24,16 @@ export function formatPhone(value: string) {
     .replace(/(\d{5})(\d{4})/, '$1-$2')
 }
 
-export function PhoneInput({ className, defaultValue, onChange, ...props }: PhoneInputProps) {
+export function PhoneInput({ className, defaultValue, value: controlledValue, onChange, ...props }: PhoneInputProps) {
   const [value, setValue] = useState('')
 
   useEffect(() => {
-    if (defaultValue) {
+    if (controlledValue !== undefined) {
+      setValue(formatPhone(String(controlledValue)))
+    } else if (defaultValue) {
       setValue(formatPhone(String(defaultValue)))
     }
-  }, [defaultValue])
+  }, [controlledValue, defaultValue])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhone(e.target.value)

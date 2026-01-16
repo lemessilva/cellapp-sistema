@@ -7,6 +7,7 @@ import { registerForEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { Loader2, Ticket, CheckCircle, User, ArrowRight, Smartphone } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import { PhoneInput } from '@/components/ui/phone-input'
 
 type SmartRegistrationFormProps = {
   eventId: string

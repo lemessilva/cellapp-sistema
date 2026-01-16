@@ -15,7 +15,7 @@ export function TogglePastoralStatusButton({ id, initialStatus }: { id: string, 
     const newStatus = !status
     
     try {
-      const result = await togglePastoralMessageStatus(id, newStatus)
+      const result = await togglePastoralMessageStatus(id)
       if (result.error) {
         toast.error(result.error)
       } else {

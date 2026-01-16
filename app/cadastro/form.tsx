@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { registerUser } from './actions'
+import { PhoneInput } from '@/components/ui/phone-input'
 
 export default function CadastroForm({ token }: { token: string }) {
     const [error, setError] = useState('')

@@ -2,8 +2,42 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { uploadToMidiaBucket } from '@/lib/supabase'
 import { getUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
+
+async function uploadToSupabase(file: File): Promise<string | null> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase credentials missing')
+      return null
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+
+    const { error } = await supabase.storage
+      .from('midia')
+      .upload(fileName, file)
+
+    if (error) {
+      console.error('Supabase upload error:', error)
+      return null
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('midia').getPublicUrl(fileName)
+    const finalImageUrl = publicUrlData.publicUrl
+    
+    return finalImageUrl
+  } catch (error) {
+    console.error('Upload exception:', error)
+    return null
+  }
+}
 
 export async function getPastoralMessages() {
   const messages = await prisma.pastoralMessage.findMany({
@@ -42,8 +76,13 @@ export async function createPastoralMessage(formData: FormData) {
     let imageUrl = null
 
     if (imageFile && imageFile.size > 0) {
-      const url = await uploadToMidiaBucket(imageFile)
-      if (url) imageUrl = url
+      console.log('Iniciando upload de imagem (Create)...')
+      const url = await uploadToSupabase(imageFile)
+      
+      if (url) {
+        imageUrl = url
+        console.log('URL da Imagem Gerada (Create):', imageUrl)
+      }
     }
 
     await prisma.pastoralMessage.create({
@@ -79,29 +118,32 @@ export async function updatePastoralMessage(id: string, formData: FormData) {
     const publishedAt = formData.get('publishedAt') as string
     const ativo = formData.get('ativo') === 'true'
 
-    let imageUrl = formData.get('imageUrl') as string | null
+    const dataToUpdate: any = {
+        titulo: title,
+        conteudo: content,
+        publishedAt: publishedAt ? new Date(publishedAt) : undefined,
+        ativo: ativo
+    }
 
+    // Lógica Crítica: Só atualiza imageUrl se houver novo arquivo
     if (imageFile && imageFile.size > 0) {
-      const url = await uploadToMidiaBucket(imageFile)
-      if (url) imageUrl = url
+      console.log('Iniciando upload de imagem (Update)...')
+      const url = await uploadToSupabase(imageFile)
+      
+      if (url) {
+        dataToUpdate.imageUrl = url
+        console.log('URL da Imagem Gerada (Update):', url)
+      }
     }
 
     await prisma.pastoralMessage.update({
       where: { id },
-      data: {
-        titulo: title,
-        conteudo: content,
-        imageUrl: imageUrl,
-        publishedAt: publishedAt ? new Date(publishedAt) : undefined,
-        ativo: ativo
-      }
+      data: dataToUpdate
     })
 
     revalidatePath('/admin/pastoral')
     revalidatePath('/')
     revalidatePath('/app')
-    revalidatePath(`/mensagem/${id}`)
-    
     return { success: true }
   } catch (error) {
     console.error('Erro ao atualizar mensagem pastoral:', error)
@@ -123,7 +165,6 @@ export async function deletePastoralMessage(id: string) {
     revalidatePath('/admin/pastoral')
     revalidatePath('/')
     revalidatePath('/app')
-    
     return { success: true }
   } catch (error) {
     console.error('Erro ao excluir mensagem pastoral:', error)
@@ -131,22 +172,24 @@ export async function deletePastoralMessage(id: string) {
   }
 }
 
-export async function togglePastoralMessageStatus(id: string, status: boolean) {
+export async function togglePastoralMessageStatus(id: string) {
   try {
     const user = await getUser()
     if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
       return { error: 'Não autorizado.' }
     }
 
+    const message = await prisma.pastoralMessage.findUnique({ where: { id } })
+    if (!message) return { error: 'Mensagem não encontrada.' }
+
     await prisma.pastoralMessage.update({
       where: { id },
-      data: { ativo: status }
+      data: { ativo: !message.ativo }
     })
 
     revalidatePath('/admin/pastoral')
     revalidatePath('/')
     revalidatePath('/app')
-    
     return { success: true }
   } catch (error) {
     console.error('Erro ao alterar status:', error)
