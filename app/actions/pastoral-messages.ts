@@ -12,7 +12,7 @@ async function uploadToSupabase(file: File): Promise<string | null> {
 
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase credentials missing')
-      return null
+      throw new Error('Supabase credentials missing')
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -20,22 +20,36 @@ async function uploadToSupabase(file: File): Promise<string | null> {
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-    const { error } = await supabase.storage
-      .from('midia')
-      .upload(fileName, file)
+    // 1. Conversão para Buffer
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-    if (error) {
-      console.error('Supabase upload error:', error)
-      return null
+    // 2. Upload com Buffer
+    const { data, error: uploadError } = await supabase.storage
+      .from('midia')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: true
+      })
+
+    // 3. Tratamento de Erro Explícito
+    if (uploadError) {
+      console.error('ERRO SUPABASE:', uploadError)
+      throw new Error('Falha no upload para o Supabase')
     }
 
+    // 4. Verificação da URL
     const { data: publicUrlData } = supabase.storage.from('midia').getPublicUrl(fileName)
     const finalImageUrl = publicUrlData.publicUrl
     
+    if (!finalImageUrl) {
+        throw new Error('URL pública gerada é vazia')
+    }
+
     return finalImageUrl
   } catch (error) {
     console.error('Upload exception:', error)
-    return null
+    throw error // Re-throw para parar o processo
   }
 }
 
