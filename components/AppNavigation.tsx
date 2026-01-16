@@ -16,6 +16,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string, isS
   if (role === 'MIDIA') {
     links = [
       { href: '/admin/website', label: 'Website', icon: Globe },
+      { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
       { href: '/app/perfil', label: 'Perfil', icon: User },
     ]
   } else {

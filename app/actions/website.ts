@@ -13,7 +13,6 @@ export async function getSiteConfiguration() {
     config = await prisma.siteConfiguration.create({
       data: {
         id: 1,
-        // Default values
         heroTitle: "Bem-vindo à Nossa Igreja",
         heroSubtitle: "Um lugar de fé, esperança e amor.",
         heroCtaText: "Visite-nos",
@@ -25,7 +24,9 @@ export async function getSiteConfiguration() {
         ]),
         contactWhatsapp: "5511999999999",
         socialInstagram: "@igreja",
-        footerAddress: "Rua da Igreja, 123 - Centro"
+        footerAddress: "Rua da Igreja, 123 - Centro",
+        isLive: false,
+        liveLink: null
       }
     })
   }
@@ -51,6 +52,8 @@ export async function updateSiteConfiguration(data: any) {
       contactWhatsapp: data.contactWhatsapp,
       socialInstagram: data.socialInstagram,
       footerAddress: data.footerAddress,
+      isLive: data.isLive,
+      liveLink: data.liveLink,
     }
   })
 

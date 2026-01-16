@@ -2,9 +2,15 @@ import { getEventDetails } from '@/app/actions/events'
 import { EventRegistrationsTable } from '@/components/admin/EventRegistrationsTable'
 import { ArrowLeft, Calendar, DollarSign, Users } from 'lucide-react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { getUser } from '@/lib/auth'
 
 export default async function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getUser()
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+    redirect('/app')
+  }
+
   const { id } = await params
   const result = await getEventDetails(id)
 

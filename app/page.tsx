@@ -4,6 +4,7 @@ import { getSiteConfiguration } from '@/app/actions/website'
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
 import { LandingNavbar } from '@/components/LandingNavbar'
+import { getYouTubeId } from '@/lib/utils'
 
 export default async function LandingPage() {
   const user = await getUser()
@@ -31,7 +32,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
-      <LandingNavbar isAuthenticated={!!user} />
+      <LandingNavbar isAuthenticated={!!user} isLive={config.isLive} />
 
       {/* 2. Hero Section (A Capa) */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
@@ -72,6 +73,43 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {config.isLive && config.liveLink && (
+        <section id="transmissao" className="py-24 bg-black relative overflow-hidden border-b border-slate-800">
+           {/* Decorative */}
+           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950"></div>
+           
+           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex flex-col items-center text-center mb-10">
+                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-wider mb-4">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Ao Vivo Agora
+                 </div>
+                 <h2 className="text-3xl md:text-5xl font-bold text-white mb-2">Culto Ao Vivo</h2>
+                 <p className="text-slate-400">Junte-se a nós em adoração, onde quer que você esteja.</p>
+              </div>
+
+              <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/10 border border-slate-800 bg-slate-900">
+                 {getYouTubeId(config.liveLink) ? (
+                    <iframe 
+                      src={`https://www.youtube.com/embed/${getYouTubeId(config.liveLink)}?autoplay=1`}
+                      title="Culto Ao Vivo"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="absolute inset-0 w-full h-full"
+                    ></iframe>
+                 ) : (
+                    <div className="flex items-center justify-center h-full text-slate-500">
+                       <p>Link de transmissão inválido.</p>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </section>
+      )}
 
       {/* 3. Seção 'Nossa Programação' */}
       <section id="agenda" className="py-20 bg-slate-950">

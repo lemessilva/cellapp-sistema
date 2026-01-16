@@ -131,12 +131,28 @@ export function EventForm() {
             accept="image/*"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
+          <p className="text-xs text-slate-500">
+            📏 Tamanho recomendado: 1280x720px (Padrão YouTube). Formatos: JPG ou PNG.
+          </p>
           {/* Fallback URL input if needed */}
           <input 
             name="bannerUrl" 
             placeholder="Ou cole uma URL (https://...)"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mt-2 text-sm"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-slate-400" /> Capa do Evento
+          </label>
+          <input 
+            type="file"
+            name="coverFile" 
+            accept="image/*"
+            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <p className="text-xs text-slate-500">Imagem de capa para a página do evento.</p>
         </div>
       </div>
 

@@ -1,8 +1,15 @@
 import { getAdminEvents } from '@/app/actions/events'
 import Link from 'next/link'
 import { Plus, Calendar, Users, DollarSign } from 'lucide-react'
+import { getUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export default async function AdminEventsPage() {
+  const user = await getUser()
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+    redirect('/app')
+  }
+
   const events = await getAdminEvents()
 
   return (

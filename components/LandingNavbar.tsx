@@ -6,9 +6,10 @@ import { Menu, X, LayoutDashboard, User } from 'lucide-react'
 
 interface LandingNavbarProps {
   isAuthenticated: boolean
+  isLive?: boolean
 }
 
-export function LandingNavbar({ isAuthenticated }: LandingNavbarProps) {
+export function LandingNavbar({ isAuthenticated, isLive }: LandingNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
@@ -23,6 +24,18 @@ export function LandingNavbar({ isAuthenticated }: LandingNavbarProps) {
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
+            {isLive && (
+              <Link 
+                href="#transmissao" 
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full hover:bg-red-500/20 transition-all group animate-in fade-in zoom-in duration-300"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+                <span className="text-xs font-bold text-red-500 tracking-wide">AO VIVO AGORA</span>
+              </Link>
+            )}
             <Link href="#" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
               Início
             </Link>
@@ -78,6 +91,18 @@ export function LandingNavbar({ isAuthenticated }: LandingNavbarProps) {
         {isMobileMenuOpen && (
           <div className="md:hidden pb-4">
             <div className="space-y-2 pt-2">
+              {isLive && (
+                <Link
+                  href="#transmissao"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20"
+                >
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                  AO VIVO AGORA
+                </Link>
+              )}
               <Link
                 href="#"
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-200 hover:bg-slate-900"

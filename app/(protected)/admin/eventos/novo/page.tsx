@@ -1,8 +1,15 @@
 import { EventForm } from '@/components/admin/EventForm'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { getUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
-export default function NewEventPage() {
+export default async function NewEventPage() {
+  const user = await getUser()
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+    redirect('/app')
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">

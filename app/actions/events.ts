@@ -204,11 +204,18 @@ export async function registerForEvent(eventId: string, guestData?: { name?: str
 export async function createEvent(formData: FormData) {
   try {
     const bannerFile = formData.get('bannerFile') as File | null
+    const coverFile = formData.get('coverFile') as File | null
     let bannerUrl = formData.get('bannerUrl') as string | null
+    let coverUrl = null
 
     if (bannerFile && bannerFile.size > 0) {
       const url = await uploadFile(bannerFile, 'uploads')
       if (url) bannerUrl = url
+    }
+
+    if (coverFile && coverFile.size > 0) {
+      const url = await uploadToMidiaBucket(coverFile)
+      if (url) coverUrl = url
     }
 
     await prisma.event.create({
@@ -219,7 +226,8 @@ export async function createEvent(formData: FormData) {
         location: formData.get('location') as string,
         price: parseFloat((formData.get('price') as string) || '0'),
         maxCapacity: formData.get('maxCapacity') ? parseInt(formData.get('maxCapacity') as string) : null,
-        bannerUrl: bannerUrl
+        bannerUrl: bannerUrl,
+        coverUrl: coverUrl
       }
     })
 

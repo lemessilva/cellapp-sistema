@@ -33,3 +33,7 @@ export async function uploadFile(file: File, bucket: string = 'uploads') {
     return null
   }
 }
+
+export async function uploadToMidiaBucket(file: File) {
+  return uploadFile(file, 'midia')
+}
