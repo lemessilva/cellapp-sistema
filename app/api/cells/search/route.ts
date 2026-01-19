@@ -56,7 +56,8 @@ export async function GET(request: Request) {
       )
     }
 
-    let results: any[] = []
+    type CellResult = typeof cells[0] & { distancia?: number | null }
+    let results: CellResult[] = []
 
     // Estratégia 1: Busca por Geolocalização
     if (latParam && lngParam) {
@@ -76,8 +77,8 @@ export async function GET(request: Request) {
 
           return { ...cell, distancia: distance }
         })
-        .filter((cell: any) => cell !== null && cell.distancia <= 15) // Raio de 15km
-        .sort((a: any, b: any) => a.distancia - b.distancia)
+        .filter((cell): cell is CellResult => cell !== null && (cell.distancia !== undefined && cell.distancia <= 15)) // Raio de 15km
+        .sort((a, b) => (a.distancia || 0) - (b.distancia || 0))
     } 
     // Estratégia 2: Busca por Texto (Cidade ou Bairro)
     else if (cidade || bairro) {
@@ -89,31 +90,19 @@ export async function GET(request: Request) {
         const matchBairro = bairro && cell.bairro
           ? cell.bairro.toLowerCase().includes(bairro.toLowerCase())
           : false
-
-        // Se passar os dois, tenta casar os dois. Se passar um só, casa um só.
-        // A regra do prompt diz: "Filtre onde cidade OU bairro contém o texto pesquisado"
-        // Mas a UI sugere inputs separados. Vamos ser flexíveis.
         
         if (cidade && bairro) {
             return matchCidade || matchBairro
         }
         return matchCidade || matchBairro
       })
-      .map(cell => ({ ...cell, distancia: null }))
-    } else {
-        // Se não filtrar nada, retorna vazio ou tudo?
-        // Prompt não especifica, mas "Encontre uma Célula" sugere busca ativa.
-        // Vamos retornar vazio para não poluir, ou retornar tudo se for só filtro de dia?
-        // Se tiver filtro de dia, retorna os daquele dia.
-        if (dia) {
-             results = cells.map(cell => ({ ...cell, distancia: null }))
-        } else {
-             results = []
-        }
+    }
+    // Estratégia 3: Sem busca, mas com filtro de dia (ou listagem geral limitada)
+    else {
+        results = cells
     }
 
-    // Formatar retorno seguro
-    const safeResponse = results.map((cell: any) => ({
+    const safeResponse = results.map((cell) => ({
       id: cell.id,
       nome: cell.nome,
       liderNome: cell.lider?.nome || 'Líder',
@@ -126,9 +115,8 @@ export async function GET(request: Request) {
     }))
 
     return NextResponse.json(safeResponse)
-
   } catch (error) {
-    console.error('Erro na busca de células:', error)
+    console.error('Search API Error:', error)
     return NextResponse.json({ error: 'Erro interno ao buscar células' }, { status: 500 })
   }
 }

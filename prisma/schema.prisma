@@ -53,6 +53,13 @@ model User {
   genero          String?   // 'M' | 'F'
   data_batismo    DateTime?
   endereco        String?
+  numero          String?
+  bairro          String?
+  cidade          String?
+  estado          String?
+  cep             String?
+  latitude        Float?
+  longitude       Float?
   estado_civil    String?
   conjuge_nome    String?
   foto_url        String?
@@ -61,9 +68,6 @@ model User {
   dataNascimento  DateTime?
   naturalidade    String?
   ufNascimento    String?
-  numero          String?
-  bairro          String?
-  cep             String?
   pontoReferencia String?
   nomePai         String?
   nomeMae         String?
@@ -506,6 +510,11 @@ model MeetingRoster {
   
   hostId      String?
   host        User?    @relation("RosterHost", fields: [hostId], references: [id])
+  
+  // Local da Reunião
+  customAddress String?
+  latitude      Float?
+  longitude     Float?
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

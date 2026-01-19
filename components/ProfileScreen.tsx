@@ -16,6 +16,44 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
     (user.estadoCivil || user.estado_civil || '') as string
   )
 
+  // Address States for Auto-Complete
+  const [cep, setCep] = useState(user.cep || '')
+  const [endereco, setEndereco] = useState(user.endereco || '')
+  const [numero, setNumero] = useState(user.numero || '')
+  const [bairro, setBairro] = useState(user.bairro || '')
+  const [cidade, setCidade] = useState(user.cidade || '')
+  const [uf, setUf] = useState(user.estado || user.uf || '') 
+  const [pontoReferencia, setPontoReferencia] = useState(user.pontoReferencia || '')
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false)
+
+  const checkCEP = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Keep the raw value for state, but you might want to mask it visually
+    const rawValue = e.target.value.replace(/\D/g, '')
+    setCep(e.target.value)
+
+    if (rawValue.length === 8) {
+      setIsLoadingAddress(true)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${rawValue}/json/`)
+        const data = await res.json()
+        
+        if (!data.erro) {
+          setEndereco(data.logradouro)
+          setBairro(data.bairro)
+          setCidade(data.localidade)
+          setUf(data.uf)
+          
+          // Focus on Number input for better UX
+          document.getElementById('numeroInput')?.focus()
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP', error)
+      } finally {
+        setIsLoadingAddress(false)
+      }
+    }
+  }
+
   const handleUpdateProfile = async (formData: FormData) => {
     setLoading(true)
     // Add userId to formData since it might not be in the form fields directly if not hidden input
@@ -223,10 +261,16 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                  CEP
+                  {isLoadingAddress && <span className="text-xs text-indigo-600 animate-pulse">Buscando...</span>}
+                </label>
                 <input
                   name="cep"
-                  defaultValue={user.cep || ''}
+                  value={cep}
+                  onChange={checkCEP}
+                  maxLength={9}
+                  placeholder="00000-000"
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -235,7 +279,8 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
                 <label className="block text-sm font-medium text-slate-700 mb-1">Endereço (Rua)</label>
                 <input
                   name="endereco"
-                  defaultValue={user.endereco || ''}
+                  value={endereco}
+                  onChange={(e) => setEndereco(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -245,8 +290,10 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
                 <input
+                  id="numeroInput"
                   name="numero"
-                  defaultValue={user.numero || ''}
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -255,19 +302,43 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
                 <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
                 <input
                   name="bairro"
-                  defaultValue={user.bairro || ''}
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Ponto de Referência</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Cidade</label>
                 <input
-                  name="pontoReferencia"
-                  defaultValue={user.pontoReferencia || ''}
+                  name="cidade"
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">UF</label>
+                    <input
+                    name="estado"
+                    value={uf}
+                    onChange={(e) => setUf(e.target.value)}
+                    maxLength={2}
+                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Ponto de Referência</label>
+                    <input
+                    name="pontoReferencia"
+                    value={pontoReferencia}
+                    onChange={(e) => setPontoReferencia(e.target.value)}
+                    className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                </div>
             </div>
           </div>
 

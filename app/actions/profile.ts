@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { geocodeAddress } from './roster'
 
 import { uploadFile } from '@/lib/supabase'
 
@@ -44,8 +45,11 @@ export async function updateProfile(formData: FormData) {
     const escolaridade = formData.get('escolaridade') as string
     const profissao = formData.get('profissao') as string
     const cep = formData.get('cep') as string
+    const endereco = formData.get('endereco') as string
     const numero = formData.get('numero') as string
     const bairro = formData.get('bairro') as string
+    const cidade = formData.get('cidade') as string
+    const estado = formData.get('estado') as string
     const pontoReferencia = formData.get('pontoReferencia') as string
     const nomePai = formData.get('nomePai') as string
     const nomeMae = formData.get('nomeMae') as string
@@ -58,12 +62,25 @@ export async function updateProfile(formData: FormData) {
     const dateNasc = safeDate(data_nascimento)
     const dateConv = safeDate(dataConversao)
 
+    // Geocoding Logic
+    let latitude = null
+    let longitude = null
+
+    if (endereco && numero && bairro) {
+        const fullAddress = `${endereco}, ${numero} - ${bairro}, ${cidade || ''}`
+        const geo = await geocodeAddress(fullAddress)
+        if (geo) {
+            latitude = geo.lat
+            longitude = geo.lon
+        }
+    }
+
     await prisma.user.update({
       where: { id: targetId },
       data: {
         nome: formData.get('nome') as string,
         telefone: formData.get('telefone') as string,
-        endereco: formData.get('endereco') as string,
+        endereco: endereco,
         
         data_nascimento: dateNasc,
         dataNascimento: dateNasc,
@@ -79,7 +96,12 @@ export async function updateProfile(formData: FormData) {
         cep: cep || null,
         numero: numero || null,
         bairro: bairro || null,
+        cidade: cidade || null,
+        estado: estado || null,
         pontoReferencia: pontoReferencia || null,
+        
+        latitude: latitude,
+        longitude: longitude,
         
         nomePai: nomePai || null,
         nomeMae: nomeMae || null,
@@ -97,7 +119,6 @@ export async function updateProfile(formData: FormData) {
     
     revalidatePath('/app/perfil')
     return { success: true }
-
   } catch (e) {
     console.error('Update Profile Error:', e)
     return { error: 'Erro ao atualizar perfil. Verifique os dados.' }

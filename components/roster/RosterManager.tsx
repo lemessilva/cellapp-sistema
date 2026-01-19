@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, setDate, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Save, MapPin, User, Calendar, Loader2 } from 'lucide-react'
-import { getRoster, upsertRoster } from '@/app/actions/roster'
+import { ChevronLeft, ChevronRight, Save, MapPin, User, Calendar, Loader2, RefreshCw } from 'lucide-react'
+import { getRoster, upsertRoster, geocodeAddress } from '@/app/actions/roster'
 import { toast } from 'sonner'
 
 interface Props {
@@ -30,6 +30,7 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
   const [rosters, setRosters] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [savingMap, setSavingMap] = useState<Record<string, boolean>>({})
+  const [geocodingMap, setGeocodingMap] = useState<Record<string, boolean>>({})
 
   // Form state for each date key (YYYY-MM-DD)
   const [forms, setForms] = useState<Record<string, any>>({})
@@ -58,7 +59,9 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
           worshipMemberId: r.worshipMemberId || '',
           evangelismMemberId: r.evangelismMemberId || '',
           hostMemberId: r.hostMemberId || '',
-          customAddress: r.customAddress || ''
+          customAddress: r.customAddress || '',
+          latitude: r.latitude,
+          longitude: r.longitude
         }
       })
       setForms(prev => ({ ...prev, ...newForms }))
@@ -77,13 +80,72 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
   }
 
   const handleInputChange = (dateKey: string, field: string, value: string) => {
-    setForms(prev => ({
-      ...prev,
-      [dateKey]: {
-        ...prev[dateKey],
-        [field]: value
+    setForms(prev => {
+      const currentForm = prev[dateKey] || {}
+      let updates = { [field]: value }
+
+      // Auto-fill address logic when Host changes
+      if (field === 'hostMemberId') {
+        if (value === '') {
+            // Reset to default (optional, maybe keep manual edit?)
+            // Let's keep it simple: if cleared, we don't clear address automatically unless we want to revert to "default"
+        } else {
+            const member = members.find(m => m.id === value)
+            if (member) {
+                // Construct address from member profile
+                const parts = [
+                    member.endereco, 
+                    member.numero, 
+                    member.bairro, 
+                    member.cidade
+                ].filter(Boolean)
+                
+                if (parts.length > 0) {
+                    updates = {
+                        ...updates,
+                        customAddress: parts.join(', '),
+                        latitude: member.latitude || null,
+                        longitude: member.longitude || null
+                    }
+                }
+            }
+        }
       }
-    }))
+
+      return {
+        ...prev,
+        [dateKey]: {
+          ...currentForm,
+          ...updates
+        }
+      }
+    })
+  }
+
+  const handleManualGeocode = async (dateKey: string) => {
+    const address = forms[dateKey]?.customAddress
+    if (!address) {
+        toast.error('Digite um endereço para buscar as coordenadas.')
+        return
+    }
+
+    setGeocodingMap(prev => ({ ...prev, [dateKey]: true }))
+    const result = await geocodeAddress(address)
+    setGeocodingMap(prev => ({ ...prev, [dateKey]: false }))
+
+    if (result) {
+        setForms(prev => ({
+            ...prev,
+            [dateKey]: {
+                ...prev[dateKey],
+                latitude: result.lat,
+                longitude: result.lon
+            }
+        }))
+        toast.success('Coordenadas atualizadas com sucesso!')
+    } else {
+        toast.error('Endereço não encontrado. Tente ser mais específico.')
+    }
   }
 
   const handleSave = async (date: Date) => {
@@ -152,6 +214,8 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
           const dateKey = date.toISOString().split('T')[0]
           const form = forms[dateKey] || {}
           const isSaving = savingMap[dateKey]
+          const isGeocoding = geocodingMap[dateKey]
+          const hasCoords = form.latitude && form.longitude
 
           return (
             <div key={dateKey} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -240,13 +304,38 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                    <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> Local da Reunião
                   </label>
-                  <input 
-                    type="text" 
-                    value={form.customAddress || ''}
-                    onChange={e => handleInputChange(dateKey, 'customAddress', e.target.value)}
-                    placeholder={defaultAddress ? `Padrão: ${defaultAddress}` : 'Digite o endereço...'}
-                    className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={form.customAddress || ''}
+                        onChange={e => handleInputChange(dateKey, 'customAddress', e.target.value)}
+                        placeholder={defaultAddress ? `Padrão: ${defaultAddress}` : 'Digite o endereço...'}
+                        className="flex-1 text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                    />
+                    <button
+                        onClick={() => handleManualGeocode(dateKey)}
+                        disabled={isGeocoding || !form.customAddress}
+                        className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 text-xs font-bold
+                            ${hasCoords 
+                                ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100' 
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                            }`}
+                        title="Atualizar Coordenadas"
+                    >
+                        {isGeocoding ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className={`w-4 h-4 ${hasCoords ? 'text-green-600' : 'text-slate-400'}`} />
+                        )}
+                        {hasCoords ? 'Atualizado' : 'Buscar GPS'}
+                    </button>
+                  </div>
+                  {hasCoords && (
+                      <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          Coordenadas salvas: {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+                      </p>
+                  )}
                 </div>
               </div>
             </div>

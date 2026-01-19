@@ -41,6 +41,32 @@ export async function getRoster(cellId: string, month: number, year: number) {
   }
 }
 
+export async function geocodeAddress(address: string) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'CellApp/1.0',
+          'Accept-Language': 'pt-BR'
+        }
+      }
+    )
+    const data = await response.json()
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+        display_name: data[0].display_name
+      }
+    }
+    return null
+  } catch (error) {
+    console.error('Geocoding error:', error)
+    return null
+  }
+}
+
 export async function upsertRoster(data: {
   id?: string
   cellId: string
@@ -50,6 +76,8 @@ export async function upsertRoster(data: {
   evangelismMemberId?: string
   hostMemberId?: string
   customAddress?: string
+  latitude?: number | null
+  longitude?: number | null
 }) {
   try {
     // Check if roster exists for this date/cell
@@ -62,25 +90,27 @@ export async function upsertRoster(data: {
         }
     })
 
+    const rosterData = {
+      directionId: data.directionMemberId || null,
+      worshipId: data.worshipMemberId || null,
+      evangelismId: data.evangelismMemberId || null,
+      hostId: data.hostMemberId || null,
+      customAddress: data.customAddress || null,
+      latitude: data.latitude,
+      longitude: data.longitude
+    }
+
     if (existing) {
       await prisma.meetingRoster.update({
         where: { id: existing.id },
-        data: {
-          directionId: data.directionMemberId || null,
-          worshipId: data.worshipMemberId || null,
-          evangelismId: data.evangelismMemberId || null,
-          hostId: data.hostMemberId || null
-        }
+        data: rosterData
       })
     } else {
       await prisma.meetingRoster.create({
         data: {
           cellId: data.cellId,
           date: data.date,
-          directionId: data.directionMemberId || null,
-          worshipId: data.worshipMemberId || null,
-          evangelismId: data.evangelismMemberId || null,
-          hostId: data.hostMemberId || null
+          ...rosterData
         }
       })
     }
