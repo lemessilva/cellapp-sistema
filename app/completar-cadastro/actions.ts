@@ -20,6 +20,8 @@ export async function completeRegistration(formData: FormData) {
   const endereco = formData.get('endereco') as string
   const numero = formData.get('numero') as string
   const bairro = formData.get('bairro') as string
+  const cidade = formData.get('cidade') as string
+  const estado = formData.get('estado') as string
   const cep = formData.get('cep') as string
   const pontoReferencia = formData.get('pontoReferencia') as string
   
@@ -61,6 +63,8 @@ export async function completeRegistration(formData: FormData) {
           endereco,
           numero,
           bairro,
+          cidade,
+          estado,
           cep,
           pontoReferencia,
           

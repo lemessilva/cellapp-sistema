@@ -8,6 +8,42 @@ export default function OnboardingForm({ user }: { user: any }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [estadoCivil, setEstadoCivil] = useState(user?.estado_civil || user?.estadoCivil || '')
+
+  // Address States
+  const [cep, setCep] = useState(user?.cep || '')
+  const [endereco, setEndereco] = useState(user?.endereco || '')
+  const [numero, setNumero] = useState(user?.numero || '')
+  const [bairro, setBairro] = useState(user?.bairro || '')
+  const [cidade, setCidade] = useState(user?.cidade || '')
+  const [estado, setEstado] = useState(user?.estado || '')
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false)
+
+  const checkCEP = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '')
+    setCep(e.target.value)
+
+    if (rawValue.length === 8) {
+      setIsLoadingAddress(true)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${rawValue}/json/`)
+        const data = await res.json()
+        
+        if (!data.erro) {
+          setEndereco(data.logradouro)
+          setBairro(data.bairro)
+          setCidade(data.localidade)
+          setEstado(data.uf)
+          
+          // Focus on Number input
+          document.getElementById('numeroInput')?.focus()
+        }
+      } catch (error) {
+        console.error('Erro ao buscar CEP', error)
+      } finally {
+        setIsLoadingAddress(false)
+      }
+    }
+  }
   
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -137,28 +173,108 @@ export default function OnboardingForm({ user }: { user: any }) {
 
               <div className="col-span-2 md:col-span-1">
                 <label className="label">CEP</label>
-                <input name="cep" type="text" className="input-field" placeholder="00000-000" defaultValue={user?.cep} />
+                <div className="relative">
+                  <input 
+                    name="cep" 
+                    type="text" 
+                    className="input-field pr-10" 
+                    placeholder="00000-000" 
+                    maxLength={9}
+                    value={cep} 
+                    onChange={checkCEP} 
+                  />
+                  {isLoadingAddress && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-indigo-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="col-span-2">
                 <label className="label">Endereço (Rua)</label>
-                <input name="endereco" type="text" className="input-field" defaultValue={user?.endereco} />
+                <input 
+                  name="endereco" 
+                  type="text" 
+                  className="input-field" 
+                  value={endereco}
+                  onChange={(e) => setEndereco(e.target.value)}
+                />
               </div>
 
               <div>
                 <label className="label">Número</label>
-                <input name="numero" type="text" className="input-field" defaultValue={user?.numero} />
+                <input 
+                  id="numeroInput"
+                  name="numero" 
+                  type="text" 
+                  className="input-field" 
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                />
               </div>
 
               <div>
                 <label className="label">Bairro</label>
-                <input name="bairro" type="text" className="input-field" defaultValue={user?.bairro} />
+                <input 
+                  name="bairro" 
+                  type="text" 
+                  className="input-field" 
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label">Cidade</label>
+                <input 
+                  name="cidade" 
+                  type="text" 
+                  className="input-field" 
+                  value={cidade}
+                  onChange={(e) => setCidade(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="label">Estado</label>
+                <input 
+                  name="estado" 
+                  type="text" 
+                  className="input-field" 
+                  maxLength={2}
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value)}
+                />
               </div>
 
               <div className="col-span-2">
                 <label className="label">Ponto de Referência</label>
                 <input name="pontoReferencia" type="text" className="input-field" defaultValue={user?.pontoReferencia} />
               </div>
+
+              {/* Google Maps Visualizer */}
+              {(endereco || cidade) && (
+                <div className="col-span-2 mt-4">
+                  <label className="label mb-2 block">Localização Aproximada</label>
+                  <div className="w-full h-64 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      scrolling="no"
+                      marginHeight={0}
+                      marginWidth={0}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                        [endereco, numero, bairro, cidade, estado].filter(Boolean).join(', ')
+                      )}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    ></iframe>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    * O mapa exibe a localização baseada no endereço preenchido.
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 

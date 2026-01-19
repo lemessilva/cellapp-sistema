@@ -364,7 +364,7 @@ model MeetingAttendance {
   report          MeetingReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt       DateTime @default(now())
 
@@ -400,7 +400,7 @@ model MeetingKidsPillars {
   report          MeetingReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([reportId, userId])
 }
@@ -410,7 +410,7 @@ model Oikos {
   nome      String
   
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
 }
@@ -423,7 +423,7 @@ model Invite {
   
   // Quem criou o convite (Geralmente o Líder)
   createdById String
-  createdBy   User     @relation("InviteCreator", fields: [createdById], references: [id])
+  createdBy   User     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
   
   // Para qual célula o convite é
   cellId      String
@@ -437,7 +437,7 @@ model PrayerLog {
   date      DateTime // Apenas a data (hora zerada ou ignorada na lógica)
   
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
 }

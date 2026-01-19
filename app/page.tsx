@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music, User } from 'lucide-react'
 import { getSiteConfiguration } from '@/app/actions/website'
 import { prisma } from '@/lib/prisma'
@@ -38,37 +39,41 @@ export default async function LandingPage() {
       <LandingNavbar isAuthenticated={!!user} isLive={config.isLive} />
 
       {/* 2. Hero Section (A Capa) */}
-      <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Background Placeholder (Overlay) */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${heroBgImage}')` }}
-        >
-          <div className="absolute inset-0 bg-slate-950/70 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
+      <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="/hero-bg.jpg" 
+            alt="Background" 
+            fill 
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-black/60"></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 py-12">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <span className="inline-block px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-sm font-medium tracking-wide uppercase backdrop-blur-sm">
               Bem-vindo à nossa casa
             </span>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight whitespace-pre-line">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight whitespace-pre-line">
               {heroTitle}
             </h1>
-            <p className="max-w-2xl mx-auto text-xl text-slate-300 leading-relaxed">
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 leading-relaxed">
               {heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Link 
                 href={heroCtaLink} 
-                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/30 group"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/30 group"
               >
                 {heroCtaText}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link 
                 href="#agenda" 
-                className="inline-flex items-center justify-center px-8 py-4 text-base font-bold rounded-xl text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all"
+                className="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-xl text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all"
               >
                 Ver Programação
               </Link>

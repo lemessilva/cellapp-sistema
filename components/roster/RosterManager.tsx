@@ -87,8 +87,13 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
       // Auto-fill address logic when Host changes
       if (field === 'hostMemberId') {
         if (value === '') {
-            // Reset to default (optional, maybe keep manual edit?)
-            // Let's keep it simple: if cleared, we don't clear address automatically unless we want to revert to "default"
+            // Revert to Default Cell Address
+            updates = {
+                ...updates,
+                customAddress: defaultAddress || '',
+                latitude: null,
+                longitude: null
+            }
         } else {
             const member = members.find(m => m.id === value)
             if (member) {
