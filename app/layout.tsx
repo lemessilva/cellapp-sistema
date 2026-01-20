@@ -26,17 +26,25 @@ export const viewport: Viewport = {
 }
 
 import { SidebarProvider } from '@/components/providers/SidebarContext';
+import { prisma } from '@/lib/prisma';
+import { ThemeWrapper } from '@/components/website/ThemeWrapper';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const churchInfo = await prisma.churchInfo.findUnique({
+    where: { id: 'main' },
+    select: { themeColor: true }
+  });
+
   return (
     <html lang="pt-BR">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
       >
+        <ThemeWrapper themeColor={churchInfo?.themeColor || 'blue'} />
         <SidebarProvider>
           {children}
         </SidebarProvider>

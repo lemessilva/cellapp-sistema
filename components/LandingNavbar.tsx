@@ -73,6 +73,12 @@ export function LandingNavbar({
             <Link href="#contato" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
               Contato
             </Link>
+            <Link href="/mensagens" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+              Mensagens
+            </Link>
+            <Link href="/links" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+              Links
+            </Link>
           </div>
 
           <div className="hidden md:block">
@@ -154,6 +160,18 @@ export function LandingNavbar({
                 className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-200 hover:bg-slate-900"
               >
                 Contato
+              </Link>
+              <Link
+                href="/mensagens"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-200 hover:bg-slate-900"
+              >
+                Mensagens
+              </Link>
+              <Link
+                href="/links"
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-200 hover:bg-slate-900"
+              >
+                Links
               </Link>
             </div>
 

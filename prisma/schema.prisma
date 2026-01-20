@@ -155,6 +155,41 @@ model ChurchInfo {
   address     String?
   instagram   String?
   youtube     String?
+  themeColor  String   @default("blue") // Ex: 'blue', 'red', 'dark', 'gold'
+}
+
+model BioLink {
+  id          String   @id @default(cuid())
+  title       String
+  url         String
+  icon        String?  // Nome do ícone do Lucide-react (ex: 'Instagram', 'Youtube')
+  isActive    Boolean  @default(true)
+  isHighlight Boolean  @default(false) // Se true, o botão pulsa/brilha
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model SermonSeries {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  coverUrl    String   // Capa da série (Vertical ou Quadrada)
+  startDate   DateTime?
+  isActive    Boolean  @default(true)
+  sermons     Sermon[]
+  createdAt   DateTime @default(now())
+}
+
+model Sermon {
+  id          String   @id @default(cuid())
+  title       String
+  youtubeUrl  String
+  date        DateTime
+  
+  seriesId    String
+  series      SermonSeries @relation(fields: [seriesId], references: [id])
+  
+  createdAt   DateTime @default(now())
 }
 
 model SiteBanner {

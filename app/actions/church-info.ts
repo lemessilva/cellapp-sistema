@@ -32,6 +32,7 @@ export async function updateChurchInfo(formData: FormData) {
     const address = formData.get('address') as string
     const instagram = formData.get('instagram') as string
     const youtube = formData.get('youtube') as string
+    const themeColor = formData.get('themeColor') as string
     const logoFile = formData.get('logoFile') as File | null
 
     let logoUrl = undefined
@@ -44,7 +45,8 @@ export async function updateChurchInfo(formData: FormData) {
       whatsapp,
       address,
       instagram,
-      youtube
+      youtube,
+      themeColor
     }
 
     if (logoUrl) {

@@ -5,7 +5,9 @@ import { updateChurchInfo } from '@/app/actions/church-info'
 import { updateSiteConfiguration } from '@/app/actions/website'
 import { createBanner, deleteBanner, toggleBannerStatus } from '@/app/actions/banners'
 import { createResource, deleteResource } from '@/app/actions/resources'
-import { Layout, Calendar, Share2, Save, Plus, Trash2, Image as ImageIcon, Loader2, X, Eye, EyeOff, FileText, RadioTower, Smartphone, Crop as CropIcon, User } from 'lucide-react'
+import { BioLinksManager } from '@/components/admin/BioLinksManager'
+import { SermonsManager } from '@/components/admin/SermonsManager'
+import { Layout, Calendar, Share2, Save, Plus, Trash2, Image as ImageIcon, Loader2, X, Eye, EyeOff, FileText, RadioTower, Smartphone, Crop as CropIcon, User, Link as LinkIcon, Video, Palette } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { IPhoneSimulator } from '@/components/admin/IPhoneSimulator'
 import { InlineImageCropper } from '@/components/admin/ImageCropper'
@@ -18,6 +20,8 @@ type WebsiteEditorProps = {
   initialCells: any[]
   initialEvents: any[]
   initialChurchInfo: any
+  initialBioLinks: any[]
+  initialSermonSeries: any[]
 }
 
 export default function WebsiteEditor({ 
@@ -26,7 +30,9 @@ export default function WebsiteEditor({
   initialResources,
   initialCells,
   initialEvents,
-  initialChurchInfo
+  initialChurchInfo,
+  initialBioLinks,
+  initialSermonSeries
 }: WebsiteEditorProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('appearance')
@@ -87,6 +93,7 @@ export default function WebsiteEditor({
     address: initialChurchInfo?.address || '',
     instagram: initialChurchInfo?.instagram || '',
     youtube: initialChurchInfo?.youtube || '',
+    themeColor: initialChurchInfo?.themeColor || 'blue',
     logoUrl: initialChurchInfo?.logoUrl || '',
     logoFile: null as File | null
   })
@@ -175,6 +182,7 @@ export default function WebsiteEditor({
       data.append('address', churchInfo.address)
       data.append('instagram', churchInfo.instagram)
       data.append('youtube', churchInfo.youtube)
+      data.append('themeColor', churchInfo.themeColor)
       if (churchInfo.logoFile) {
         data.append('logoFile', churchInfo.logoFile)
       }
@@ -282,6 +290,28 @@ export default function WebsiteEditor({
           >
             <User className="w-4 h-4" />
             Identidade & Contato
+          </button>
+          <button
+            onClick={() => setActiveTab('links')}
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'links' 
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <LinkIcon className="w-4 h-4" />
+            Links na Bio
+          </button>
+          <button
+            onClick={() => setActiveTab('sermons')}
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'sermons' 
+                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Video className="w-4 h-4" />
+            Mensagens
           </button>
           <button
             onClick={() => setActiveTab('resources')}
@@ -715,6 +745,50 @@ export default function WebsiteEditor({
                 </div>
               </div>
 
+              {/* Theme Section */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-indigo-600" />
+                    Tema Visual
+                  </h3>
+                  <p className="text-sm text-slate-500">Escolha a cor principal do site.</p>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { id: 'blue', name: 'Azul (Padrão)', color: 'bg-blue-600' },
+                    { id: 'red', name: 'Vermelho (Paixão)', color: 'bg-red-600' },
+                    { id: 'dark', name: 'Dark (Jovens)', color: 'bg-slate-900' },
+                    { id: 'gold', name: 'Dourado (Especial)', color: 'bg-yellow-500' },
+                  ].map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => setChurchInfo(prev => ({ ...prev, themeColor: theme.id }))}
+                      className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                        churchInfo.themeColor === theme.id
+                          ? 'border-indigo-600 bg-white shadow-sm'
+                          : 'border-transparent bg-white hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full ${theme.color} shadow-sm`} />
+                      <span className={`text-sm font-medium ${
+                        churchInfo.themeColor === theme.id ? 'text-slate-900' : 'text-slate-600'
+                      }`}>
+                        {theme.name}
+                      </span>
+                      {churchInfo.themeColor === theme.id && (
+                        <div className="absolute top-[-8px] right-[-8px] bg-indigo-600 text-white p-1 rounded-full shadow-md">
+                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                           </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Contact Section */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
                 <div className="mb-6">
@@ -796,6 +870,20 @@ export default function WebsiteEditor({
                 </Button>
               </div>
 
+            </div>
+          )}
+
+          {/* Tab: Bio Links */}
+          {activeTab === 'links' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <BioLinksManager initialLinks={initialBioLinks} />
+            </div>
+          )}
+
+          {/* Tab: Sermons */}
+          {activeTab === 'sermons' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <SermonsManager initialSeries={initialSermonSeries} />
             </div>
           )}
 

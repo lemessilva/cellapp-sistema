@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { getSiteConfiguration } from '@/app/actions/website'
 import { getBanners } from '@/app/actions/banners'
 import { getResources } from '@/app/actions/resources'
+import { getBioLinks } from '@/app/actions/bio-links'
+import { getSermonSeries } from '@/app/actions/sermons'
 import WebsiteEditor from './WebsiteEditor'
 
 export default async function WebsiteAdminPage() {
@@ -13,7 +15,7 @@ export default async function WebsiteAdminPage() {
     redirect('/app')
   }
 
-  const [config, banners, resources, cellsRaw, eventsRaw, churchInfo] = await Promise.all([
+  const [config, banners, resources, cellsRaw, eventsRaw, churchInfo, bioLinks, sermonSeries] = await Promise.all([
     getSiteConfiguration(),
     getBanners(),
     getResources(),
@@ -27,7 +29,9 @@ export default async function WebsiteAdminPage() {
     }),
     prisma.churchInfo.findUnique({
       where: { id: 'main' }
-    })
+    }),
+    getBioLinks(),
+    getSermonSeries()
   ])
 
   // Map cells to match FindCellSection interface
@@ -71,6 +75,8 @@ export default async function WebsiteAdminPage() {
         initialCells={cells}
         initialEvents={events}
         initialChurchInfo={churchInfo}
+        initialBioLinks={bioLinks}
+        initialSermonSeries={sermonSeries}
       />
     </div>
   )
