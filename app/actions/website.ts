@@ -17,6 +17,11 @@ export async function getSiteConfiguration() {
         heroSubtitle: "Um lugar de fé, esperança e amor.",
         heroCtaText: "Visite-nos",
         heroCtaLink: "#schedule",
+        // Barra de Avisos (Default)
+        alertActive: false,
+        alertText: "",
+        alertColor: "bg-blue-600",
+        alertLink: "",
         weeklySchedule: JSON.stringify([
           { dia: "Domingo", horario: "10:00", titulo: "Culto da Manhã" },
           { dia: "Domingo", horario: "18:00", titulo: "Culto da Noite" },

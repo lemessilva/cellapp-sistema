@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2 } from 'lucide-react'
+import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -9,10 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { getPrayerReportData } from '@/app/actions/report'
+import { updateMemberCell } from '@/app/actions/member'
 import { toggleUserActiveStatus } from '@/app/(protected)/admin/actions'
 
 type Member = {
@@ -29,6 +32,12 @@ type Member = {
   prayerTotalDays: number
   lastPrayerDate: string | Date | null
   prayerFrequency: string
+}
+
+type CellOption = {
+  id: string
+  nome: string
+  lider: { nome: string } | null
 }
 
 function parseDate(value: string | Date | null | undefined) {
@@ -72,14 +81,20 @@ function formatPhone(phone: string | null | undefined) {
 
 type Props = {
   members: Member[]
+  cells?: CellOption[]
 }
 
-export default function MembersManagementTable({ members }: Props) {
+export default function MembersManagementTable({ members, cells = [] }: Props) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
   const [reportError, setReportError] = useState('')
   const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  // Cell Move State
+  const [memberToMove, setMemberToMove] = useState<Member | null>(null)
+  const [targetCellId, setTargetCellId] = useState<string>('')
+  const [isMoving, setIsMoving] = useState(false)
 
   const rows = useMemo(() => members, [members])
 
@@ -105,6 +120,27 @@ export default function MembersManagementTable({ members }: Props) {
       .catch(() => setReportError('Erro ao carregar relatório de oração.'))
       .finally(() => setLoadingReport(false))
   }, [selectedMember?.id])
+
+  const handleMoveMember = async () => {
+    if (!memberToMove) return
+
+    setIsMoving(true)
+    try {
+      const res = await updateMemberCell(memberToMove.id, targetCellId)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        const cellName = cells.find(c => c.id === targetCellId)?.nome || 'Sem Célula'
+        toast.success(`Membro movido para ${cellName} com sucesso!`)
+        setMemberToMove(null)
+        setTargetCellId('')
+      }
+    } catch (error) {
+      toast.error('Erro ao mover membro.')
+    } finally {
+      setIsMoving(false)
+    }
+  }
 
   return (
     <>
@@ -227,6 +263,16 @@ export default function MembersManagementTable({ members }: Props) {
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => {
+                            setMemberToMove(member)
+                            setTargetCellId('') // Reset selection
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Mudar Célula"
+                        >
+                          <ArrowRightLeft className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() =>
                             toast.info(
                               'Em breve: Ficha cadastral em PDF para este membro.'
@@ -254,6 +300,69 @@ export default function MembersManagementTable({ members }: Props) {
         </div>
       </div>
 
+      {/* Move Member Dialog */}
+      <Dialog 
+        open={!!memberToMove} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setMemberToMove(null)
+            setTargetCellId('')
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Mover Membro</DialogTitle>
+            <DialogDescription>
+              Selecione a nova célula para <strong>{memberToMove?.nome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Nova Célula
+              </label>
+              <select
+                className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={targetCellId}
+                onChange={(e) => setTargetCellId(e.target.value)}
+              >
+                <option value="" disabled>Selecione uma célula</option>
+                <option value="none">Sem Célula (Remover)</option>
+                {cells.map((cell) => (
+                  <option key={cell.id} value={cell.id}>
+                    {cell.nome} {cell.lider?.nome ? `- ${cell.lider.nome}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMemberToMove(null)}
+              disabled={isMoving}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleMoveMember} 
+              disabled={!targetCellId || isMoving}
+            >
+              {isMoving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Movendo...
+                </>
+              ) : (
+                'Confirmar Troca'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prayer Report Dialog */}
       <Dialog
         open={!!selectedMember}
         onOpenChange={(open) => {

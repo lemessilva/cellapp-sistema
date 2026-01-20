@@ -100,7 +100,19 @@ export default async function MembersAdminPage() {
   const user = await getUser()
   if (!user || user.role !== 'ADMIN') redirect('/app')
 
-  const members = await getMembersWithPrayerStats()
+  const [members, cells] = await Promise.all([
+    getMembersWithPrayerStats(),
+    prisma.cell.findMany({
+      select: {
+        id: true,
+        nome: true,
+        lider: {
+          select: { nome: true }
+        }
+      },
+      orderBy: { nome: 'asc' }
+    })
+  ])
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 md:p-8 bg-slate-50 min-h-screen space-y-8">
@@ -116,7 +128,7 @@ export default async function MembersAdminPage() {
         </a>
       </header>
 
-      <MembersManagementTable members={members} />
+      <MembersManagementTable members={members} cells={cells} />
     </div>
   )
 }

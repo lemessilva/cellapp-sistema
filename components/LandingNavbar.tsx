@@ -5,25 +5,47 @@ import Link from 'next/link'
 import { Menu, X, LayoutDashboard, User } from 'lucide-react'
 
 interface LandingNavbarProps {
-  isAuthenticated: boolean
+  isAuthenticated?: boolean
   isLive?: boolean
+  isMobilePreview?: boolean
+  churchName?: string
+  logoUrl?: string | null
 }
 
-export function LandingNavbar({ isAuthenticated, isLive }: LandingNavbarProps) {
+export function LandingNavbar({ 
+  isAuthenticated = false, 
+  isLive, 
+  isMobilePreview = false,
+  churchName = "CellApp",
+  logoUrl
+}: LandingNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
+    <nav className={`${isMobilePreview ? 'sticky' : 'fixed'} top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className={`flex justify-between items-center ${isMobilePreview ? 'h-16' : 'h-20'}`}>
           <div className="flex-shrink-0 flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="font-bold text-white text-lg">C</span>
-            </div>
-            <span className="font-bold text-xl tracking-tight">CellApp</span>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img 
+                src={logoUrl} 
+                alt={churchName} 
+                className={`rounded-lg object-contain bg-white/10 p-1 ${isMobilePreview ? 'w-8 h-8' : 'w-10 h-10'}`} 
+              />
+            ) : (
+              <div className={`bg-indigo-600 rounded-lg flex items-center justify-center ${isMobilePreview ? 'w-6 h-6' : 'w-8 h-8'}`}>
+                <span className={`font-bold text-white ${isMobilePreview ? 'text-sm' : 'text-lg'}`}>
+                  {churchName.charAt(0)}
+                </span>
+              </div>
+            )}
+            <span className={`font-bold tracking-tight ${isMobilePreview ? 'text-lg' : 'text-xl'}`}>
+              {churchName}
+            </span>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
+          <div className={`${isMobilePreview ? 'hidden' : 'hidden md:flex'} items-center space-x-8`}>
             {isLive && (
               <Link 
                 href="#transmissao" 

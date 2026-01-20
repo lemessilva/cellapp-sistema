@@ -3,11 +3,11 @@
 export async function uploadFile(file: File, bucket: string = 'uploads') {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    // Use Service Role Key to bypass RLS
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    // Use Service Role Key to bypass RLS if available, otherwise fallback to Anon Key
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('As variáveis NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY não estão definidas.')
+      console.error('As variáveis NEXT_PUBLIC_SUPABASE_URL e chaves de API não estão definidas.')
       throw new Error(
         'Configuração de armazenamento indisponível.'
       )

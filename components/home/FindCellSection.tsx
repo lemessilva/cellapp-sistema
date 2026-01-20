@@ -26,12 +26,18 @@ const ORDERED_DAYS = [
   { value: 'SABADO', label: 'Sábado' },
 ]
 
-export function FindCellSection() {
-  const [loading, setLoading] = useState(true)
+export function FindCellSection({ cells: initialCells }: { cells?: Cell[] }) {
+  const [loading, setLoading] = useState(!initialCells)
   const [error, setError] = useState<string | null>(null)
-  const [cells, setCells] = useState<Cell[]>([])
+  const [cells, setCells] = useState<Cell[]>(initialCells || [])
 
   useEffect(() => {
+    if (initialCells) {
+        setCells(initialCells)
+        setLoading(false)
+        return
+    }
+
     const fetchCells = async () => {
       try {
         const response = await fetch('/api/cells/search')

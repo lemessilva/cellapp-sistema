@@ -147,11 +147,22 @@ model User {
   registrations Registration[]
 }
 
+model ChurchInfo {
+  id          String   @id @default("main")
+  name        String   @default("Minha Igreja")
+  logoUrl     String?
+  whatsapp    String?
+  address     String?
+  instagram   String?
+  youtube     String?
+}
+
 model SiteBanner {
   id          String   @id @default(cuid())
   titulo      String
   subtitulo   String?
-  imageUrl    String
+  desktopUrl  String
+  mobileUrl   String?
   linkBotao   String?
   textoBotao  String?
   ativo       Boolean  @default(true)
@@ -531,6 +542,12 @@ model SiteConfiguration {
   heroBgImage     String?
   heroCtaText     String?
   heroCtaLink     String?
+  
+  // Barra de Avisos
+  alertActive     Boolean  @default(false)
+  alertText       String?
+  alertColor      String   @default("bg-indigo-600")
+  alertLink       String?
   
   weeklySchedule  String? // JSON
   

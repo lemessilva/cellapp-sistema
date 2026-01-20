@@ -76,3 +76,28 @@ export async function createMember(formData: FormData) {
     return { error: 'Erro ao cadastrar membro.' }
   }
 }
+
+export async function updateMemberCell(userId: string, newCellId: string) {
+  const user = await getUser()
+  if (!user || user.role !== 'ADMIN') {
+    return { error: 'Acesso negado.' }
+  }
+
+  try {
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+    if (!targetUser) return { error: 'Usuário não encontrado.' }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        celulaId: newCellId === 'none' ? null : newCellId
+      }
+    })
+
+    revalidatePath('/admin/membros')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating member cell:', error)
+    return { error: 'Erro ao atualizar célula do membro.' }
+  }
+}

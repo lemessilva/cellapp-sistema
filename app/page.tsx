@@ -8,13 +8,27 @@ import { LandingNavbar } from '@/components/LandingNavbar'
 import { getYouTubeId } from '@/lib/utils'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 import { FindCellSection } from '@/components/home/FindCellSection'
+import { AgendaSection } from '@/components/home/AgendaSection'
+import { AlertBar } from '@/components/home/AlertBar'
+import { HeroCarousel } from '@/components/home/HeroCarousel'
+import { Footer } from '@/components/Footer'
+import { FloatingWhatsAppButton } from '@/components/FloatingWhatsAppButton'
 
 export default async function LandingPage() {
   const user = await getUser()
   const config = await getSiteConfiguration()
+  const churchInfo = await prisma.churchInfo.findUnique({
+    where: { id: 'main' }
+  })
+
   const pastoralMessage = await getActivePastoralMessage()
   const schedule = config.weeklySchedule ? JSON.parse(config.weeklySchedule) : []
   
+  const banners = await prisma.siteBanner.findMany({
+    where: { ativo: true },
+    orderBy: { ordem: 'asc' }
+  })
+
   const upcomingEvents = await prisma.event.findMany({
     where: {
       date: { gte: new Date() },
@@ -23,64 +37,27 @@ export default async function LandingPage() {
     take: 3,
     orderBy: { date: 'asc' }
   })
-  
-  const heroTitle = config.heroTitle || "Uma Igreja,\nUma Família."
-  const heroSubtitle = config.heroSubtitle || "Somos uma comunidade apaixonada por Jesus e por pessoas. Aqui você encontra um lugar para pertencer, crescer e servir."
-  const heroBgImage = config.heroBgImage || "https://images.unsplash.com/photo-1510936111840-65e151ad71bb?q=80&w=2090&auto=format&fit=crop"
-  const heroCtaText = config.heroCtaText || "Encontre uma Célula"
-  const heroCtaLink = config.heroCtaLink || "#celulas"
 
-  const contactWhatsapp = config.contactWhatsapp || "(00) 99999-9999"
-  const footerAddress = config.footerAddress || "Av. Principal, 1000\nCentro, Cidade - UF"
-  const socialInstagram = config.socialInstagram || "@igreja"
+  // Prioritize ChurchInfo, fallback to Config (legacy) or Defaults
+  const contactWhatsapp = churchInfo?.whatsapp || config.contactWhatsapp || ""
+  const footerAddress = churchInfo?.address || config.footerAddress || ""
+  const socialInstagram = churchInfo?.instagram || config.socialInstagram || ""
+  const socialYoutube = churchInfo?.youtube || null
+  const churchName = churchInfo?.name || "CellApp"
+  const logoUrl = churchInfo?.logoUrl || null
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
-      <LandingNavbar isAuthenticated={!!user} isLive={config.isLive} />
+      <AlertBar config={config} />
+      <LandingNavbar 
+        isAuthenticated={!!user} 
+        isLive={config.isLive} 
+        churchName={churchName}
+        logoUrl={logoUrl}
+      />
 
-      {/* 2. Hero Section (A Capa) */}
-      <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src="/hero-bg.jpg" 
-            alt="Background" 
-            fill 
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/60"></div>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 py-12">
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-            <span className="inline-block px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-sm font-medium tracking-wide uppercase backdrop-blur-sm">
-              Bem-vindo à nossa casa
-            </span>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight whitespace-pre-line">
-              {heroTitle}
-            </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 leading-relaxed">
-              {heroSubtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Link 
-                href={heroCtaLink} 
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-900/30 group"
-              >
-                {heroCtaText}
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link 
-                href="#agenda" 
-                className="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-xl text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all"
-              >
-                Ver Programação
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 2. Hero Section (Carrossel) */}
+      <HeroCarousel banners={banners} config={config} />
 
       {config.isLive && config.liveLink && (
         <section id="transmissao" className="py-24 bg-black relative overflow-hidden border-b border-slate-800">
@@ -163,37 +140,7 @@ export default async function LandingPage() {
       <FindCellSection />
 
       {/* 3. Seção 'Nossa Programação' */}
-      <section id="agenda" className="py-20 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Nossa Programação</h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Participe dos nossos encontros semanais. Você é nosso convidado especial!
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {schedule.length > 0 ? (
-              schedule.map((item: any, index: number) => (
-                <div key={index} className="group p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition-all hover:bg-slate-800/50">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
-                    <Calendar className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{item.titulo}</h3>
-                  <div className="flex items-center gap-3 text-indigo-300 font-medium mt-4">
-                    <Calendar className="w-5 h-5" />
-                    <span>{item.dia} às {item.horario}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-               <div className="col-span-3 text-center text-slate-500">
-                 Nenhuma programação cadastrada.
-               </div>
-            )}
-          </div>
-        </div>
-      </section>
+      <AgendaSection schedule={schedule} />
 
       {/* 3.5 Seção 'Próximos Eventos' */}
       <section id="eventos" className="py-20 bg-slate-950 border-t border-slate-800/50">
@@ -352,63 +299,17 @@ export default async function LandingPage() {
       </section>
 
       {/* 5. Rodapé (Footer) */}
-      <footer id="contato" className="bg-slate-950 border-t border-slate-900 pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                   <span className="font-bold text-white text-lg">C</span>
-                </div>
-                <span className="font-bold text-xl tracking-tight text-white">CellApp</span>
-              </div>
-              <p className="text-slate-400 max-w-sm mb-8">
-                Levando o amor de Deus a cada lar, transformando vidas através do discipulado e da comunhão.
-              </p>
-              <div className="flex gap-4">
-                <a href={`https://instagram.com/${socialInstagram.replace('@', '')}`} target="_blank" className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
-                  <Instagram className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-white mb-6">Links Rápidos</h4>
-              <ul className="space-y-4">
-                <li><Link href="#" className="text-slate-400 hover:text-indigo-400 transition-colors">Início</Link></li>
-                <li><Link href="#sobre" className="text-slate-400 hover:text-indigo-400 transition-colors">Sobre Nós</Link></li>
-                <li><Link href="#celulas" className="text-slate-400 hover:text-indigo-400 transition-colors">Encontrar Célula</Link></li>
-                <li>
-                  {user ? (
-                    <Link href="/app" className="text-slate-400 hover:text-indigo-400 transition-colors">Meu Painel</Link>
-                  ) : (
-                    <Link href="/login" className="text-slate-400 hover:text-indigo-400 transition-colors">Área de Membros</Link>
-                  )}
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-white mb-6">Contato</h4>
-              <ul className="space-y-4 text-slate-400">
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-indigo-500 shrink-0" />
-                  <span className="whitespace-pre-line">{footerAddress}</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <MessageCircle className="w-5 h-5 text-indigo-500 shrink-0" />
-                  <span>{contactWhatsapp}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
-            <p>&copy; 2024 CellApp. Todos os direitos reservados.</p>
-            <p>Desenvolvido com ❤️ para o Reino.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer 
+        contactWhatsapp={contactWhatsapp} 
+        footerAddress={footerAddress} 
+        socialInstagram={socialInstagram}
+        socialYoutube={socialYoutube} 
+        user={user} 
+        churchName={churchName}
+        logoUrl={logoUrl}
+      />
+      
+      <FloatingWhatsAppButton whatsapp={contactWhatsapp} />
     </div>
   )
 }

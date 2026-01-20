@@ -15,18 +15,33 @@ export async function createBanner(formData: FormData) {
   try {
     const title = formData.get('title') as string
     const subtitle = formData.get('subtitle') as string
-    const file = formData.get('file') as File
     const linkBotao = formData.get('linkBotao') as string
     const textoBotao = formData.get('textoBotao') as string
     
-    if (!file || file.size === 0) {
-      return { error: 'Imagem obrigatória' }
+    const desktopFile = formData.get('desktopFile') as File | null
+    const mobileFile = formData.get('mobileFile') as File | null
+    const desktopUrlExisting = formData.get('desktopUrlExisting') as string | null
+    const mobileUrlExisting = formData.get('mobileUrlExisting') as string | null
+    
+    let desktopUrl = ''
+    
+    // 1. Handle Desktop Image (Priority: File > Existing URL)
+    if (desktopFile && desktopFile.size > 0) {
+      const uploadedUrl = await uploadToMidiaBucket(desktopFile)
+      if (!uploadedUrl) return { error: 'Falha no upload da imagem Desktop' }
+      desktopUrl = uploadedUrl
+    } else if (desktopUrlExisting) {
+      desktopUrl = desktopUrlExisting
+    } else {
+      return { error: 'Imagem Desktop obrigatória (Upload ou Biblioteca)' }
     }
 
-    const imageUrl = await uploadToMidiaBucket(file)
-
-    if (!imageUrl) {
-      return { error: 'Falha no upload da imagem' }
+    // 2. Handle Mobile Image
+    let mobileUrl = null
+    if (mobileFile && mobileFile.size > 0) {
+      mobileUrl = await uploadToMidiaBucket(mobileFile)
+    } else if (mobileUrlExisting) {
+      mobileUrl = mobileUrlExisting
     }
 
     // Get max order to append
@@ -39,7 +54,8 @@ export async function createBanner(formData: FormData) {
       data: {
         titulo: title,
         subtitulo: subtitle,
-        imageUrl,
+        desktopUrl,
+        mobileUrl,
         linkBotao,
         textoBotao,
         ordem: newOrder,
@@ -50,9 +66,10 @@ export async function createBanner(formData: FormData) {
     revalidatePath('/')
     revalidatePath('/admin/website')
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao criar banner:', error)
-    return { error: 'Erro ao criar banner' }
+    // Return specific error message if available
+    return { error: error.message || 'Erro ao criar banner' }
   }
 }
 
