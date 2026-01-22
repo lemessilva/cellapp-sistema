@@ -72,10 +72,15 @@ export default async function DashboardPage() {
     { id: 3, title: 'Escola Bíblica', date: 'Domingo, 09h' }
   ]
 
-  const prayerRequests = [
-    { id: 1, text: 'Pela saúde da Dona Maria' },
-    { id: 2, text: 'Pelo emprego do João' }
-  ]
+  // Real Data: Prayer Requests (for Leaders/Admins)
+  const canViewRequests = ['ADMIN', 'LIDER', 'SUPERVISOR'].includes(user.role)
+  const pendingRequests = canViewRequests 
+    ? await prisma.prayerRequest.findMany({
+        where: { status: 'PENDING' },
+        take: 5,
+        orderBy: { createdAt: 'desc' }
+      })
+    : []
 
   const upcomingEvents = await prisma.event.findMany({
     where: {
@@ -196,21 +201,37 @@ export default async function DashboardPage() {
               </div>
               <h2 className="font-semibold text-slate-900">Pedidos de Oração</h2>
             </div>
-            <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 px-3 py-1 bg-indigo-50 rounded-full transition-colors">
-              Solicitar Oração
-            </button>
+            <Link href="/#pedidos-oracao" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 px-3 py-1 bg-indigo-50 rounded-full transition-colors">
+              Solicitar
+            </Link>
           </div>
-          <ul className="space-y-3 mb-4">
-             {prayerRequests.map((req) => (
-              <li key={req.id} className="text-sm text-slate-600 flex gap-2">
-                 <span className="text-pink-300">•</span>
-                 {req.text}
-              </li>
-            ))}
-          </ul>
-           <button className="w-full py-2 text-sm font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
-            Ver todos os pedidos
-          </button>
+          
+          {canViewRequests ? (
+             pendingRequests.length > 0 ? (
+               <ul className="space-y-3 mb-4">
+                 {pendingRequests.map((req) => (
+                  <li key={req.id} className="text-sm text-slate-600 flex gap-2 items-start">
+                     <span className="text-pink-300 mt-1 shrink-0">•</span>
+                     <span className="line-clamp-2"><span className="font-medium">{req.name}</span>: {req.content}</span>
+                  </li>
+                ))}
+              </ul>
+             ) : (
+               <div className="text-center py-8 text-slate-500 text-sm">
+                 Nenhum pedido pendente.
+               </div>
+             )
+          ) : (
+            <div className="text-sm text-slate-600 mb-4 py-2">
+               Precisa de oração? Nossa equipe de intercessão está pronta para orar por você e sua família.
+            </div>
+          )}
+
+           {canViewRequests && (
+             <Link href="/admin/prayers" className="block w-full text-center py-2 text-sm font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors">
+              Ver todos os pedidos
+            </Link>
+           )}
         </div>
 
         {/* Card 4: News / Events */}

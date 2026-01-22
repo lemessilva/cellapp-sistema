@@ -31,7 +31,7 @@ export function LandingNavbar({
               <img 
                 src={logoUrl} 
                 alt={churchName} 
-                className={`rounded-lg object-contain bg-white/10 p-1 ${isMobilePreview ? 'w-8 h-8' : 'w-10 h-10'}`} 
+                className={`rounded-lg object-contain p-1 ${isMobilePreview ? 'w-8 h-8' : 'w-auto max-h-[60px]'}`} 
               />
             ) : (
               <div className={`bg-indigo-600 rounded-lg flex items-center justify-center ${isMobilePreview ? 'w-6 h-6' : 'w-8 h-8'}`}>

@@ -95,7 +95,8 @@ export default function WebsiteEditor({
     youtube: initialChurchInfo?.youtube || '',
     themeColor: initialChurchInfo?.themeColor || 'blue',
     logoUrl: initialChurchInfo?.logoUrl || '',
-    logoFile: null as File | null
+    logoFile: null as File | null,
+    heroVideoUrl: initialChurchInfo?.heroVideoUrl || ''
   })
 
   // Handlers
@@ -183,6 +184,7 @@ export default function WebsiteEditor({
       data.append('instagram', churchInfo.instagram)
       data.append('youtube', churchInfo.youtube)
       data.append('themeColor', churchInfo.themeColor)
+      data.append('heroVideoUrl', churchInfo.heroVideoUrl)
       if (churchInfo.logoFile) {
         data.append('logoFile', churchInfo.logoFile)
       }
@@ -741,6 +743,18 @@ export default function WebsiteEditor({
                       placeholder="Ex: Minha Igreja"
                     />
                     <p className="text-xs text-slate-500 mt-1">Usado quando a logo não está disponível.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">URL do Vídeo de Fundo (MP4)</label>
+                    <input
+                      type="text"
+                      value={churchInfo.heroVideoUrl}
+                      onChange={(e) => setChurchInfo(prev => ({ ...prev, heroVideoUrl: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="https://exemplo.com/video.mp4"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Link direto para o vídeo que será exibido no fundo da Hero Section. Deixe em branco para usar a imagem.</p>
                   </div>
                 </div>
               </div>

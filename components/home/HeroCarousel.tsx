@@ -23,6 +23,7 @@ interface HeroCarouselProps {
     heroBgImage?: string | null
     heroCtaText?: string | null
     heroCtaLink?: string | null
+    heroVideoUrl?: string | null
   }
   isPreview?: boolean
   previewImage?: string | null
@@ -31,16 +32,19 @@ interface HeroCarouselProps {
 export function HeroCarousel({ banners = [], config = {}, isPreview = false, previewImage }: HeroCarouselProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
 
+  // Fallback to Config (Legacy Mode) or Video Background
+  const showVideoBackground = config.heroVideoUrl && banners.length === 0
+  
   // Auto-play
   useEffect(() => {
-    if (banners.length <= 1 || isPreview) return
+    if (banners.length <= 1 || isPreview || showVideoBackground) return
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % banners.length)
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [banners.length, isPreview])
+  }, [banners.length, isPreview, showVideoBackground])
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % banners.length)
@@ -96,7 +100,7 @@ export function HeroCarousel({ banners = [], config = {}, isPreview = false, pre
     )
   }
 
-  // Fallback to Config (Legacy Mode) if no banners
+  // Fallback to Config (Legacy Mode) if no banners or Video Mode
   if (banners.length === 0) {
     const heroTitle = config.heroTitle || "Uma Igreja,\nUma Família."
     const heroSubtitle = config.heroSubtitle || "Somos uma comunidade apaixonada por Jesus e por pessoas. Aqui você encontra um lugar para pertencer, crescer e servir."
@@ -105,16 +109,33 @@ export function HeroCarousel({ banners = [], config = {}, isPreview = false, pre
     const heroCtaLink = config.heroCtaLink || "#celulas"
 
     return (
-      <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <Image 
-            src={heroBgImage} 
-            alt="Background" 
-            fill 
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/60"></div>
+      <section className="relative w-full h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden bg-slate-900">
+        <div className="absolute inset-0 z-10">
+          <div className="absolute inset-0">
+             {config.heroVideoUrl ? (
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover z-[-1]"
+                  src={config.heroVideoUrl}
+                />
+             ) : (
+                heroBgImage ? (
+                  <img 
+                    src={heroBgImage} 
+                    alt="Hero Background" 
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                    <span className="opacity-20 text-6xl font-bold tracking-tighter">BEM VINDO</span>
+                  </div>
+                )
+             )}
+            <div className="absolute inset-0 bg-black/60"></div>
+          </div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 py-12">

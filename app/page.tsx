@@ -9,10 +9,13 @@ import { getYouTubeId } from '@/lib/utils'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 import { FindCellSection } from '@/components/home/FindCellSection'
 import { AgendaSection } from '@/components/home/AgendaSection'
+import { PrayerRequestSection } from '@/components/home/PrayerRequestSection'
+import { PlanVisitSection } from '@/components/home/PlanVisitSection'
 import { AlertBar } from '@/components/home/AlertBar'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { Footer } from '@/components/Footer'
 import { FloatingWhatsAppButton } from '@/components/FloatingWhatsAppButton'
+import { FloatingPrayerButton } from '@/components/home/FloatingPrayerButton'
 
 export default async function LandingPage() {
   const user = await getUser()
@@ -57,7 +60,15 @@ export default async function LandingPage() {
       />
 
       {/* 2. Hero Section (Carrossel) */}
-      <HeroCarousel banners={banners} config={config} />
+      <HeroCarousel 
+        banners={banners} 
+        config={{
+          ...config,
+          heroVideoUrl: churchInfo?.heroVideoUrl
+        }} 
+      />
+
+      <PlanVisitSection />
 
       {config.isLive && config.liveLink && (
         <section id="transmissao" className="py-24 bg-black relative overflow-hidden border-b border-slate-800">
@@ -298,6 +309,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* 4.5 Seção Pedidos de Oração */}
+      <PrayerRequestSection />
+
       {/* 5. Rodapé (Footer) */}
       <Footer 
         contactWhatsapp={contactWhatsapp} 
@@ -310,6 +324,7 @@ export default async function LandingPage() {
       />
       
       <FloatingWhatsAppButton whatsapp={contactWhatsapp} />
+      <FloatingPrayerButton />
     </div>
   )
 }

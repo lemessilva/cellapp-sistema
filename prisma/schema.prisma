@@ -158,6 +158,7 @@ model ChurchInfo {
   instagram   String?
   youtube     String?
   themeColor  String   @default("blue") // Ex: 'blue', 'red', 'dark', 'gold'
+  heroVideoUrl String?
 }
 
 model BioLink {
@@ -603,7 +604,8 @@ model SiteConfiguration {
 
   isLive          Boolean  @default(false)
   liveLink        String?
-  
+  heroVideoUrl    String?  // URL do vídeo de fundo da Home
+
   updatedAt       DateTime @updatedAt
 }
 
@@ -648,4 +650,13 @@ model PaymentTransaction {
   date           DateTime     @default(now())
   notes          String?      // Ex: "Pix", "Dinheiro na mão"
   registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+model PrayerRequest {
+  id        String   @id @default(cuid())
+  name      String   // Apenas o primeiro nome ou como a pessoa preferir
+  phone     String?  // Opcional (para contato posterior se ela quiser)
+  content   String   @db.Text // O pedido em si
+  status    String   @default("PENDING") // PENDING, PRAYED, ARCHIVED
+  createdAt DateTime @default(now())
 }
