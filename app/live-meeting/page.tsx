@@ -14,7 +14,7 @@ export default async function LiveMeetingPage() {
   // Fetch data
   const data = await getLiveMeetingData(user.celula.id)
   
-  if ('error' in data || !data.active) {
+  if ('error' in data || !data.active || !data.report || !data.members) {
     redirect('/app/celula') // No live meeting, go back
   }
 

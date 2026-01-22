@@ -25,8 +25,8 @@ export function MonthlyReportGenerator({ cellId, cellName }: Props) {
     try {
       const result = await getMonthlyReportData(cellId, month, year)
       
-      if ('error' in result) {
-        toast.error(result.error)
+      if (!result) {
+        toast.error('Erro ao carregar dados do relatório')
         return
       }
 

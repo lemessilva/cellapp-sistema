@@ -2,10 +2,14 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { sendNotification } from "./notifications"
 
 export async function startLiveMeeting(cellId: string, date: string) {
   try {
     const meetingDate = new Date(date)
+    let reportId = ''
+    let startedAt = new Date()
+    let isNewStart = false
     
     // Check if report exists
     const existing = await prisma.meetingReport.findFirst({
@@ -28,20 +32,44 @@ export async function startLiveMeeting(cellId: string, date: string) {
           startedAt: existing.startedAt || new Date()
         }
       })
-      return { success: true, reportId: updated.id, startedAt: updated.startedAt }
+      reportId = updated.id
+      startedAt = updated.startedAt
+      isNewStart = true
+    } else {
+      // Create new
+      const created = await prisma.meetingReport.create({
+        data: {
+          cellId,
+          date: meetingDate,
+          status: 'EM_ANDAMENTO',
+          startedAt: new Date()
+        }
+      })
+      reportId = created.id
+      startedAt = created.startedAt
+      isNewStart = true
     }
 
-    // Create new
-    const created = await prisma.meetingReport.create({
-      data: {
-        cellId,
-        date: meetingDate,
-        status: 'EM_ANDAMENTO',
-        startedAt: new Date()
-      }
-    })
+    if (isNewStart) {
+        // Notify members
+        const members = await prisma.user.findMany({
+            where: { celulaId: cellId, ativo: true },
+            select: { id: true }
+        })
+
+        // Fire and forget notifications to avoid delay
+        Promise.all(members.map(member => 
+            sendNotification({
+                userId: member.id,
+                title: 'Célula Iniciada! 🚀',
+                message: 'A célula começou! O modo ao vivo foi ativado.',
+                type: 'INFO',
+                link: '/app/celula'
+            })
+        )).catch(err => console.error('Failed to send start notifications', err))
+    }
     
-    return { success: true, reportId: created.id, startedAt: created.startedAt }
+    return { success: true, reportId, startedAt }
   } catch (error) {
     console.error('Error starting live meeting:', error)
     return { error: 'Falha ao iniciar célula' }
@@ -56,7 +84,8 @@ export async function getLiveMeetingData(cellId: string) {
         status: 'EM_ANDAMENTO'
       },
       include: {
-        attendance: true
+        attendance: true,
+        kidsPillars: true
       }
     })
 
@@ -64,15 +93,16 @@ export async function getLiveMeetingData(cellId: string) {
 
     const members = await prisma.user.findMany({
       where: {
-        cellId,
-        active: true
+        celulaId: cellId,
+        ativo: true
       },
       orderBy: { nome: 'asc' },
       select: {
         id: true,
         nome: true,
-        photoUrl: true,
-        role: true
+        foto_url: true,
+        role: true,
+        categoria: true
       }
     })
 
@@ -153,21 +183,21 @@ export async function finishLiveMeeting(
 
         if (category === 'CRIANCA') {
             // Save to MeetingKidPillar
-            await tx.meetingKidPillar.upsert({
+            await tx.meetingKidsPillars.upsert({
                 where: {
-                    meetingId_userId: {
-                        meetingId: reportId,
-                        userId
+                    reportId_userId: {
+                        reportId: reportId,
+                        userId: userId
                     }
                 },
                 create: {
-                    meetingId: reportId,
+                    reportId: reportId,
                     userId,
-                    cell: isPresent, // If present in live meeting, they are at cell
-                    church: false,
-                    homeWorship: false,
-                    devotional: false,
-                    challenge: false,
+                    cell: isPresent, 
+                    church: data.church || false,
+                    homeWorship: data.homeWorship || false,
+                    devotional: data.devotional || false,
+                    challenge: data.challenge || false,
                     offerValue: Number(data.offerValue || 0),
                     titheValue: Number(data.titheValue || 0),
                     missionsValue: Number(data.missionsValue || 0),
@@ -175,6 +205,10 @@ export async function finishLiveMeeting(
                 },
                 update: {
                     cell: isPresent,
+                    church: data.church || false,
+                    homeWorship: data.homeWorship || false,
+                    devotional: data.devotional || false,
+                    challenge: data.challenge || false,
                     offerValue: Number(data.offerValue || 0),
                     titheValue: Number(data.titheValue || 0),
                     missionsValue: Number(data.missionsValue || 0),
@@ -185,13 +219,13 @@ export async function finishLiveMeeting(
             // Save to MeetingAttendance (Adults)
             await tx.meetingAttendance.upsert({
                 where: {
-                    meetingId_userId: {
-                        meetingId: reportId,
+                    reportId_userId: {
+                        reportId: reportId,
                         userId
                     }
                 },
                 create: {
-                    meetingId: reportId,
+                    reportId: reportId,
                     userId,
                     status,
                     offerValue: Number(data.offerValue || 0),

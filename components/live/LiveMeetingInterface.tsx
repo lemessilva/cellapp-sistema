@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { finishLiveMeeting } from '@/app/actions/live-meeting'
 import { toast } from 'sonner'
-import { Loader2, Check, X, DollarSign, Clock, Users, StopCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, Check, X, DollarSign, Clock, Users, StopCircle, ChevronDown, ChevronUp, Baby, BookOpen, Home, Trophy, Church } from 'lucide-react'
 import Image from 'next/image'
 
 interface LiveMeetingInterfaceProps {
@@ -24,15 +24,33 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
   // Initialize state from existing data if any (though usually fresh start)
   const [attendance, setAttendance] = useState<Record<string, any>>(() => {
     const initial: Record<string, any> = {}
-    data.members.forEach(m => {
-      // Check if already in report attendance
-      const existing = data.report.attendance.find((a: any) => a.userId === m.id)
-      initial[m.id] = {
-        status: existing?.status || 'P',
-        offerValue: existing?.offerValue || '',
-        titheValue: existing?.titheValue || '',
-        missionsValue: existing?.missionsValue || '',
-        otherValue: existing?.otherValue || ''
+    data.members.forEach((m: any) => {
+      if (m.categoria === 'CRIANCA') {
+        const existing = data.report.kidsPillars?.find((k: any) => k.userId === m.id)
+        initial[m.id] = {
+          isKid: true,
+          status: existing?.cell ? 'P' : 'F', // Cell pillar implies presence in meeting
+          church: existing?.church || false,
+          cell: existing?.cell || true, // Default true for cell if new? Or false? Default Present usually.
+          homeWorship: existing?.homeWorship || false,
+          devotional: existing?.devotional || false,
+          challenge: existing?.challenge || false,
+          offerValue: existing?.offerValue || '',
+          titheValue: existing?.titheValue || '',
+          missionsValue: existing?.missionsValue || '',
+          otherValue: existing?.otherValue || ''
+        }
+      } else {
+        // Adult
+        const existing = data.report.attendance?.find((a: any) => a.userId === m.id)
+        initial[m.id] = {
+          isKid: false,
+          status: existing?.status || 'P',
+          offerValue: existing?.offerValue || '',
+          titheValue: existing?.titheValue || '',
+          missionsValue: existing?.missionsValue || '',
+          otherValue: existing?.otherValue || ''
+        }
       }
     })
     return initial
@@ -63,20 +81,42 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
 
   const toggleStatus = (userId: string) => {
     setAttendance(prev => {
-      const current = prev[userId].status
-      const newStatus = current === 'P' ? 'F' : 'P'
+      const state = prev[userId]
       
-      // If Absent, clear financials? The prompt says "Se status == 'F', ofertaValor... deve ser setado para 0".
-      // Let's apply this rule here too.
-      const newState = { ...prev[userId], status: newStatus }
-      if (newStatus === 'F') {
-          newState.offerValue = ''
-          newState.titheValue = ''
-          newState.missionsValue = ''
-          newState.otherValue = ''
+      if (state.isKid) {
+          const newStatus = state.status === 'P' ? 'F' : 'P'
+          const newState = { 
+              ...state, 
+              status: newStatus,
+              cell: newStatus === 'P' 
+          }
+          if (newStatus === 'F') {
+              newState.offerValue = ''
+              newState.titheValue = ''
+              newState.missionsValue = ''
+              newState.otherValue = ''
+          }
+          return { ...prev, [userId]: newState }
+      } else {
+          const current = state.status
+          const newStatus = current === 'P' ? 'F' : 'P'
+          const newState = { ...state, status: newStatus }
+          if (newStatus === 'F') {
+              newState.offerValue = ''
+              newState.titheValue = ''
+              newState.missionsValue = ''
+              newState.otherValue = ''
+          }
+          return { ...prev, [userId]: newState }
       }
-      return { ...prev, [userId]: newState }
     })
+  }
+
+  const togglePillar = (userId: string, pillar: string) => {
+    setAttendance(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], [pillar]: !prev[userId][pillar] }
+    }))
   }
 
   const updateFinancial = (userId: string, field: string, value: string) => {
@@ -139,6 +179,7 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
             const state = attendance[member.id]
             const isPresent = state.status === 'P'
             const isExpanded = expandedMember === member.id
+            const isKid = state.isKid
 
             return (
               <div 
@@ -153,12 +194,12 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                   <div className="flex-1 flex items-center gap-3">
                     <div className={`
                       w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
-                      ${isPresent ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-400'}
+                      ${isPresent ? (isKid ? 'bg-pink-600 text-white' : 'bg-indigo-600 text-white') : 'bg-slate-700 text-slate-400'}
                     `}>
                       {member.photoUrl ? (
                           <Image src={member.photoUrl} alt={member.nome} width={40} height={40} className="rounded-full" />
                       ) : (
-                          member.nome.charAt(0)
+                          isKid ? <Baby className="w-5 h-5" /> : member.nome.charAt(0)
                       )}
                     </div>
                     <div>
@@ -194,6 +235,41 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                 {/* Financial Inputs (Drawer) */}
                 {isPresent && isExpanded && (
                   <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2">
+                    
+                    {/* Kids Pillars */}
+                    {isKid && (
+                        <div className="mb-4 grid grid-cols-4 gap-2">
+                            <button
+                                onClick={() => togglePillar(member.id, 'church')}
+                                className={`p-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${state.church ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-700/50 text-slate-500 border border-slate-700'}`}
+                            >
+                                <Church className="w-4 h-4" />
+                                CULTO
+                            </button>
+                            <button
+                                onClick={() => togglePillar(member.id, 'homeWorship')}
+                                className={`p-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${state.homeWorship ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-slate-700/50 text-slate-500 border border-slate-700'}`}
+                            >
+                                <Home className="w-4 h-4" />
+                                CULTO LAR
+                            </button>
+                            <button
+                                onClick={() => togglePillar(member.id, 'devotional')}
+                                className={`p-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${state.devotional ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-slate-700/50 text-slate-500 border border-slate-700'}`}
+                            >
+                                <BookOpen className="w-4 h-4" />
+                                DEVOC.
+                            </button>
+                            <button
+                                onClick={() => togglePillar(member.id, 'challenge')}
+                                className={`p-2 rounded-lg flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${state.challenge ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-slate-700/50 text-slate-500 border border-slate-700'}`}
+                            >
+                                <Trophy className="w-4 h-4" />
+                                DESAFIO
+                            </button>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase text-slate-500 font-bold">Oferta</label>

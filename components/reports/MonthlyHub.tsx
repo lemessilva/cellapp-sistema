@@ -54,19 +54,17 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
   const loadHub = async () => {
     setLoading(true)
     const result = await getMonthlyHubData(cellId, month, year)
-    if ('error' in result) {
-      toast.error(result.error)
-    } else {
-      setWeeks(result.weeks)
+    
+    setWeeks(result.weeks)
 
-      // Recalculate stats locally to include RASCUNHO (Drafts) as filled
-      const totalWeeks = result.weeks.length
-      const filledWeeks = result.weeks.filter((w: any) => w.status !== 'PENDENTE').length
-      const progressPercentage = totalWeeks > 0 ? Math.round((filledWeeks / totalWeeks) * 100) : 0
+    // Recalculate stats locally to include RASCUNHO (Drafts) as filled
+    const totalWeeks = result.weeks.length
+    const filledWeeks = result.weeks.filter((w: any) => w.status !== 'PENDENTE').length
+    const progressPercentage = totalWeeks > 0 ? Math.round((filledWeeks / totalWeeks) * 100) : 0
 
-      setStats({ ...result.stats, filledWeeks, totalWeeks, progressPercentage })
-      setClosure(result.closure)
-    }
+    setStats({ ...result.stats, filledWeeks, totalWeeks, progressPercentage })
+    setClosure(result.closure)
+    
     setLoading(false)
   }
 
@@ -78,8 +76,8 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
     setGeneratingPdf(true)
     try {
       const result = await getMonthlyReportData(cellId, month, year)
-      if ('error' in result) {
-        toast.error(result.error)
+      if (!result) {
+        toast.error('Erro ao buscar dados do relatório')
       } else {
         setReportData(result)
       }

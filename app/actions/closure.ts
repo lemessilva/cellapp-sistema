@@ -47,7 +47,7 @@ export async function closeMonthlyReport(cellId: string, month: number, year: nu
 
     // 2. Calculate totals for the closure record (now fetching all valid reports)
     const result = await getMonthlyReportData(cellId, month, year)
-    if ('error' in result) return { success: false, error: result.error }
+    if (!result) return { success: false, error: "Falha ao calcular totais do relatório." }
 
     const summaries = result.reportSummaries || []
     const totalMeetings = summaries.length

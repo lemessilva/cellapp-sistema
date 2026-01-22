@@ -26,6 +26,7 @@ interface Participant {
   nome: string
   role?: string
   foto_url?: string | null
+  joinedAt?: Date | string | null
 }
 
 interface ReportFormProps {
@@ -336,6 +337,28 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
             const result = await getReportByDate(cellId, date)
             if ('report' in result && result.report) {
                 fillForm(result.report)
+                
+                // Smart Fill Fallback: If report exists but has missing Roster fields, try to fill from Roster
+                const r = result.report
+                if (!r.hostId || !r.directionId || !r.worshipId || !r.evangelismId) {
+                     // Fetch dynamic roster
+                     const [y, m, d] = date.split('-').map(Number)
+                     const safeDate = new Date(y, m - 1, d, 12, 0, 0)
+                     const roster = await getRosterForDate(cellId, safeDate)
+                     
+                     if (roster) {
+                        if (!r.hostId) setHostId(roster.hostMemberId || '')
+                        if (!r.directionId) setDirectionId(roster.directionMemberId || '')
+                        if (!r.worshipId) setWorshipId(roster.worshipMemberId || '')
+                        if (!r.evangelismId) setEvangelismId(roster.evangelismMemberId || '')
+                        
+                        // Optional: Offer Prediction if report value is 0/empty
+                        if ((!r.offerValue || r.offerValue === 0) && roster.offerPrediction > 0) {
+                            setManualTotalOffer(String(roster.offerPrediction.toFixed(2)))
+                        }
+                     }
+                }
+
             } else {
                 // Report not found
                 resetForm()

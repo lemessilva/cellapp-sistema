@@ -163,6 +163,7 @@ interface ReportData {
     stats: {
         present: number
         financial: number
+        eligible: number
     }
   }[]
   kids: {

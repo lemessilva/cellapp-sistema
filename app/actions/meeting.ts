@@ -107,8 +107,8 @@ export async function submitMeetingReport(data: SubmitReportParams) {
 
             await tx.meetingAttendance.upsert({
                 where: {
-                    meetingId_userId: {
-                        meetingId: reportId,
+                    reportId_userId: {
+                        reportId: reportId,
                         userId: att.userId
                     }
                 },
@@ -121,7 +121,7 @@ export async function submitMeetingReport(data: SubmitReportParams) {
                     otherValue: sanitizedOther
                 },
                 create: {
-                    meetingId: reportId,
+                    reportId: reportId,
                     userId: att.userId,
                     status: att.status,
                     absenceReason: att.absenceReason,
@@ -135,10 +135,10 @@ export async function submitMeetingReport(data: SubmitReportParams) {
 
         // 3. Handle Kids
         for (const kid of data.kidsPillars) {
-            await tx.meetingKidPillar.upsert({
+            await tx.meetingKidsPillars.upsert({
                 where: {
-                    meetingId_userId: {
-                        meetingId: reportId,
+                    reportId_userId: {
+                        reportId: reportId,
                         userId: kid.userId
                     }
                 },
@@ -154,7 +154,7 @@ export async function submitMeetingReport(data: SubmitReportParams) {
                     otherValue: kid.otherValue
                 },
                 create: {
-                    meetingId: reportId,
+                    reportId: reportId,
                     userId: kid.userId,
                     church: kid.church,
                     cell: kid.cell,
@@ -172,13 +172,13 @@ export async function submitMeetingReport(data: SubmitReportParams) {
         // 4. Handle Visitors
         // First delete existing visitors for this report to handle removals/updates easily
         await tx.meetingVisitor.deleteMany({
-            where: { meetingId: reportId }
+            where: { reportId: reportId }
         })
 
         if (data.visitors.length > 0) {
             await tx.meetingVisitor.createMany({
                 data: data.visitors.map(v => ({
-                    meetingId: reportId!,
+                    reportId: reportId!,
                     name: v.name,
                     phone: v.phone,
                     type: v.type
@@ -650,7 +650,7 @@ export async function approveReport(reportId: string) {
     try {
         await prisma.meetingReport.update({
             where: { id: reportId },
-            data: { status: 'ENVIADO_SUPERVISOR' } 
+            data: { status: 'APROVADO' } 
         })
         revalidatePath('/app/lideranca')
         return { success: true }
