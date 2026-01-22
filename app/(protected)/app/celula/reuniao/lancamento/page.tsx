@@ -35,9 +35,9 @@ export default async function Page({ searchParams }: PageProps) {
 
   // Permissão de EDIÇÃO DO RELATÓRIO (Apenas Líder e Secretário)
   const isAuthorized = 
-    user.id === data.cell.leaderId || 
-    user.id === data.cell.leader2Id || 
-    user.id === data.cell.secretaryId
+    user.id === data.cell.liderId || 
+    user.id === data.cell.lider2Id || 
+    user.id === data.cell.secretarioId
 
   const resolvedSearchParams = await searchParams
   // Get date from query params
