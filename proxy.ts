@@ -4,7 +4,7 @@ import { jwtVerify } from 'jose'
 
 const JWT_SECRET = new TextEncoder().encode('super-secret-key-change-in-prod')
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Rotas que exigem autenticação

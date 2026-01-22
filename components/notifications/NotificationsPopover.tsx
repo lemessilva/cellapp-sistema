@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Check, Info, AlertTriangle, AlertCircle, CheckCircle, X } from 'lucide-react'
+import { Bell, Check, Info, AlertTriangle, AlertCircle, CheckCircle, X, ClipboardList, Calendar, Home, Award, Guitar, Gift } from 'lucide-react'
 import { getUserNotifications, markAsRead, markAllAsRead, getUnreadCount } from '@/app/actions/notifications'
 import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
