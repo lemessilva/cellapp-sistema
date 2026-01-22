@@ -115,6 +115,33 @@ export async function upsertRoster(data: {
       })
     }
 
+    // Send notifications to assigned members
+    const roles = [
+        { id: data.directionMemberId, roleName: 'Direção' },
+        { id: data.worshipMemberId, roleName: 'Louvor' },
+        { id: data.evangelismMemberId, roleName: 'Palavra/Oferta' },
+        { id: data.hostMemberId, roleName: 'Anfitrião' }
+    ]
+
+    const formattedDate = new Date(data.date).toLocaleDateString('pt-BR')
+
+    for (const role of roles) {
+        if (role.id) {
+            // Check if this is a new assignment or just an update
+            // Ideally we check against 'existing', but simplistic approach is fine: just notify.
+            // To avoid spam, maybe we can check if it changed.
+            // However, simplicity is key now.
+            await sendNotification({
+                userId: role.id,
+                title: "Você foi Escalado! 🎸",
+                message: `Você servirá no dia ${formattedDate} como ${role.roleName}.`,
+                type: 'ROSTER',
+                link: '/app/lideranca', // Or a specific roster view
+                metaData: { date: data.date, role: role.roleName }
+            })
+        }
+    }
+
     revalidatePath('/app/lideranca')
     return { success: true }
   } catch (error) {

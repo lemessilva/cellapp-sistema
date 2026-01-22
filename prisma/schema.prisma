@@ -248,9 +248,10 @@ model Notification {
   userId    String   // Quem recebe
   title     String
   message   String
-  type      String   @default("INFO") // 'INFO', 'SUCCESS', 'WARNING', 'ALERT'
+  type      String   @default("INFO") // 'INFO', 'SUCCESS', 'WARNING', 'ALERT', 'REPORT', 'ROLE', 'CELL', 'EVENT', 'ROSTER', 'BIRTHDAY'
   read      Boolean  @default(false)
   link      String?  // Url para redirecionar ao clicar (opcional)
+  metaData  Json?    // Dados extras para linkar (ex: ID do evento ou da Célula)
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

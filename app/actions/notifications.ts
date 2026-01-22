@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-export type NotificationType = 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT'
+export type NotificationType = 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT' | 'REPORT' | 'ROLE' | 'CELL' | 'EVENT' | 'ROSTER' | 'BIRTHDAY'
 
 interface SendNotificationParams {
   userId: string
@@ -11,6 +11,7 @@ interface SendNotificationParams {
   message: string
   type?: NotificationType
   link?: string
+  metaData?: any
 }
 
 export async function sendNotification({
@@ -18,7 +19,8 @@ export async function sendNotification({
   title,
   message,
   type = 'INFO',
-  link
+  link,
+  metaData
 }: SendNotificationParams) {
   try {
     const notification = await prisma.notification.create({
@@ -27,7 +29,8 @@ export async function sendNotification({
         title,
         message,
         type,
-        link
+        link,
+        metaData: metaData ? metaData : undefined
       }
     })
     

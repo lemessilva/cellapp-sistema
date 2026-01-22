@@ -92,6 +92,12 @@ export default function NotificationsPopover({ userId }: { userId: string }) {
       case 'SUCCESS': return <CheckCircle className="w-5 h-5 text-green-500" />
       case 'WARNING': return <AlertTriangle className="w-5 h-5 text-yellow-500" />
       case 'ALERT': return <AlertCircle className="w-5 h-5 text-red-500" />
+      case 'REPORT': return <ClipboardList className="w-5 h-5 text-indigo-500" />
+      case 'EVENT': return <Calendar className="w-5 h-5 text-purple-500" />
+      case 'CELL': return <Home className="w-5 h-5 text-blue-500" />
+      case 'ROLE': return <Award className="w-5 h-5 text-amber-500" />
+      case 'ROSTER': return <Guitar className="w-5 h-5 text-pink-500" />
+      case 'BIRTHDAY': return <Gift className="w-5 h-5 text-rose-500" />
       default: return <Info className="w-5 h-5 text-blue-500" />
     }
   }

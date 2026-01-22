@@ -218,7 +218,7 @@ export async function createEvent(formData: FormData) {
       if (url) coverUrl = url
     }
 
-    await prisma.event.create({
+    const event = await prisma.event.create({
       data: {
         title: formData.get('title') as string,
         description: formData.get('description') as string,
@@ -230,6 +230,25 @@ export async function createEvent(formData: FormData) {
         coverUrl: coverUrl
       }
     })
+
+    // Bulk Notification for all active users
+    const allUsers = await prisma.user.findMany({
+        where: { ativo: true },
+        select: { id: true }
+    })
+
+    if (allUsers.length > 0) {
+        await prisma.notification.createMany({
+            data: allUsers.map(u => ({
+                userId: u.id,
+                title: `Vem aí: ${event.title} 📅`,
+                message: "Confira a data e faça sua inscrição. Não fique de fora!",
+                type: 'EVENT',
+                link: `/app/eventos`,
+                metaData: { eventId: event.id }
+            }))
+        })
+    }
 
     revalidatePath('/admin/eventos')
     return { success: true }

@@ -104,10 +104,11 @@ export async function updateUserRoleAndCells({
     // Send Notification
     await sendNotification({
       userId: userId,
-      title: "Parabéns! Novo Cargo",
-      message: `Você foi promovido para ${role}.`,
-      type: "SUCCESS",
-      link: "/perfil"
+      title: "Novos Horizontes! 🚀",
+      message: `Seu nível de acesso foi atualizado para ${role}.`,
+      type: "ROLE",
+      link: "/perfil",
+      metaData: { role }
     })
 
     revalidatePath('/admin')

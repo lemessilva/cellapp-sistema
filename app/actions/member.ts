@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { sendNotification } from './notifications'
 
 export async function createMember(formData: FormData) {
   const user = await getUser()
@@ -87,12 +88,30 @@ export async function updateMemberCell(userId: string, newCellId: string) {
     const targetUser = await prisma.user.findUnique({ where: { id: userId } })
     if (!targetUser) return { error: 'Usuário não encontrado.' }
 
+    let cellName = 'Sem Célula'
+    if (newCellId !== 'none') {
+        const cell = await prisma.cell.findUnique({ where: { id: newCellId } })
+        if (cell) cellName = cell.nome
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
         celulaId: newCellId === 'none' ? null : newCellId
       }
     })
+
+    // Notification
+    if (newCellId !== 'none') {
+        await sendNotification({
+            userId: userId,
+            title: "Casa Nova! 🏡",
+            message: `Você foi adicionado à Célula ${cellName}. Seja bem-vindo à família!`,
+            type: "CELL",
+            link: "/app/celula",
+            metaData: { cellId: newCellId }
+        })
+    }
 
     revalidatePath('/admin/membros')
     return { success: true }
