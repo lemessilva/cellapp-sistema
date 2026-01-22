@@ -21,7 +21,7 @@ export async function startLiveMeeting(cellId: string, date: string) {
 
     if (existing) {
       if (existing.status === 'EM_ANDAMENTO') {
-        return { success: true, reportId: existing.id, startedAt: existing.startedAt }
+        return { success: true, reportId: existing.id, startedAt: existing.startedAt || new Date() }
       }
       
       // Update to in progress
@@ -33,7 +33,7 @@ export async function startLiveMeeting(cellId: string, date: string) {
         }
       })
       reportId = updated.id
-      startedAt = updated.startedAt
+      startedAt = updated.startedAt || new Date()
       isNewStart = true
     } else {
       // Create new
