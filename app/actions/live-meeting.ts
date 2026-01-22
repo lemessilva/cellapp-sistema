@@ -46,7 +46,7 @@ export async function startLiveMeeting(cellId: string, date: string) {
         }
       })
       reportId = created.id
-      startedAt = created.startedAt
+      startedAt = created.startedAt || new Date()
       isNewStart = true
     }
 
