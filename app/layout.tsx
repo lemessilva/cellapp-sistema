@@ -28,6 +28,8 @@ export const viewport: Viewport = {
 import { SidebarProvider } from '@/components/providers/SidebarContext';
 import { prisma } from '@/lib/prisma';
 import { ThemeWrapper } from '@/components/website/ThemeWrapper';
+import { getUser } from '@/lib/auth';
+import { LiveMeetingWatcher } from '@/components/live/LiveMeetingWatcher';
 
 export default async function RootLayout({
   children,
@@ -39,6 +41,8 @@ export default async function RootLayout({
     select: { themeColor: true }
   });
 
+  const user = await getUser();
+
   return (
     <html lang="pt-BR">
       <body
@@ -46,6 +50,7 @@ export default async function RootLayout({
       >
         <ThemeWrapper themeColor={churchInfo?.themeColor || 'blue'} />
         <SidebarProvider>
+          <LiveMeetingWatcher cellId={user?.celula?.id} />
           {children}
         </SidebarProvider>
       </body>

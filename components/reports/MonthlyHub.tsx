@@ -33,6 +33,8 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
   // Correction Modal
   const [isCorrectionModalOpen, setIsCorrectionModalOpen] = useState(false)
   const [correctionReason, setCorrectionReason] = useState('')
+  // Renamed isPreviewOpen to isSignatureModalOpen to avoid confusion
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false)
 
   const months = [
     { value: 1, label: 'Janeiro' },
@@ -56,7 +58,13 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
       toast.error(result.error)
     } else {
       setWeeks(result.weeks)
-      setStats(result.stats)
+
+      // Recalculate stats locally to include RASCUNHO (Drafts) as filled
+      const totalWeeks = result.weeks.length
+      const filledWeeks = result.weeks.filter((w: any) => w.status !== 'PENDENTE').length
+      const progressPercentage = totalWeeks > 0 ? Math.round((filledWeeks / totalWeeks) * 100) : 0
+
+      setStats({ ...result.stats, filledWeeks, totalWeeks, progressPercentage })
       setClosure(result.closure)
     }
     setLoading(false)
@@ -82,12 +90,31 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
     }
   }
 
+  const isWeekLocked = (dateStr: string) => {
+    if (userRole === 'ADMIN') return false
+    
+    // Parse dateStr (YYYY-MM-DD)
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const meetingDate = new Date(y, m - 1, d)
+    
+    // Available from day + 1 (tomorrow)
+    const availableDate = new Date(meetingDate)
+    availableDate.setDate(availableDate.getDate() + 1)
+    availableDate.setHours(0, 0, 0, 0)
+    
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    
+    return now < availableDate
+  }
+
   const handleWeekClick = (date: string) => {
-    // If month is closed (not ABERTO), prevent editing or open in read-only (handled by form usually, but we can block navigation or show alert)
-    // Actually user requirement says: "input viram read-only". So we still navigate, but pass a param or handle in form.
-    // For now, let's just navigate. The form should check status.
-    // Wait, "Bloquear edição... inputs viram read-only".
-    // I will append a query param `readonly=true` if status != ABERTO.
+    if (isWeekLocked(date)) {
+        toast.info('O relatório estará disponível para preenchimento a partir de amanhã')
+        return
+    }
+
+    // If month is closed (not ABERTO), prevent editing or open in read-only
     const isReadOnly = closure && closure.status !== 'ABERTO'
     router.push(`/app/celula/reuniao/lancamento?date=${date}${isReadOnly ? '&readonly=true' : ''}`)
   }
@@ -106,11 +133,12 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
     setActionLoading(false)
   }
 
-  const handleSignLider = async () => {
+  const handleRequestCorrection = async () => {
     setActionLoading(true)
-    const result = await signMonthlyReportLider(cellId, month, year, userId)
+    const result = await requestCorrection(cellId, month, year, correctionReason)
     if (result.success) {
-      toast.success('Relatório assinado e validado!')
+      toast.success('Solicitação de correção enviada! O status voltou para ABERTO.')
+      setIsCorrectionModalOpen(false)
       loadHub()
     } else {
       toast.error(result.error)
@@ -118,12 +146,34 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
     setActionLoading(false)
   }
 
-  const handleRequestCorrection = async () => {
+  const [signatureType, setSignatureType] = useState<'LIDER' | 'SUPERVISOR'>('LIDER')
+
+  const handleSignClick = async (type: 'LIDER' | 'SUPERVISOR') => {
+    setSignatureType(type)
+    setIsSignatureModalOpen(true)
+    
+    if (!reportData) {
+        setGeneratingPdf(true)
+        const data = await getMonthlyReportData(cellId, month, year)
+        setReportData(data)
+        setGeneratingPdf(false)
+    }
+  }
+
+  const handleConfirmSignature = async () => {
+    if (signatureType === 'LIDER') {
+        await handleSignLider()
+    } else {
+        await handleSignSupervisor()
+    }
+    setIsSignatureModalOpen(false)
+  }
+
+  const handleSignLider = async () => {
     setActionLoading(true)
-    const result = await requestCorrection(cellId, month, year, correctionReason)
+    const result = await signMonthlyReportLider(cellId, month, year, userId)
     if (result.success) {
-      toast.success('Solicitação de correção enviada! O status voltou para ABERTO.')
-      setIsCorrectionModalOpen(false)
+      toast.success('Relatório assinado e validado!')
       loadHub()
     } else {
       toast.error(result.error)
@@ -162,9 +212,6 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
   const canCloseMonth = stats?.progressPercentage === 100 && (!closure || closure.status === 'ABERTO')
   const canSignLider = userRole === 'LIDER' && closure?.status === 'AGUARDANDO_LIDER'
   const canSignSupervisor = (userRole === 'SUPERVISOR' || userRole === 'ADMIN') && closure?.status === 'AGUARDANDO_SUPERVISOR'
-  
-  // Also Lider can sign if he is viewing. 
-  // User Requirement: "Se o usuário logado for o Líder (e o status for AGUARDANDO_LIDER )"
   
   return (
     <div className="space-y-6">
@@ -262,11 +309,11 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
                     Solicitar Correção
                 </button>
                 <button
-                    onClick={handleSignLider}
+                    onClick={() => handleSignClick('LIDER')}
                     disabled={actionLoading}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
                 >
-                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenTool className="w-4 h-4" />}
+                    <PenTool className="w-4 h-4" />
                     Assinar e Validar
                 </button>
               </>
@@ -275,11 +322,11 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
           {/* Supervisor Actions */}
           {canSignSupervisor && (
               <button
-                onClick={handleSignSupervisor}
+                onClick={() => handleSignClick('SUPERVISOR')}
                 disabled={actionLoading}
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50"
               >
-                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenTool className="w-4 h-4" />}
+                 <PenTool className="w-4 h-4" />
                  Assinar como Supervisor
               </button>
           )}
@@ -343,16 +390,24 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
               
               <button 
                 onClick={() => handleWeekClick(week.date)}
+                title={isWeekLocked(week.date) ? 'O relatório estará disponível para preenchimento a partir de amanhã' : ''}
                 className={`
                   w-full py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors
-                  ${week.status === 'PENDENTE' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : ''}
-                  ${week.status === 'CONCLUIDO' ? 'bg-white text-green-700 border border-green-200 hover:bg-green-50' : ''}
-                  ${week.status === 'RASCUNHO' ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                  ${week.status === 'NAO_HOUVE' ? 'bg-white text-yellow-700 border border-yellow-200 hover:bg-yellow-50' : ''}
+                  ${isWeekLocked(week.date) ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 
+                    week.status === 'PENDENTE' ? 'bg-indigo-600 text-white hover:bg-indigo-700' :
+                    week.status === 'CONCLUIDO' ? 'bg-white text-green-700 border border-green-200 hover:bg-green-50' :
+                    week.status === 'RASCUNHO' ? 'bg-blue-600 text-white hover:bg-blue-700' :
+                    week.status === 'NAO_HOUVE' ? 'bg-white text-yellow-700 border border-yellow-200 hover:bg-yellow-50' : ''
+                  }
                 `}
               >
                 {/* Logic for Button Label/Icon based on Status AND Closure Status */}
-                {closure && closure.status !== 'ABERTO' ? (
+                {isWeekLocked(week.date) ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      Aguardando
+                    </>
+                ) : closure && closure.status !== 'ABERTO' ? (
                      <>
                         <Lock className="w-4 h-4" />
                         Visualizar
@@ -404,6 +459,160 @@ export function MonthlyHub({ cellId, cellName, userId, userRole, isSecretary }: 
               </div>
           </div>
       )}
+
+      {/* Signature Preview Modal */}
+      <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle>Conferência de Relatório Mensal</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+                <div className="bg-slate-50 p-4 rounded-lg text-sm text-slate-600">
+                    <p>Por favor, confira os dados abaixo antes de assinar. Esta ação é irrevogável.</p>
+                </div>
+
+                {reportData && (
+                    <div className="space-y-6">
+                        {/* Summary Table */}
+                        <div className="border rounded-lg overflow-hidden">
+                            <h4 className="bg-gray-100 p-2 font-bold text-sm border-b">Resumo Geral</h4>
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="p-2 text-left">Data</th>
+                                        <th className="p-2 text-left">Tema</th>
+                                        <th className="p-2 text-right">Presentes</th>
+                                        <th className="p-2 text-right">Visitantes</th>
+                                        <th className="p-2 text-left">Observações</th>
+                                        <th className="p-2 text-left">Detalhamento Oferta</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {reportData.reportSummaries.map((s: any, i: number) => (
+                                        <tr key={i}>
+                                            <td className="p-2">{s.date}</td>
+                                            <td className="p-2 text-xs truncate max-w-[150px]">{s.theme}</td>
+                                            <td className="p-2 text-right">{s.present}</td>
+                                            <td className="p-2 text-right">{s.visitors}</td>
+                                            <td className="p-2 text-xs truncate max-w-[150px]">{s.observations || '-'}</td>
+                                            <td className="p-2 text-xs truncate max-w-[150px]">{s.offerDetails || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Financial Breakdown */}
+                         <div className="border rounded-lg overflow-hidden">
+                            <h4 className="bg-gray-100 p-2 font-bold text-sm border-b">Detalhamento Financeiro</h4>
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="p-2 text-left">Categoria</th>
+                                        {reportData.reportSummaries.map((s: any, i: number) => (
+                                            <th key={i} className="p-2 text-right">{s.date}</th>
+                                        ))}
+                                        <th className="p-2 text-right bg-slate-100">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    <tr>
+                                        <td className="p-2 font-medium">Dízimos</td>
+                                        {reportData.reportSummaries.map((s: any, i: number) => (
+                                            <td key={i} className="p-2 text-right">R$ {s.financials.tithe.toFixed(2)}</td>
+                                        ))}
+                                        <td className="p-2 text-right font-bold bg-slate-50">
+                                            R$ {reportData.reportSummaries.reduce((acc: number, curr: any) => acc + curr.financials.tithe, 0).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="p-2 font-medium">Ofertas</td>
+                                        {reportData.reportSummaries.map((s: any, i: number) => (
+                                            <td key={i} className="p-2 text-right">R$ {s.financials.offer.toFixed(2)}</td>
+                                        ))}
+                                        <td className="p-2 text-right font-bold bg-slate-50">
+                                            R$ {reportData.reportSummaries.reduce((acc: number, curr: any) => acc + curr.financials.offer, 0).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="p-2 font-medium">Missões</td>
+                                        {reportData.reportSummaries.map((s: any, i: number) => (
+                                            <td key={i} className="p-2 text-right">R$ {s.financials.missions.toFixed(2)}</td>
+                                        ))}
+                                        <td className="p-2 text-right font-bold bg-slate-50">
+                                            R$ {reportData.reportSummaries.reduce((acc: number, curr: any) => acc + curr.financials.missions, 0).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                    <tr className="bg-slate-50 font-bold">
+                                        <td className="p-2">TOTAL GERAL</td>
+                                        {reportData.reportSummaries.map((s: any, i: number) => (
+                                            <td key={i} className="p-2 text-right">R$ {s.financials.total.toFixed(2)}</td>
+                                        ))}
+                                        <td className="p-2 text-right">
+                                            R$ {reportData.reportSummaries.reduce((acc: number, curr: any) => acc + curr.financials.total, 0).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                         {/* Member Attendance */}
+                         <div className="border rounded-lg overflow-hidden">
+                            <h4 className="bg-gray-100 p-2 font-bold text-sm border-b">Lista de Presença (Adultos) - Pro Rata</h4>
+                            <div className="max-h-60 overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-slate-50 sticky top-0">
+                                        <tr>
+                                            <th className="p-2 text-left">Membro</th>
+                                            {reportData.reportSummaries.map((s: any, i: number) => (
+                                                <th key={i} className="p-2 text-center text-xs">{s.date}</th>
+                                            ))}
+                                            <th className="p-2 text-center">Freq.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {reportData.adults.map((adult: any) => (
+                                            <tr key={adult.id}>
+                                                <td className="p-2">{adult.name}</td>
+                                                {reportData.reportSummaries.map((s: any) => (
+                                                    <td key={s.date} className="p-2 text-center text-xs">
+                                                        {adult.attendance[s.date] || '-'}
+                                                    </td>
+                                                ))}
+                                                <td className="p-2 text-center font-bold">
+                                                    {adult.stats.present}/{adult.stats.eligible}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-4 border-t">
+                            <button
+                                onClick={() => setIsSignatureModalOpen(false)}
+                                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium"
+                            >
+                                Voltar / Editar
+                            </button>
+
+                            <button
+                                onClick={handleConfirmSignature}
+                                disabled={actionLoading}
+                                className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                Confirmar Dados e Assinar
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

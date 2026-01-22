@@ -52,15 +52,6 @@ export default function LeaderScreen({ user, members, pendingReports = [] }: { u
     }
   }
 
-  const handleApprove = async (reportId: string) => {
-    const result = await approveReport(reportId)
-    if (result.success) {
-      toast.success('Relatório aprovado com sucesso!')
-    } else {
-      toast.error(result.error || 'Erro ao aprovar relatório')
-    }
-  }
-
   const isSameDay = (d1: Date, d2: Date) => {
     return d1.getDate() === d2.getDate() &&
            d1.getMonth() === d2.getMonth() &&

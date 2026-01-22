@@ -142,6 +142,9 @@ interface ReportData {
   reportSummaries: {
     date: string
     theme: string
+    cancelReason?: string
+    observations?: string
+    offerDetails?: string // Added
     present: number
     visitors: number
     financials: {
@@ -212,7 +215,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <Text style={[styles.headerText, { marginTop: 4, fontWeight: 'bold' }]}>Célula: {data?.cellName}</Text>
         </View>
         <View style={styles.headerColRight}>
-            <Text style={[styles.headerText, { fontSize: 12, fontWeight: 'bold' }]}>Mês/Ano: {data?.month} / {data?.year}</Text>
+            <Text style={[styles.headerText, { fontSize: 12, fontWeight: 'bold' }]}>Mês/Ano: {data?.month} de {data?.year}</Text>
             <Text style={styles.headerText}>Horário: {data?.time}</Text>
             <Text style={styles.headerText}>Coordenador: -</Text>
         </View>
@@ -246,6 +249,38 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             {summaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={[styles.valueText, { fontSize: 6 }]}>{s.theme.substring(0, 20)}</Text>
+                </View>
+            ))}
+            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
+            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
+        </View>
+
+        {/* Observations Row */}
+        <View style={styles.row}>
+            <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
+                <Text style={styles.labelBold}>Observações</Text>
+            </View>
+            {summaries.map((s, i) => (
+                <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
+                    <Text style={[styles.valueText, { fontSize: 6 }]}>
+                      {s.observations ? s.observations.substring(0, 30) : '-'}
+                    </Text>
+                </View>
+            ))}
+            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
+            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
+        </View>
+
+        {/* Offer Details Row */}
+        <View style={styles.row}>
+            <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
+                <Text style={styles.labelBold}>Detalhamento Oferta</Text>
+            </View>
+            {summaries.map((s, i) => (
+                <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
+                    <Text style={[styles.valueText, { fontSize: 6 }]}>
+                      {s.offerDetails ? s.offerDetails.substring(0, 30) : '-'}
+                    </Text>
                 </View>
             ))}
             {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
@@ -384,7 +419,11 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                 {dates.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
 
                 <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                    <Text style={styles.dataTextBold}>{adult.stats.present}</Text>
+                    <Text style={styles.dataTextBold}>
+                      {adult.stats.eligible > 0 
+                        ? `${Math.round((adult.stats.present / adult.stats.eligible) * 100)}%` 
+                        : '-'}
+                    </Text>
                 </View>
             </View>
         ))}

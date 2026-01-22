@@ -128,110 +128,195 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
   // Financial Summary State
   const [manualTotalOffer, setManualTotalOffer] = useState<string>('')
   const [manualTotalMissions, setManualTotalMissions] = useState<string>('')
+  
+  // Additional Fields
+  const [observations, setObservations] = useState('')
+  const [offerDetails, setOfferDetails] = useState('')
 
   // Initialize states
   useEffect(() => {
     // Adults
     const initialAdults: Record<string, AdultState> = {}
-    adults.forEach(p => {
-      initialAdults[p.id] = {
-        status: 'P', 
-        absenceReason: '',
-        offerValue: '',
-        titheValue: '',
-        missionsValue: '',
-        otherValue: ''
-      }
-    })
+    if (adults && Array.isArray(adults)) {
+      adults.forEach(p => {
+        initialAdults[p.id] = {
+          status: 'P', 
+          absenceReason: '',
+          offerValue: '',
+          titheValue: '',
+          missionsValue: '',
+          otherValue: ''
+        }
+      })
+    }
     setAdultAttendance(initialAdults)
 
     // Kids
     const initialKids: Record<string, KidState> = {}
-    kids.forEach(k => {
-      const existing = initialReport?.kidsPillars?.find((kp: any) => kp.userId === k.id)
-      initialKids[k.id] = {
-        church: existing?.church || false,
-        cell: existing?.cell || false,
-        homeWorship: existing?.homeWorship || false,
-        devotional: existing?.devotional || false,
-        challenge: existing?.challenge || false,
-        offerValue: existing?.offerValue ? String(existing.offerValue.toFixed(2)) : '',
-        titheValue: existing?.titheValue ? String(existing.titheValue.toFixed(2)) : '',
-        missionsValue: existing?.missionsValue ? String(existing.missionsValue.toFixed(2)) : '',
-        otherValue: existing?.otherValue ? String(existing.otherValue.toFixed(2)) : ''
-      }
-    })
+    if (kids && Array.isArray(kids)) {
+      kids.forEach(k => {
+        const existing = initialReport?.kidsPillars?.find((kp: any) => kp.userId === k.id)
+        initialKids[k.id] = {
+          church: existing?.church || false,
+          cell: existing?.cell || false,
+          homeWorship: existing?.homeWorship || false,
+          devotional: existing?.devotional || false,
+          challenge: existing?.challenge || false,
+          offerValue: existing?.offerValue ? String(existing.offerValue.toFixed(2)) : '',
+          titheValue: existing?.titheValue ? String(existing.titheValue.toFixed(2)) : '',
+          missionsValue: existing?.missionsValue ? String(existing.missionsValue.toFixed(2)) : '',
+          otherValue: existing?.otherValue ? String(existing.otherValue.toFixed(2)) : ''
+        }
+      })
+    }
     setKidPillars(initialKids)
   }, [adults, kids, initialReport])
 
-  // Load Report Data
+  // Helper para resetar o formulário
+  const resetForm = () => {
+    setStartTime('')
+    setEndTime('')
+    setStudyTheme('')
+    setIsMeetingCancelled(false)
+    setCancelReason('')
+    
+    // Reset Roster fields (will be refilled if roster exists)
+    setHostId('')
+    setDirectionId('')
+    setWorshipId('')
+    setEvangelismId('')
+    
+    // Reset Financials
+    setManualTotalOffer('')
+    setManualTotalMissions('')
+    setOfferDetails('')
+    
+    // Reset Visitors
+    setVisitors([])
+    setObservations('')
+
+    // Reset Adults
+    const initialAdults: Record<string, AdultState> = {}
+    if (adults && Array.isArray(adults)) {
+      adults.forEach(p => {
+        initialAdults[p.id] = {
+          status: 'P', 
+          absenceReason: '',
+          offerValue: '',
+          titheValue: '',
+          missionsValue: '',
+          otherValue: ''
+        }
+      })
+    }
+    setAdultAttendance(initialAdults)
+
+    // Reset Kids
+    const initialKids: Record<string, KidState> = {}
+    if (kids && Array.isArray(kids)) {
+      kids.forEach(k => {
+        initialKids[k.id] = {
+          church: false,
+          cell: false,
+          homeWorship: false,
+          devotional: false,
+          challenge: false,
+          offerValue: '',
+          titheValue: '',
+          missionsValue: '',
+          otherValue: ''
+        }
+      })
+    }
+    setKidPillars(initialKids)
+  }
+
   useEffect(() => {
     const fillForm = (report: any) => {
-        setStartTime(report.startTime)
-        setEndTime(report.endTime)
-        setStudyTheme(report.studyTheme)
-        setIsMeetingCancelled(report.status === 'NAO_HOUVE')
-        setCancelReason(report.cancelReason || '')
+        if (report.status === 'CANCELADA') {
+            setIsMeetingCancelled(true)
+            setCancelReason(report.cancelReason || '')
+            setDate(new Date(report.date).toISOString().split('T')[0])
+            return
+        }
 
-        // Roster Fields from Report
-        setHostId(report.hostId || '')
-        setDirectionId(report.directionId || '')
-        setWorshipId(report.worshipId || '')
-        setEvangelismId(report.evangelismId || '')
+        setIsMeetingCancelled(false)
+        setDate(new Date(report.date).toISOString().split('T')[0])
         
-        if (report.status !== 'NAO_HOUVE') {
-             // Update Attendance preserving structure
+        // Handle Start Time
+        let sTime = report.startTime || ''
+        if (!sTime && report.startedAt) {
+            const d = new Date(report.startedAt)
+            // Adjust to BRT if needed, but local time is usually what user expects
+            sTime = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        }
+        setStartTime(sTime)
+
+        // Handle End Time
+        let eTime = report.endTime || ''
+        if (!eTime && report.endedAt) {
+            const d = new Date(report.endedAt)
+            eTime = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        }
+        setEndTime(eTime)
+
+        setStudyTheme(report.studyTheme || '')
+        setObservations(report.observations || '')
+        setOfferDetails(report.offerDetails || '')
+        
+        setHostId(report.hostMemberId || '')
+        setDirectionId(report.directionMemberId || '')
+        setWorshipId(report.worshipMemberId || '')
+        setEvangelismId(report.evangelismMemberId || '')
+
+        setManualTotalOffer(report.offerValue ? String(report.offerValue.toFixed(2)) : '')
+        setManualTotalMissions(report.missionsValue ? String(report.missionsValue.toFixed(2)) : '')
+
+        if (report.visitors) {
+            setVisitors(report.visitors)
+        }
+
+        // Fill Adults
+        if (report.attendance) {
              setAdultAttendance(prev => {
-                const next = { ...prev }
-                if (report.attendance) {
-                    report.attendance.forEach((att: any) => {
-                        if (next[att.userId]) {
-                            next[att.userId] = {
-                                status: att.status as any,
-                                absenceReason: att.absenceReason || '',
-                                titheValue: att.titheValue !== undefined ? Number(att.titheValue).toFixed(2) : '',
-                                missionsValue: att.missionsValue !== undefined ? Number(att.missionsValue).toFixed(2) : '',
-                                otherValue: att.otherValue !== undefined ? Number(att.otherValue).toFixed(2) : '',
-                                offerValue: att.offerValue !== undefined ? Number(att.offerValue).toFixed(2) : ''
-                            }
-                        }
-                    })
-                }
-                return next
+                 const newAdults = { ...prev }
+                 report.attendance.forEach((att: any) => {
+                     if (newAdults[att.userId]) {
+                         newAdults[att.userId] = {
+                             status: att.status,
+                             absenceReason: att.absenceReason || '',
+                             offerValue: att.offerValue ? String(att.offerValue.toFixed(2)) : '',
+                             titheValue: att.titheValue ? String(att.titheValue.toFixed(2)) : '',
+                             missionsValue: att.missionsValue ? String(att.missionsValue.toFixed(2)) : '',
+                             otherValue: att.otherValue ? String(att.otherValue.toFixed(2)) : ''
+                         }
+                     }
+                 })
+                 return newAdults
              })
+        }
 
-             // Update Kids
-             setKidPillars(prev => {
-                const next = { ...prev }
-                if (report.kidsPillars) {
-                    report.kidsPillars.forEach((kid: any) => {
-                        if (next[kid.userId]) {
-                            next[kid.userId] = {
-                                church: kid.church,
-                                cell: kid.cell,
-                                homeWorship: kid.homeWorship,
-                                devotional: kid.devotional,
-                                challenge: kid.challenge,
-                                offerValue: kid.offerValue !== undefined ? Number(kid.offerValue).toFixed(2) : '',
-                                titheValue: kid.titheValue !== undefined ? Number(kid.titheValue).toFixed(2) : '',
-                                missionsValue: kid.missionsValue !== undefined ? Number(kid.missionsValue).toFixed(2) : '',
-                                otherValue: kid.otherValue !== undefined ? Number(kid.otherValue).toFixed(2) : ''
-                            }
+        // Fill Kids
+        if (report.kidsPillars) {
+            setKidPillars(prev => {
+                const newKids = { ...prev }
+                report.kidsPillars.forEach((kp: any) => {
+                    if (newKids[kp.userId]) {
+                        newKids[kp.userId] = {
+                            church: kp.church,
+                            cell: kp.cell,
+                            homeWorship: kp.homeWorship,
+                            devotional: kp.devotional,
+                            challenge: kp.challenge,
+                            offerValue: kp.offerValue ? String(kp.offerValue.toFixed(2)) : '',
+                            titheValue: kp.titheValue ? String(kp.titheValue.toFixed(2)) : '',
+                            missionsValue: kp.missionsValue ? String(kp.missionsValue.toFixed(2)) : '',
+                            otherValue: kp.otherValue ? String(kp.otherValue.toFixed(2)) : ''
                         }
-                    })
-                }
-                return next
-             })
-
-             // Visitors
-             if (report.visitors) {
-                 setVisitors(report.visitors.map((v: any) => ({
-                     id: v.id,
-                     name: v.name,
-                     phone: v.phone,
-                     type: v.type
-                 })))
-             }
+                    }
+                })
+                return newKids
+            })
         }
     }
 
@@ -252,30 +337,42 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
             if ('report' in result && result.report) {
                 fillForm(result.report)
             } else {
-                // Report not found, try to fetch Roster to pre-fill
+                // Report not found
+                resetForm()
+                
+                // Try to fetch Roster to pre-fill
                 // Only if we are on the initial date and have prop, OR fetch dynamically
+                let roster = null
+                
                 if (initialDate === date && rosterData) {
-                    setHostId(rosterData.hostMemberId || '')
-                    setDirectionId(rosterData.directionMemberId || '')
-                    setWorshipId(rosterData.worshipMemberId || '')
-                    setEvangelismId(rosterData.evangelismMemberId || '')
+                    roster = rosterData
                 } else {
                     // Fetch dynamic roster
                     const [y, m, d] = date.split('-').map(Number)
                     const safeDate = new Date(y, m - 1, d, 12, 0, 0)
-                    const roster = await getRosterForDate(cellId, safeDate)
-                    if (roster) {
-                        setHostId(roster.hostMemberId || '')
-                        setDirectionId(roster.directionMemberId || '')
-                        setWorshipId(roster.worshipMemberId || '')
-                        setEvangelismId(roster.evangelismMemberId || '')
+                    roster = await getRosterForDate(cellId, safeDate)
+                }
+
+                if (roster) {
+                    setHostId(roster.hostMemberId || '')
+                    setDirectionId(roster.directionMemberId || '')
+                    setWorshipId(roster.worshipMemberId || '')
+                    setEvangelismId(roster.evangelismMemberId || '')
+                    
+                    // Smart Fill: Offer Prediction
+                    // "Se houver previsão, senão deixe zerado"
+                    if (roster.offerPrediction && roster.offerPrediction > 0) {
+                        setManualTotalOffer(String(roster.offerPrediction.toFixed(2)))
                     } else {
-                        // Clear fields if no roster
-                        setHostId('')
-                        setDirectionId('')
-                        setWorshipId('')
-                        setEvangelismId('')
+                        setManualTotalOffer('') 
                     }
+                } else {
+                    // Clear fields if no roster
+                    setHostId('')
+                    setDirectionId('')
+                    setWorshipId('')
+                    setEvangelismId('')
+                    setManualTotalOffer('')
                 }
             }
         } catch (error) {
@@ -300,10 +397,28 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
 
   // Handlers: Adults
   const updateAdultStatus = (userId: string, status: 'P' | 'F' | 'FJ') => {
-    setAdultAttendance(prev => ({
-      ...prev,
-      [userId]: { ...prev[userId], status }
-    }))
+    setAdultAttendance(prev => {
+        const newState = { ...prev[userId], status }
+        
+        // Regra 2: Falta = Valor Zero
+        if (status === 'F' || status === 'FJ') {
+            newState.offerValue = ''
+            newState.titheValue = ''
+            newState.missionsValue = ''
+            newState.otherValue = ''
+        }
+        
+        // Regra 3: Validação de Justificativa
+        // Se status == 'F', limpa justificativa
+        if (status === 'F') {
+            newState.absenceReason = ''
+        }
+        
+        return {
+            ...prev,
+            [userId]: newState
+        }
+    })
   }
 
   const updateAdultReason = (userId: string, reason: string) => {
@@ -382,7 +497,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
 
     // Validate Absences Reason
     for (const [userId, state] of Object.entries(adultAttendance)) {
-      if ((state.status === 'F' || state.status === 'FJ') && !state.absenceReason.trim()) {
+      if (state.status === 'FJ' && !state.absenceReason.trim()) {
         const user = adults.find(a => a.id === userId)
         if (user) {
           setError(`Por favor, informe o motivo da falta para ${user.nome}.`)
@@ -432,6 +547,8 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
         attendance: attendanceData,
         kidsPillars: kidsData,
         status,
+        observations,
+        offerDetails,
         // Roster Fields
         hostId,
         directionId,
@@ -603,7 +720,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Selecione...</option>
-                    {adults.map(m => (
+                    {adults?.map(m => (
                       <option key={m.id} value={m.id}>{m.nome}</option>
                     ))}
                   </select>
@@ -618,7 +735,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Selecione...</option>
-                    {adults.map(m => (
+                    {adults?.map(m => (
                       <option key={m.id} value={m.id}>{m.nome}</option>
                     ))}
                   </select>
@@ -633,7 +750,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Selecione...</option>
-                    {adults.map(m => (
+                    {adults?.map(m => (
                       <option key={m.id} value={m.id}>{m.nome}</option>
                     ))}
                   </select>
@@ -648,7 +765,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   >
                     <option value="">Selecione...</option>
-                    {adults.map(m => (
+                    {adults?.map(m => (
                       <option key={m.id} value={m.id}>{m.nome}</option>
                     ))}
                   </select>
@@ -665,8 +782,45 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
           </h3>
           
           <div className="space-y-4">
-            {adults.map(adult => {
+            {adults?.map(adult => {
               const state = adultAttendance[adult.id] || { status: 'P', absenceReason: '', offerValue: '', titheValue: '', missionsValue: '', otherValue: '' }
+              
+              // Pro-rata Check: Is the meeting date before the member joined?
+              let isBeforeJoin = false
+              if (adult.joinedAt) {
+                  // Compare YYYY-MM-DD
+                  const meetingDate = date // already YYYY-MM-DD string
+                  const joinDate = new Date(adult.joinedAt).toISOString().split('T')[0]
+                  if (meetingDate < joinDate) {
+                      isBeforeJoin = true
+                  }
+              }
+
+              if (isBeforeJoin) {
+                  return (
+                    <div key={adult.id} className="p-4 rounded-lg border border-gray-100 bg-gray-50 opacity-60">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 font-bold text-sm">
+                                    {adult.nome.substring(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="font-medium text-gray-500">{adult.nome}</p>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <span className="px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">
+                                            Não era membro
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-xs text-gray-400 italic">
+                                Entrada: {new Date(adult.joinedAt!).toLocaleDateString('pt-BR')}
+                            </div>
+                        </div>
+                    </div>
+                  )
+              }
+
               const isAbsent = state.status === 'F' || state.status === 'FJ'
 
               return (
@@ -714,8 +868,8 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                           type="text" 
                           value={state.absenceReason}
                           onChange={(e) => updateAdultReason(adult.id, e.target.value)}
-                          placeholder="Motivo da falta (Obrigatório)"
-                          disabled={readonly}
+                          placeholder={state.status === 'F' ? 'Sem justificativa necessária' : 'Motivo da falta (Obrigatório)'}
+                          disabled={readonly || state.status === 'F'}
                           className="w-full p-2 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-2 focus:ring-red-200 outline-none placeholder:text-red-300 disabled:opacity-50"
                         />
                       </div>
@@ -988,6 +1142,36 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
               </div>
             </div>
           </div>
+
+          <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Detalhamento da Oferta</label>
+              <textarea
+                value={offerDetails}
+                onChange={(e) => setOfferDetails(e.target.value)}
+                placeholder="Ex: R$ 50,00 Pix (Fulano), R$ 20,00 Espécie..."
+                disabled={readonly}
+                className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                rows={2}
+              />
+          </div>
+        </section>
+
+        <hr className="border-gray-100" />
+
+        {/* Observações Gerais */}
+        <section className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FileEdit className="w-5 h-5 text-gray-600" />
+              Observações Gerais
+            </h3>
+            <textarea
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+                placeholder="Alguma observação importante sobre a reunião?"
+                disabled={readonly}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                rows={3}
+            />
         </section>
         </>
         )}
@@ -1019,28 +1203,18 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
               disabled={isSubmitting || success}
               className="px-6 py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
-              <FileEdit className="w-5 h-5" />
-              Salvar Rascunho
+              <Save className="w-5 h-5" />
+              Salvar
             </button>
 
             <button 
               type="button" 
-              onClick={() => handleSubmit('ENVIADO_LIDER', 'next')}
-              disabled={isSubmitting || success}
-              className="px-6 py-3 bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold rounded-xl hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2"
-            >
-              <ArrowRight className="w-5 h-5" />
-              {isMeetingCancelled ? 'Confirmar e Próxima' : 'Salvar e Próxima'}
-            </button>
-
-            <button 
-              type="button" 
-              onClick={() => handleSubmit('ENVIADO_LIDER')}
+              onClick={() => handleSubmit('RASCUNHO', 'next')}
               disabled={isSubmitting || success}
               className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
             >
-              <Send className="w-5 h-5" />
-              {isMeetingCancelled ? 'Confirmar Cancelamento' : 'Enviar para o Líder'}
+              <ArrowRight className="w-5 h-5" />
+              {isMeetingCancelled ? 'Confirmar e Próxima' : 'Salvar e Próxima'}
             </button>
           </>
         )}

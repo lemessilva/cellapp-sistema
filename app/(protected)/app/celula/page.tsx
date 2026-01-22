@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { MapPin, Calendar, Clock, User, Users, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { StartLiveMeetingButton } from '@/components/live/StartLiveMeetingButton'
 
 export default async function MemberCellPage() {
   const user = await getUser()
@@ -16,6 +17,7 @@ export default async function MemberCellPage() {
   }
 
   const celula = user.celula
+  const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN', 'LIDER_EM_TREINAMENTO'].includes(user.role)
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -46,6 +48,13 @@ export default async function MemberCellPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
+          {/* Start Meeting Button */}
+          {canStartMeeting && (
+             <div className="md:col-span-2">
+                <StartLiveMeetingButton cellId={celula.id} />
+             </div>
+          )}
+
           {/* Cartão Principal da Célula */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:col-span-2">
             <div className="flex items-start justify-between mb-6">

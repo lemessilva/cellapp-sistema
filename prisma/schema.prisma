@@ -26,6 +26,7 @@ enum ReportStatus {
   ENVIADO_LIDER
   APROVADO
   NAO_HOUVE
+  EM_ANDAMENTO
 }
 
 enum ResourceType {
@@ -136,6 +137,7 @@ model User {
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  joinedAt        DateTime  @default(now())
 
   // Growth Track
   growthProgress MemberGrowthProgress[]
@@ -365,7 +367,12 @@ model MeetingReport {
   endTime         String?      // "HH:mm"
   studyTheme      String?
   observations    String?      // Observações gerais
+  offerDetails    String?      // Detalhamento de Oferta
   cancelReason    String?      // Se status == NAO_HOUVE
+  
+  // Live Meeting (Secretário)
+  startedAt       DateTime?    // Hora que o secretário deu play
+  endedAt         DateTime?    // Hora que finalizou
   
   // Escala Realizada
   hostId           String?
@@ -562,6 +569,9 @@ model MeetingRoster {
   latitude      Float?
   longitude     Float?
   
+  // Financeiro (Previsão)
+  offerPrediction Float    @default(0)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
