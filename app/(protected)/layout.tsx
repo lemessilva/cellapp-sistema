@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import AppNavigation from '@/components/AppNavigation'
 import MainLayout from '@/components/MainLayout'
@@ -11,23 +12,43 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getUser()
+  // 1. Validação de Sessão Básica (Token)
+  const sessionUser = await getUser()
 
-  if (!user) {
+  if (!sessionUser) {
     redirect('/login')
   }
 
-  if (!user.dados_completos) {
+  // 2. Busca Server-Side em Tempo Real (Garante Role atualizada)
+  const currentUser = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: {
+      id: true,
+      role: true,
+      dados_completos: true,
+      celula: {
+        select: {
+          secretarioId: true
+        }
+      }
+    }
+  })
+
+  if (!currentUser) {
+    redirect('/login')
+  }
+
+  if (!currentUser.dados_completos) {
     redirect('/completar-cadastro')
   }
 
-  const isSecretary = user.celula?.secretarioId === user.id
+  const isSecretary = currentUser.celula?.secretarioId === currentUser.id
 
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-slate-50">
-        <Header userId={user.id} />
-        <AppNavigation role={user.role} isSecretary={isSecretary} />
+        <Header userId={currentUser.id} />
+        <AppNavigation role={currentUser.role} isSecretary={isSecretary} />
         
         <MainLayout>
           {children}

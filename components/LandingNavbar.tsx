@@ -40,9 +40,6 @@ export function LandingNavbar({
                 </span>
               </div>
             )}
-            <span className={`font-bold tracking-tight ${isMobilePreview ? 'text-lg' : 'text-xl'}`}>
-              {churchName}
-            </span>
           </div>
 
           <div className={`${isMobilePreview ? 'hidden' : 'hidden md:flex'} items-center space-x-8`}>

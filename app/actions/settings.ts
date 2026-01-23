@@ -30,10 +30,22 @@ export async function updateCellSettings(cellId: string, data: {
       }
     })
 
+    // Mapeamento de dias para normalização
+    const diaSemanaMap: Record<string, string> = {
+      'Domingo': 'DOMINGO',
+      'Segunda-feira': 'SEGUNDA',
+      'Terça-feira': 'TERCA',
+      'Quarta-feira': 'QUARTA',
+      'Quinta-feira': 'QUINTA',
+      'Sexta-feira': 'SEXTA',
+      'Sábado': 'SABADO'
+    }
+
     await prisma.cell.update({
       where: { id: cellId },
       data: {
         dia_reuniao: data.dia_reuniao,
+        diaSemana: diaSemanaMap[data.dia_reuniao] || null,
         horario: data.horario,
         endereco: data.endereco,
         tesoureiroId: data.tesoureiroId || null,
@@ -114,6 +126,7 @@ export async function getCellSettings(cellId: string) {
             settings: {
                 dia_reuniao: cell.dia_reuniao,
                 horario: cell.horario,
+                endereco: cell.endereco,
                 tesoureiroId: cell.tesoureiroId,
                 secretarioId: cell.secretarioId,
                 louvorId: cell.louvorId,

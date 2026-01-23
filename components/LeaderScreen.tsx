@@ -11,6 +11,7 @@ import { CellSettingsModal } from '@/components/settings/CellSettingsModal'
 import RosterManager from '@/components/roster/RosterManager'
 import { PrayerCalendarPDF } from '@/components/reports/PrayerCalendarPDF'
 import MemberGrowthModal from '@/components/growth/MemberGrowthModal'
+import { StartLiveMeetingButton } from '@/components/live/StartLiveMeetingButton'
 import dynamic from 'next/dynamic'
 import { PhoneInput } from '@/components/ui/phone-input'
 
@@ -92,6 +93,11 @@ export default function LeaderScreen({ user, members, pendingReports = [] }: { u
             </button>
         )}
       </header>
+
+      {/* Start Live Meeting Button */}
+      {cell && (
+        <StartLiveMeetingButton cellId={cell.id} />
+      )}
 
       {/* Relatórios Pendentes */}
       {pendingReports.length > 0 && (

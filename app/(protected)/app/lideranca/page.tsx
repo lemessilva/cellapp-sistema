@@ -15,22 +15,33 @@ export default async function LeaderPage() {
     redirect('/app/oracao')
   }
 
-  // Buscar dados frescos da célula e membros
-  // Assumindo que o user tem celulaLiderada (se for líder)
-  // Ou se for supervisor, buscar células supervisionadas (simplificação: focar em Líder de Célula agora)
-  
-  let cellId = user.celulaLiderada?.id
-  
-  // Se não veio no getUser (relação), buscar explicitamente
-  if (!cellId) {
-      const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          include: { celulaLiderada: true }
+  // Buscar a célula onde o usuário é líder OU membro (Lógica Robusta + Fallback Admin)
+  let targetCell = await prisma.cell.findFirst({
+    where: {
+        OR: [
+            { liderId: user.id },
+            { lider2Id: user.id },
+            { membros: { some: { id: user.id } } }
+        ]
+    },
+    include: {
+        lider: { select: { nome: true } },
+        supervisor: { select: { nome: true } }
+    }
+  })
+
+  // Fallback para ADMIN: Se não tiver célula, pega a primeira disponível
+  if (!targetCell && user.role === 'ADMIN') {
+      targetCell = await prisma.cell.findFirst({
+          orderBy: { nome: 'asc' },
+          include: {
+              lider: { select: { nome: true } },
+              supervisor: { select: { nome: true } }
+          }
       })
-      cellId = dbUser?.celulaLiderada?.id
   }
 
-  if (!cellId) {
+  if (!targetCell) {
       return (
           <div className="p-8 text-center">
               <h1 className="text-xl font-bold text-slate-900">Acesso Restrito</h1>
@@ -43,6 +54,8 @@ export default async function LeaderPage() {
           </div>
       )
   }
+
+  const cellId = targetCell.id
 
   // Buscar membros e status de oração
   const today = new Date()
@@ -69,17 +82,16 @@ export default async function LeaderPage() {
   })
 
   // Recarregar user com celulaLiderada garantida para passar pro componente
-  const fullUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { 
-        celulaLiderada: {
-            include: {
-                supervisor: { select: { nome: true } },
-                lider: { select: { nome: true } }
-            }
-        }
-      }
+  // NOTA: Injetamos manualmente a 'targetCell' encontrada pela lógica robusta acima
+  // para garantir que Admins ou Membros vejam a célula correta, mesmo que não sejam o líder oficial no DB.
+  const dbUser = await prisma.user.findUnique({
+      where: { id: user.id }
   })
+
+  const fullUser = {
+      ...dbUser,
+      celulaLiderada: targetCell
+  }
 
   // Buscar relatórios pendentes de aprovação
   const pendingReports = await prisma.meetingReport.findMany({

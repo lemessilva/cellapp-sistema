@@ -538,46 +538,39 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
 export async function getMeetingData(userId: string) {
     try {
         const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: {
-                celulaLiderada: { 
-                    include: {
-                        membros: {
-                            where: { ativo: true },
-                            orderBy: { nome: 'asc' }
-                        }
-                    }
-                },
-                celulaLiderada2: { 
-                    include: {
-                        membros: {
-                            where: { ativo: true },
-                            orderBy: { nome: 'asc' }
-                        }
-                    }
-                },
-                celula: { 
-                    include: {
-                        membros: {
-                            where: { ativo: true },
-                            orderBy: { nome: 'asc' }
-                        }
-                    }
-                }
-            }
+            where: { id: userId }
         })
 
         if (!user) return { error: 'Usuário não encontrado' }
 
-        let targetCell = null;
+        // Busca robusta: Lider OU Lider2 OU Membro
+        let targetCell = await prisma.cell.findFirst({
+            where: {
+                OR: [
+                    { liderId: userId },
+                    { lider2Id: userId },
+                    { membros: { some: { id: userId } } }
+                ]
+            },
+            include: {
+                membros: {
+                    where: { ativo: true },
+                    orderBy: { nome: 'asc' }
+                }
+            }
+        })
 
-        // Priority: Lider > Lider2 > Membro/Secretario
-        if (user.celulaLiderada) {
-            targetCell = user.celulaLiderada
-        } else if (user.celulaLiderada2) {
-            targetCell = user.celulaLiderada2
-        } else if (user.celula) {
-            targetCell = user.celula
+        // Fallback para ADMIN: Se não tiver célula, pega a primeira disponível
+        if (!targetCell && user.role === 'ADMIN') {
+            targetCell = await prisma.cell.findFirst({
+                orderBy: { nome: 'asc' },
+                include: {
+                    membros: {
+                        where: { ativo: true },
+                        orderBy: { nome: 'asc' }
+                    }
+                }
+            })
         }
 
         if (targetCell) {

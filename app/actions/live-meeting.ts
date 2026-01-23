@@ -3,6 +3,43 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { sendNotification } from "./notifications"
+import { startOfWeek, endOfWeek, format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+
+export async function getWeeklyScheduledMeetings(cellId: string, currentReportId: string) {
+    try {
+        const today = new Date()
+        const start = startOfWeek(today, { locale: ptBR }) // Sunday
+        const end = endOfWeek(today, { locale: ptBR })     // Saturday
+
+        const meetings = await prisma.meetingReport.findMany({
+            where: {
+                cellId,
+                status: 'RASCUNHO',
+                date: {
+                    gte: start,
+                    lte: end
+                },
+                id: {
+                    not: currentReportId // Exclude current live one if it's somehow draft (though live is EM_ANDAMENTO)
+                }
+            },
+            orderBy: {
+                date: 'asc'
+            }
+        })
+
+        return meetings.map(m => ({
+            id: m.id,
+            date: m.date,
+            formattedDate: format(m.date, "EEEE, dd/MM", { locale: ptBR }),
+            studyTheme: m.studyTheme
+        }))
+    } catch (error) {
+        console.error('Error fetching scheduled meetings:', error)
+        return []
+    }
+}
 
 export async function startLiveMeeting(cellId: string, date: string) {
   try {
@@ -134,16 +171,20 @@ export async function checkLiveStatus(cellId: string) {
 export async function finishLiveMeeting(
   reportId: string, 
   attendanceData: Record<string, any>, 
-  financials: { offer: number; missions: number }
+  financials: { offer: number; missions: number },
+  targetReportId?: string
 ) {
   try {
     // Fetch report to get cellId
     const report = await prisma.meetingReport.findUnique({
       where: { id: reportId },
-      select: { cellId: true }
+      select: { cellId: true, startedAt: true }
     })
 
     if (!report) return { error: 'Relatório não encontrado' }
+
+    // If target provided, use that ID, otherwise use current
+    const finalReportId = targetReportId || reportId
 
     // Fetch all active members to determine category (Adult vs Kid)
     const members = await prisma.user.findMany({
@@ -172,10 +213,7 @@ export async function finishLiveMeeting(
         
         // Accumulate totals for header
         if (isPresent) {
-            if (category === 'ADULTO') presentCount++ // Only adults count for main presence? Or both? Usually both or just adults.
-            // Let's count adults for now as per usual metric, or maybe total?
-            // MeetingReport.presentMembers usually refers to adults/members.
-            // Let's stick to simple count for now.
+            if (category === 'ADULTO') presentCount++ 
             
             totalOffer += Number(data.offerValue || 0)
             totalMissions += Number(data.missionsValue || 0)
@@ -186,12 +224,12 @@ export async function finishLiveMeeting(
             await tx.meetingKidsPillars.upsert({
                 where: {
                     reportId_userId: {
-                        reportId: reportId,
+                        reportId: finalReportId,
                         userId: userId
                     }
                 },
                 create: {
-                    reportId: reportId,
+                    reportId: finalReportId,
                     userId,
                     cell: isPresent, 
                     church: data.church || false,
@@ -220,12 +258,12 @@ export async function finishLiveMeeting(
             await tx.meetingAttendance.upsert({
                 where: {
                     reportId_userId: {
-                        reportId: reportId,
+                        reportId: finalReportId,
                         userId
                     }
                 },
                 create: {
-                    reportId: reportId,
+                    reportId: finalReportId,
                     userId,
                     status,
                     offerValue: Number(data.offerValue || 0),
@@ -244,17 +282,25 @@ export async function finishLiveMeeting(
         }
       }
 
-      // 2. Update Report
+      // 2. Update Final Report
       await tx.meetingReport.update({
-        where: { id: reportId },
+        where: { id: finalReportId },
         data: {
           status: 'RASCUNHO', // Back to draft for leader
+          startedAt: report.startedAt || new Date(), // Keep original start time if moving
           endedAt: new Date(),
           offerValue: totalOffer,
           missionsValue: totalMissions,
           presentMembers: presentCount
         }
       })
+
+      // 3. Delete temporary report if target was used
+      if (targetReportId && targetReportId !== reportId) {
+          await tx.meetingReport.delete({
+              where: { id: reportId }
+          })
+      }
     })
 
     revalidatePath('/app')

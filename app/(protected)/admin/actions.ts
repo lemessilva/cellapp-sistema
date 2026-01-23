@@ -102,10 +102,18 @@ export async function updateUserRoleAndCells({
     })
 
     // Send Notification
+    let message = `Seu nível de acesso foi atualizado para ${role}.`
+    if (role === 'LIDER' && liderancaCellId) {
+       const cell = await prisma.cell.findUnique({ where: { id: liderancaCellId }, select: { nome: true } })
+       if (cell) message = `Você agora é LIDER da célula ${cell.nome}.`
+    } else if (role === 'SUPERVISOR') {
+       message = `Você agora é SUPERVISOR.`
+    }
+
     await sendNotification({
       userId: userId,
       title: "Novos Horizontes! 🚀",
-      message: `Seu nível de acesso foi atualizado para ${role}.`,
+      message: message,
       type: "ROLE",
       link: "/perfil",
       metaData: { role }

@@ -15,6 +15,18 @@ export async function saveCell(formData: FormData) {
   const supervisorId = formData.get('supervisorId') as string
   const supervisor2Id = formData.get('supervisor2Id') as string
 
+  // Mapeamento de dias para normalização
+  const diaSemanaMap: Record<string, string> = {
+    'Domingo': 'DOMINGO',
+    'Segunda-feira': 'SEGUNDA',
+    'Terça-feira': 'TERCA',
+    'Quarta-feira': 'QUARTA',
+    'Quinta-feira': 'QUINTA',
+    'Sexta-feira': 'SEXTA',
+    'Sábado': 'SABADO'
+  }
+  const diaSemana = diaSemanaMap[dia_reuniao] || null
+
   // New Role Fields
   const tesoureiroId = formData.get('tesoureiroId') as string
   const intercessorId = formData.get('intercessorId') as string
@@ -110,7 +122,11 @@ export async function saveCell(formData: FormData) {
           secretarioId: true,
           louvorId: true,
           eventosId: true,
-          intercessorId: true
+          intercessorId: true,
+          liderId: true,
+          lider2Id: true,
+          supervisorId: true,
+          supervisor2Id: true
         }
       })
 
@@ -119,6 +135,7 @@ export async function saveCell(formData: FormData) {
         data: {
           nome,
           dia_reuniao,
+          diaSemana,
           horario,
           endereco,
           liderId: liderId || null,
@@ -140,7 +157,11 @@ export async function saveCell(formData: FormData) {
           { key: 'secretarioId', label: 'Secretário', newVal: secretarioId },
           { key: 'louvorId', label: 'Líder de Louvor', newVal: louvorId },
           { key: 'eventosId', label: 'Líder de Eventos', newVal: eventosId },
-          { key: 'intercessorId', label: 'Intercessor', newVal: intercessorId }
+          { key: 'intercessorId', label: 'Intercessor', newVal: intercessorId },
+          { key: 'liderId', label: 'Líder', newVal: liderId },
+          { key: 'lider2Id', label: 'Co-Líder', newVal: lider2Id },
+          { key: 'supervisorId', label: 'Supervisor', newVal: supervisorId },
+          { key: 'supervisor2Id', label: 'Co-Supervisor', newVal: supervisor2Id }
         ]
 
         for (const role of rolesToCheck) {
@@ -172,6 +193,7 @@ export async function saveCell(formData: FormData) {
         data: {
           nome,
           dia_reuniao,
+          diaSemana,
           horario,
           endereco,
           liderId: liderId || null,
@@ -192,7 +214,11 @@ export async function saveCell(formData: FormData) {
           { id: secretarioId, label: 'Secretário' },
           { id: louvorId, label: 'Líder de Louvor' },
           { id: eventosId, label: 'Líder de Eventos' },
-          { id: intercessorId, label: 'Intercessor' }
+          { id: intercessorId, label: 'Intercessor' },
+          { id: liderId, label: 'Líder' },
+          { id: lider2Id, label: 'Co-Líder' },
+          { id: supervisorId, label: 'Supervisor' },
+          { id: supervisor2Id, label: 'Co-Supervisor' }
       ]
 
       for (const role of rolesToNotify) {

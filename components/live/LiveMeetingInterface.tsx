@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { finishLiveMeeting } from '@/app/actions/live-meeting'
+import { finishLiveMeeting, getWeeklyScheduledMeetings } from '@/app/actions/live-meeting'
 import { toast } from 'sonner'
 import { Loader2, Check, X, DollarSign, Clock, Users, StopCircle, ChevronDown, ChevronUp, Baby, BookOpen, Home, Trophy, Church } from 'lucide-react'
 import Image from 'next/image'
+
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 interface LiveMeetingInterfaceProps {
   user: any
@@ -15,11 +18,28 @@ interface LiveMeetingInterfaceProps {
   }
 }
 
+const formatInitialValue = (value: number | string | null) => {
+  if (!value) return ''
+  const num = Number(value)
+  if (isNaN(num)) return ''
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const parseCurrency = (value: string) => {
+    if (!value) return 0
+    const clean = value.replace(/\./g, '').replace(',', '.')
+    return Number(clean)
+}
+
 export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [checkingSchedule, setCheckingSchedule] = useState(false)
   const [elapsed, setElapsed] = useState('00:00:00')
   const [expandedMember, setExpandedMember] = useState<string | null>(null)
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false)
+  const [scheduledMeetings, setScheduledMeetings] = useState<any[]>([])
+  const [selectedTargetId, setSelectedTargetId] = useState<string>('new')
   
   // Initialize state from existing data if any (though usually fresh start)
   const [attendance, setAttendance] = useState<Record<string, any>>(() => {
@@ -35,10 +55,10 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
           homeWorship: existing?.homeWorship || false,
           devotional: existing?.devotional || false,
           challenge: existing?.challenge || false,
-          offerValue: existing?.offerValue || '',
-          titheValue: existing?.titheValue || '',
-          missionsValue: existing?.missionsValue || '',
-          otherValue: existing?.otherValue || ''
+          offerValue: formatInitialValue(existing?.offerValue),
+          titheValue: formatInitialValue(existing?.titheValue),
+          missionsValue: formatInitialValue(existing?.missionsValue),
+          otherValue: formatInitialValue(existing?.otherValue)
         }
       } else {
         // Adult
@@ -46,10 +66,10 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
         initial[m.id] = {
           isKid: false,
           status: existing?.status || 'P',
-          offerValue: existing?.offerValue || '',
-          titheValue: existing?.titheValue || '',
-          missionsValue: existing?.missionsValue || '',
-          otherValue: existing?.otherValue || ''
+          offerValue: formatInitialValue(existing?.offerValue),
+          titheValue: formatInitialValue(existing?.titheValue),
+          missionsValue: formatInitialValue(existing?.missionsValue),
+          otherValue: formatInitialValue(existing?.otherValue)
         }
       }
     })
@@ -120,27 +140,77 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
   }
 
   const updateFinancial = (userId: string, field: string, value: string) => {
+    // Currency Mask
+    const digits = value.replace(/\D/g, '')
+    if (!digits) {
+      setAttendance(prev => ({
+        ...prev,
+        [userId]: { ...prev[userId], [field]: '' }
+      }))
+      return
+    }
+    const numberValue = Number(digits) / 100
+    const formatted = numberValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    
     setAttendance(prev => ({
       ...prev,
-      [userId]: { ...prev[userId], [field]: value }
+      [userId]: { ...prev[userId], [field]: formatted }
     }))
   }
 
-  const handleFinish = async () => {
-    if (!confirm('Deseja realmente encerrar a célula?')) return
+  const handleCheckAndOpenEndDialog = async () => {
+    setCheckingSchedule(true)
+    try {
+        const matches = await getWeeklyScheduledMeetings(data.report.cellId, data.report.id)
+        setScheduledMeetings(matches)
+        
+        // If matches found, default to the first one (most likely intent if within week)
+        // Or default to 'new' if we want to be safe. 
+        // User requested: "Se ele selecionar a reunião do dia 21...". 
+        // Let's default to the first match if available to encourage linking.
+        if (matches.length > 0) {
+            setSelectedTargetId(matches[0].id)
+        } else {
+            setSelectedTargetId('new')
+        }
+        
+        setIsEndDialogOpen(true)
+    } catch (error) {
+        console.error("Error checking schedule", error)
+        // Fallback open
+        setIsEndDialogOpen(true)
+    } finally {
+        setCheckingSchedule(false)
+    }
+  }
 
+  const handleFinish = async () => {
     setLoading(true)
     
-    // Calculate totals just for cache/display? Backend does it too.
-    const result = await finishLiveMeeting(data.report.id, attendance, { offer: 0, missions: 0 })
+    // Prepare data by parsing currency strings back to numbers
+    const finalAttendance: Record<string, any> = {}
+    
+    Object.entries(attendance).forEach(([userId, data]) => {
+        finalAttendance[userId] = {
+            ...data,
+            offerValue: typeof data.offerValue === 'string' ? parseCurrency(data.offerValue) : data.offerValue,
+            titheValue: typeof data.titheValue === 'string' ? parseCurrency(data.titheValue) : data.titheValue,
+            missionsValue: typeof data.missionsValue === 'string' ? parseCurrency(data.missionsValue) : data.missionsValue,
+            otherValue: typeof data.otherValue === 'string' ? parseCurrency(data.otherValue) : data.otherValue
+        }
+    })
+
+    const targetId = selectedTargetId === 'new' ? undefined : selectedTargetId
+    const result = await finishLiveMeeting(data.report.id, finalAttendance, { offer: 0, missions: 0 }, targetId)
     
     if (result.success) {
       toast.success('Célula finalizada com sucesso!')
       router.push('/app/celula')
     } else {
       toast.error(result.error || 'Erro ao finalizar')
+      setLoading(false)
+      setIsEndDialogOpen(false)
     }
-    setLoading(false)
   }
 
   const toggleExpand = (userId: string) => {
@@ -156,14 +226,82 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
           <div className="text-5xl font-mono font-bold tracking-widest text-green-400 drop-shadow-lg">
             {elapsed}
           </div>
-          <button 
-            onClick={handleFinish}
-            disabled={loading}
-            className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <StopCircle className="w-5 h-5" />}
-            ENCERRAR CÉLULA
-          </button>
+
+          <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
+            {/* Trigger is manual now */}
+            <button 
+                onClick={handleCheckAndOpenEndDialog}
+                disabled={checkingSchedule || loading}
+                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            >
+                {checkingSchedule ? <Loader2 className="w-5 h-5 animate-spin" /> : <StopCircle className="w-5 h-5" />}
+                ENCERRAR CÉLULA
+            </button>
+            
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Encerrar Célula?</DialogTitle>
+                    <DialogDescription>
+                        Esta ação irá finalizar a reunião de hoje.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4 space-y-4">
+                    {scheduledMeetings.length > 0 ? (
+                        <div className="space-y-3">
+                            <div className="p-3 bg-blue-900/20 border border-blue-800/50 rounded-lg text-sm text-blue-200">
+                                <p className="font-semibold mb-1">📅 Agendamento Detectado</p>
+                                <p className="opacity-80">
+                                    Encontramos reuniões agendadas para esta semana. 
+                                    Deseja vincular os dados de hoje a um desses agendamentos?
+                                </p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase text-slate-500">Selecione o Agendamento</label>
+                                <select 
+                                    value={selectedTargetId}
+                                    onChange={(e) => setSelectedTargetId(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    {scheduledMeetings.map(meeting => (
+                                        <option key={meeting.id} value={meeting.id}>
+                                            {meeting.formattedDate} - {meeting.studyTheme || 'Sem tema'}
+                                        </option>
+                                    ))}
+                                    <option value="new">
+                                        Criar Nova Reunião Extra (Hoje - {new Date().toLocaleDateString('pt-BR')})
+                                    </option>
+                                </select>
+                            </div>
+
+                            {selectedTargetId !== 'new' && (
+                                <div className="text-xs text-amber-400 flex items-center gap-1.5 mt-2">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>Os dados serão salvos no relatório da <strong>{scheduledMeetings.find(m => m.id === selectedTargetId)?.formattedDate}</strong></span>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-slate-400 text-sm">
+                            Todos os dados de presença e ofertas serão salvos no relatório de hoje ({new Date().toLocaleDateString('pt-BR')}).
+                            <br />
+                            Tem certeza que deseja continuar?
+                        </p>
+                    )}
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button variant="outline" onClick={() => setIsEndDialogOpen(false)} disabled={loading}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleFinish} disabled={loading} className="bg-red-600 hover:bg-red-700 text-white">
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {selectedTargetId !== 'new' ? 'Vincular e Encerrar' : 'Encerrar Agora'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -276,7 +414,9 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                             <div className="relative">
                                 <span className="absolute left-2 top-2 text-slate-500 text-xs">R$</span>
                                 <input 
-                                    type="number" 
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={14}
                                     placeholder="0,00"
                                     value={state.offerValue}
                                     onChange={(e) => updateFinancial(member.id, 'offerValue', e.target.value)}
@@ -289,7 +429,9 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                             <div className="relative">
                                 <span className="absolute left-2 top-2 text-slate-500 text-xs">R$</span>
                                 <input 
-                                    type="number" 
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={14}
                                     placeholder="0,00"
                                     value={state.titheValue}
                                     onChange={(e) => updateFinancial(member.id, 'titheValue', e.target.value)}
@@ -302,7 +444,9 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                             <div className="relative">
                                 <span className="absolute left-2 top-2 text-slate-500 text-xs">R$</span>
                                 <input 
-                                    type="number" 
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={14}
                                     placeholder="0,00"
                                     value={state.missionsValue}
                                     onChange={(e) => updateFinancial(member.id, 'missionsValue', e.target.value)}
@@ -315,7 +459,9 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
                             <div className="relative">
                                 <span className="absolute left-2 top-2 text-slate-500 text-xs">R$</span>
                                 <input 
-                                    type="number" 
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={14}
                                     placeholder="0,00"
                                     value={state.otherValue}
                                     onChange={(e) => updateFinancial(member.id, 'otherValue', e.target.value)}

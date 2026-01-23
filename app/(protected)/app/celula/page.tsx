@@ -4,6 +4,7 @@ import { MapPin, Calendar, Clock, User, Users, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StartLiveMeetingButton } from '@/components/live/StartLiveMeetingButton'
+import { prisma } from '@/lib/prisma'
 
 export default async function MemberCellPage() {
   const user = await getUser()
@@ -16,7 +17,39 @@ export default async function MemberCellPage() {
     redirect('/admin/website')
   }
 
-  const celula = user.celula
+  // Lógica Robusta de Busca de Célula (Líder, Co-Líder, Membro ou Admin)
+  let targetCell = await prisma.cell.findFirst({
+    where: {
+        OR: [
+            { liderId: user.id },
+            { lider2Id: user.id },
+            { membros: { some: { id: user.id } } }
+        ]
+    },
+    include: {
+        lider: { select: { nome: true } },
+        membros: {
+            where: { ativo: true },
+            orderBy: { nome: 'asc' }
+        }
+    }
+  })
+
+  // Fallback para ADMIN: Se não tiver célula vinculada, pega a primeira disponível
+  if (!targetCell && user.role === 'ADMIN') {
+      targetCell = await prisma.cell.findFirst({
+          orderBy: { nome: 'asc' },
+          include: {
+              lider: { select: { nome: true } },
+              membros: {
+                  where: { ativo: true },
+                  orderBy: { nome: 'asc' }
+              }
+          }
+      })
+  }
+
+  const celula = targetCell
   const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN', 'LIDER_EM_TREINAMENTO'].includes(user.role)
 
   return (
