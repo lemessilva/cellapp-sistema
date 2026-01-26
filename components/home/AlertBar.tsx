@@ -4,32 +4,26 @@ import { X } from 'lucide-react'
 import { useState } from 'react'
 
 interface AlertBarProps {
-  config: {
-    alertActive: boolean
-    alertText?: string | null
-    alertColor?: string
-    alertLink?: string | null
+  info: {
+    isAlertActive: boolean
+    globalAlertTitle?: string | null
+    globalAlertMessage?: string | null
   }
 }
 
-export function AlertBar({ config }: AlertBarProps) {
+export function AlertBar({ info }: AlertBarProps) {
   const [isVisible, setIsVisible] = useState(true)
 
-  if (!config.alertActive || !isVisible || !config.alertText) return null
-
-  const bgColor = config.alertColor || 'bg-blue-600'
+  if (!info.isAlertActive || !isVisible || (!info.globalAlertTitle && !info.globalAlertMessage)) return null
 
   return (
-    <div className={`relative z-50 w-full ${bgColor} text-white px-4 py-3 shadow-md`}>
+    <div className={`relative z-50 w-full bg-indigo-600 text-white px-4 py-3 shadow-md`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex-1 text-center text-sm md:text-base font-medium">
-          {config.alertLink ? (
-            <a href={config.alertLink} className="hover:underline underline-offset-4">
-              {config.alertText}
-            </a>
-          ) : (
-            <span>{config.alertText}</span>
+        <div className="flex-1 text-center text-sm md:text-base font-medium flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+          {info.globalAlertTitle && (
+            <span className="font-bold uppercase tracking-wide opacity-90">{info.globalAlertTitle}:</span>
           )}
+          <span>{info.globalAlertMessage}</span>
         </div>
         <button 
           onClick={() => setIsVisible(false)}

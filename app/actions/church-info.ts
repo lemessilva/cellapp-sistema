@@ -25,6 +25,14 @@ export async function getChurchInfo() {
   return info
 }
 
+export async function updateGlobalAlert(data: {
+  title: string
+  message: string
+  isActive: boolean
+}) {
+  return { error: 'Funcionalidade temporariamente indisponível (Erro de Migração de Banco)' }
+}
+
 export async function updateChurchInfo(formData: FormData) {
   try {
     const name = formData.get('name') as string

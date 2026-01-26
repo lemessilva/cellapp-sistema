@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
@@ -15,10 +15,12 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
 
   if (role === 'MIDIA') {
     links = [
-      { href: '/admin/website', label: 'Website', icon: Globe },
+      { href: '/app', label: 'Início', icon: Home },
+      { href: '/media', label: 'Mídia', icon: LayoutGrid },
       { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
       { href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText },
-      { href: '/app/perfil', label: 'Perfil', icon: User },
+      { href: '/admin/trilho', label: 'Trilho', icon: BarChart3 },
+      { href: '/admin/website', label: 'Website', icon: Globe },
     ]
   } else {
     links = [

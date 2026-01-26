@@ -30,6 +30,7 @@ import { prisma } from '@/lib/prisma';
 import { ThemeWrapper } from '@/components/website/ThemeWrapper';
 import { getUser } from '@/lib/auth';
 import { LiveMeetingWatcher } from '@/components/live/LiveMeetingWatcher';
+import { AlertBar } from '@/components/home/AlertBar';
 
 export default async function RootLayout({
   children,
@@ -38,7 +39,9 @@ export default async function RootLayout({
 }>) {
   const churchInfo = await prisma.churchInfo.findUnique({
     where: { id: 'main' },
-    select: { themeColor: true }
+    select: { 
+      themeColor: true
+    }
   });
 
   const user = await getUser();
@@ -50,6 +53,11 @@ export default async function RootLayout({
       >
         <ThemeWrapper themeColor={churchInfo?.themeColor || 'blue'} />
         <SidebarProvider>
+          <AlertBar info={{
+            isAlertActive: false,
+            globalAlertTitle: null,
+            globalAlertMessage: null
+          }} />
           <LiveMeetingWatcher cellId={user?.celula?.id} />
           {children}
         </SidebarProvider>
