@@ -61,7 +61,7 @@ export function FindCellSection({ cells: initialCells }: { cells?: Cell[] }) {
     // Remover caracteres não numéricos
     const phone = cell.whatsappLider.replace(/\D/g, '')
     const message = encodeURIComponent(
-      `Olá ${cell.liderNome}, vi a célula do ${cell.bairro} no site e quero visitar!`
+      `Olá ${cell.liderNome}, vi a ${cell.nome} no site e quero visitar!`
     )
     window.open(`https://wa.me/55${phone}?text=${message}`, '_blank')
   }

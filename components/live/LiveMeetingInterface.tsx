@@ -200,6 +200,12 @@ export function LiveMeetingInterface({ user, data }: LiveMeetingInterfaceProps) 
         }
     })
 
+    console.log('Finalizing Meeting - Payload:', {
+      reportId: data.report.id,
+      targetId: selectedTargetId,
+      attendance: finalAttendance
+    })
+
     const targetId = selectedTargetId === 'new' ? undefined : selectedTargetId
     const result = await finishLiveMeeting(data.report.id, finalAttendance, { offer: 0, missions: 0 }, targetId)
     
