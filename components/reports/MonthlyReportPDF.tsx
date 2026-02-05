@@ -124,6 +124,25 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 8
+  },
+
+  // Stamp
+  stampContainer: {
+    position: 'absolute',
+    top: 150,
+    left: '30%',
+    transform: 'rotate(-30deg)',
+    borderWidth: 4,
+    borderColor: '#e74c3c', // Red
+    padding: 10,
+    opacity: 0.6,
+    zIndex: 100
+  },
+  stampText: {
+    color: '#e74c3c',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textTransform: 'uppercase'
   }
 })
 
@@ -141,10 +160,18 @@ interface ReportData {
   dates: string[]
   reportSummaries: {
     date: string
+    realStart?: string | null
+    realEnd?: string | null
+    corrections?: {
+        id: string
+        content: string
+        createdAt: string | Date
+        author?: { nome: string | null }
+    }[]
     theme: string
     cancelReason?: string
     observations?: string
-    offerDetails?: string // Added
+    offerDetails?: string
     present: number
     visitors: number
     financials: {
@@ -184,6 +211,8 @@ interface ReportData {
     supervisor?: { nome?: string | null };
     dataAssinaturaCoord?: Date | string | null;
     coord?: { nome?: string | null };
+    isLate?: boolean
+    submittedAt?: Date | string | null
   } | null;
 }
 
@@ -206,6 +235,16 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
   <Document>
     <Page size="A4" orientation="landscape" style={styles.page}>
       
+      {/* Late Stamp */}
+      {data.closure?.isLate && (
+        <View style={styles.stampContainer}>
+            <Text style={styles.stampText}>ENTREGUE COM ATRASO</Text>
+            <Text style={[styles.stampText, { fontSize: 10, marginTop: 5 }]}>
+                {data.closure.submittedAt ? new Date(data.closure.submittedAt).toLocaleDateString('pt-BR') : ''}
+            </Text>
+        </View>
+      )}
+
       {/* 1. Header Block */}
       <View style={styles.headerBlock}>
         <View style={styles.headerColLeft}>
@@ -240,6 +279,22 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.labelBold}>TOTAL</Text>
             </View>
+        </View>
+
+        {/* Real Time Row */}
+        <View style={styles.row}>
+            <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
+                <Text style={styles.labelBold}>Horário Real</Text>
+            </View>
+            {summaries.map((s, i) => (
+                <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
+                    <Text style={[styles.valueText, { fontSize: 6 }]}>
+                       {s.realStart && s.realEnd ? `${s.realStart}-${s.realEnd}` : '-'}
+                    </Text>
+                </View>
+            ))}
+            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
+            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
         </View>
 
         {/* Theme Row */}
@@ -431,7 +486,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
 
       </View>
 
-      {/* 3. Kids Grid (Optional Page Break if needed, but keeping simple for now) */}
+      {/* 3. Kids Grid */}
       {kids.length > 0 && (
           <View break={false} style={{ marginTop: 20 }}>
             <Text style={[styles.sectionTitle, { marginBottom: 5 }]}>Crianças (Gamificação)</Text>
@@ -514,5 +569,29 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
       </View>
 
     </Page>
+    
+    {/* 5. Corrections Page */}
+    {summaries.some(s => s.corrections && s.corrections.length > 0) && (
+        <Page size="A4" style={styles.page}>
+            <Text style={[styles.sectionTitle, { fontSize: 14, marginBottom: 15 }]}>Cartas de Correção e Auditoria</Text>
+            {summaries.map(s => (
+                s.corrections && s.corrections.length > 0 && (
+                    <View key={s.date} style={{ marginBottom: 20 }}>
+                        <Text style={[styles.labelBold, { fontSize: 11, marginBottom: 8, backgroundColor: '#f0f0f0', padding: 4 }]}>
+                            Relatório de {s.date}
+                        </Text>
+                        {s.corrections.map((c, idx) => (
+                            <View key={idx} style={{ padding: 10, borderLeftWidth: 3, borderColor: '#e74c3c', marginBottom: 10, backgroundColor: '#fff9f9' }}>
+                                <Text style={{ fontSize: 9, color: '#555', marginBottom: 4 }}>
+                                    {new Date(c.createdAt).toLocaleString('pt-BR')} - Autor: {c.author?.nome || 'Sistema'}
+                                </Text>
+                                <Text style={{ fontSize: 10 }}>{c.content}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )
+            ))}
+        </Page>
+    )}
   </Document>
 )}

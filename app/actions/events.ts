@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { uploadFile, uploadToMidiaBucket } from '@/lib/supabase'
 import { getUser } from '@/lib/auth'
+import { validateCPF } from '@/lib/utils'
+import { sendNotification } from './notifications'
 
 // Get ticket details for check-in
 export async function getTicketDetails(registrationId: string) {
@@ -94,13 +96,14 @@ export async function getEventDetails(eventId: string) {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
-        // Traz os inscritos para a tabela de gestão
         registrations: {
           include: { 
             user: true,
-            transactions: { orderBy: { date: 'desc' } }
+            transactions: {
+              orderBy: { date: 'desc' }
+            }
           },
-          orderBy: { createdAt: 'desc' } // Changed from date to createdAt as Registration doesn't have date, usually createdAt
+          orderBy: { createdAt: 'desc' }
         },
         _count: {
           select: { registrations: true }
@@ -108,39 +111,40 @@ export async function getEventDetails(eventId: string) {
       }
     })
 
-    if (!event) return { error: "Evento não encontrado" }
+    if (!event) {
+      return { error: 'Evento não encontrado.' }
+    }
 
     return { event }
   } catch (error) {
-    console.error("Erro ao buscar detalhes do evento:", error)
-    return { error: "Falha ao carregar evento" }
+    console.error('Erro ao buscar evento:', error)
+    return { error: 'Erro ao buscar evento.' }
   }
 }
 
-import { sendNotification } from './notifications'
-
-export async function registerForEvent(eventId: string, guestData?: { name?: string, phone?: string }) {
+export async function getPublicEventDetails(eventId: string) {
   try {
-    const user = await getUser()
-    
-    if (!user && !guestData?.name) return { error: 'Usuário não autenticado e nenhum nome informado.' }
+    const event = await prisma.event.findUnique({
+      where: { id: eventId }
+    })
+    return event
+  } catch (error) {
+    console.error('Erro ao buscar evento:', error)
+    return null
+  }
+}
 
-    // Check if already registered (only for logged users)
-    if (user) {
-      const existing = await prisma.registration.findUnique({
-        where: {
-          eventId_userId: {
-            eventId,
-            userId: user.id
-          }
-        }
-      })
+export async function registerForEvent(data: {
+  eventId: string
+  userId?: string
+  guestName?: string
+  cpf?: string
+  answers?: any
+}) {
+  try {
+    const { eventId, userId, guestName, cpf, answers } = data
 
-      if (existing) {
-        return { error: 'Você já está inscrito neste evento.' }
-      }
-    }
-
+    // Check event existence and capacity
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
@@ -150,26 +154,61 @@ export async function registerForEvent(eventId: string, guestData?: { name?: str
       }
     })
 
-    if (!event) return { error: 'Evento não encontrado.' }
+    if (!event) {
+      return { error: 'Evento não encontrado.' }
+    }
+
+    if (!event.isOpen) {
+        return { error: 'As inscrições para este evento estão encerradas.' }
+    }
+
+    if (event.registrationDeadline && new Date() > new Date(event.registrationDeadline)) {
+        return { error: 'O prazo de inscrição para este evento já encerrou.' }
+    }
 
     if (event.maxCapacity && event._count.registrations >= event.maxCapacity) {
       return { error: 'Vagas esgotadas.' }
     }
 
+    // CPF Validation
+    if (event.requiresCpf) {
+      if (!cpf) return { error: 'CPF é obrigatório.' }
+      
+      if (!validateCPF(cpf)) {
+        return { error: 'CPF inválido.' }
+      }
+
+      // Check uniqueness
+      const existingRegistration = await prisma.registration.findFirst({
+        where: {
+          eventId,
+          cpf: cpf.replace(/\D/g, '')
+        }
+      })
+
+      if (existingRegistration) {
+        return { error: 'Este CPF já está inscrito neste evento.' }
+      }
+    }
+
+    const cleanCPF = cpf ? cpf.replace(/\D/g, '') : undefined
+
     const registration = await prisma.registration.create({
       data: {
         eventId,
-        userId: user?.id,
-        guestName: guestData?.name,
+        userId: userId,
+        guestName: guestName,
+        cpf: cleanCPF,
+        answers: answers,
         status: 'CONFIRMED',
         paymentStatus: Number(event.price) > 0 ? 'PENDING' : 'PAID'
       }
     })
 
-    // 1. Notificação para o Inscrito (se for usuário logado)
-    if (user) {
+    // Notifications
+    if (userId) {
       await sendNotification({
-        userId: user.id,
+        userId: userId,
         title: 'Inscrição Confirmada',
         message: `Sua inscrição para ${event.title} foi confirmada!`,
         type: 'SUCCESS',
@@ -177,7 +216,7 @@ export async function registerForEvent(eventId: string, guestData?: { name?: str
       })
     }
 
-    // 2. Notificação para os Admins (Alerta de Gestão)
+    // Notify admins
     const admins = await prisma.user.findMany({
       where: { role: 'ADMIN' },
       select: { id: true }
@@ -187,13 +226,15 @@ export async function registerForEvent(eventId: string, guestData?: { name?: str
       await sendNotification({
         userId: admin.id,
         title: 'Nova Inscrição',
-        message: `${user ? user.nome : guestData?.name} acabou de se inscrever no evento ${event.title}.`,
+        message: `${userId ? 'Usuário' : guestName} se inscreveu no evento ${event.title}.`,
         type: 'INFO',
         link: `/admin/eventos/${event.id}`
       })
     }
 
     revalidatePath('/app/eventos')
+    revalidatePath(`/eventos/${eventId}`)
+    
     return { success: true, registrationId: registration.id }
   } catch (error) {
     console.error('Erro ao inscrever no evento:', error)
@@ -201,8 +242,107 @@ export async function registerForEvent(eventId: string, guestData?: { name?: str
   }
 }
 
+export async function addPaymentTransaction(
+  registrationId: string,
+  amount: number,
+  notes?: string
+) {
+  try {
+    const user = await getUser()
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+      return { error: 'Permissão negada.' }
+    }
+
+    // Buscar inscrição atual
+    const registration = await prisma.registration.findUnique({
+      where: { id: registrationId },
+      include: { event: true }
+    })
+
+    if (!registration) {
+      return { error: 'Inscrição não encontrada.' }
+    }
+
+    const price = Number(registration.event.price)
+    const currentPaid = Number(registration.paidAmount)
+    const newTotal = currentPaid + amount
+
+    if (newTotal > price) {
+      return { error: 'Valor excede o total do evento.' }
+    }
+
+    // Registrar transação
+    await prisma.paymentTransaction.create({
+      data: {
+        registrationId,
+        amount,
+        notes
+      }
+    })
+
+    // Atualizar inscrição
+    const updatedRegistration = await prisma.registration.update({
+      where: { id: registrationId },
+      data: {
+        paidAmount: newTotal,
+        paymentStatus: newTotal >= price ? 'PAID' : 'PARTIAL'
+      }
+    })
+
+    revalidatePath(`/admin/eventos/${registration.eventId}`)
+    return { success: true, paidAmount: Number(updatedRegistration.paidAmount) }
+  } catch (error) {
+    console.error('Erro ao adicionar transação:', error)
+    return { error: 'Erro ao registrar pagamento.' }
+  }
+}
+
+export async function deleteEvent(eventId: string) {
+  try {
+    const user = await getUser()
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+      return { error: 'Permissão negada.' }
+    }
+    
+    // Delete notifications related to the event
+    await prisma.notification.deleteMany({
+      where: {
+        metaData: {
+          path: ['eventId'],
+          equals: eventId
+        }
+      }
+    })
+    
+    await prisma.event.delete({
+      where: { id: eventId }
+    })
+
+    revalidatePath('/admin/eventos')
+    return { success: true }
+  } catch (error) {
+    console.error('Erro ao excluir evento:', error)
+    return { error: 'Erro ao excluir evento. Verifique se existem inscrições vinculadas.' }
+  }
+}
+
 export async function createEvent(formData: FormData) {
   try {
+    const user = await getUser()
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+        return { error: 'Permissão negada.' }
+    }
+
+    const title = formData.get('title') as string
+    const date = formData.get('date') as string
+    const location = formData.get('location') as string
+    const price = Number(formData.get('price'))
+    const maxCapacity = formData.get('maxCapacity') ? Number(formData.get('maxCapacity')) : null
+    const registrationDeadline = formData.get('registrationDeadline') ? new Date(formData.get('registrationDeadline') as string) : null
+    const description = formData.get('description') as string
+    const requiresCpf = formData.get('requiresCpf') === 'true'
+    const formConfig = formData.get('formConfig') ? JSON.parse(formData.get('formConfig') as string) : undefined
+
     const bannerFile = formData.get('bannerFile') as File | null
     const coverFile = formData.get('coverFile') as File | null
     let bannerUrl = formData.get('bannerUrl') as string | null
@@ -218,37 +358,22 @@ export async function createEvent(formData: FormData) {
       if (url) coverUrl = url
     }
 
-    const event = await prisma.event.create({
-      data: {
-        title: formData.get('title') as string,
-        description: formData.get('description') as string,
-        date: new Date(formData.get('date') as string),
-        location: formData.get('location') as string,
-        price: parseFloat((formData.get('price') as string) || '0'),
-        maxCapacity: formData.get('maxCapacity') ? parseInt(formData.get('maxCapacity') as string) : null,
-        bannerUrl: bannerUrl,
-        coverUrl: coverUrl
-      }
+    await prisma.event.create({
+        data: {
+            title,
+            date: new Date(date),
+            location,
+            price,
+            maxCapacity,
+            registrationDeadline,
+            description,
+            bannerUrl,
+            coverUrl,
+            requiresCpf,
+            formConfig,
+            isOpen: true
+        }
     })
-
-    // Bulk Notification for all active users
-    const allUsers = await prisma.user.findMany({
-        where: { ativo: true },
-        select: { id: true }
-    })
-
-    if (allUsers.length > 0) {
-        await prisma.notification.createMany({
-            data: allUsers.map(u => ({
-                userId: u.id,
-                title: `Vem aí: ${event.title} 📅`,
-                message: "Confira a data e faça sua inscrição. Não fique de fora!",
-                type: 'EVENT',
-                link: `/app/eventos`,
-                metaData: { eventId: event.id }
-            }))
-        })
-    }
 
     revalidatePath('/admin/eventos')
     return { success: true }
@@ -258,148 +383,23 @@ export async function createEvent(formData: FormData) {
   }
 }
 
-export async function addPaymentTransaction(
-  registrationId: string,
-  amount: number,
-  notes?: string
-) {
+export async function toggleEventStatus(eventId: string, isOpen: boolean) {
   try {
-    const registration = await prisma.registration.findUnique({
-      where: { id: registrationId },
-      include: { event: true }
-    })
-
-    if (!registration) {
-      return { error: 'Inscrição não encontrada.' }
+    const user = await getUser()
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+      return { error: 'Permissão negada.' }
     }
 
-    const priceNumber = Number(registration.event.price)
-    const value = Number(amount)
-
-    if (!value || isNaN(value) || value <= 0) {
-      return { error: 'Valor inválido.' }
-    }
-
-    const aggregate = await prisma.paymentTransaction.aggregate({
-      where: { registrationId },
-      _sum: { amount: true }
-    })
-
-    const alreadyPaidNumber = Number(aggregate._sum.amount || 0)
-    const newTotal = alreadyPaidNumber + value
-
-    if (newTotal > priceNumber) {
-      const restante = Math.max(0, priceNumber - alreadyPaidNumber)
-      return {
-        error: `Valor excede o total do evento. Restante a pagar: R$ ${restante
-          .toFixed(2)
-          .replace('.', ',')}`
-      }
-    }
-
-    await prisma.paymentTransaction.create({
-      data: {
-        registrationId,
-        amount: value,
-        notes: notes || null,
-        date: new Date()
-      }
-    })
-
-    const remaining = Math.max(0, priceNumber - newTotal)
-
-    await prisma.registration.update({
-      where: { id: registrationId },
-      data: {
-        paidAmount: newTotal,
-        paymentStatus: remaining <= 0 ? 'PAID' : 'PARTIAL'
-      }
-    })
-
-    revalidatePath(`/admin/eventos/${registration.eventId}`)
-    return { success: true, paidAmount: newTotal, remaining }
-  } catch (error) {
-    console.error('Erro ao registrar transação de pagamento:', error)
-    return { error: 'Erro ao registrar pagamento.' }
-  }
-}
-
-export async function getFutureEvents() {
-  const user = await getUser()
-  if (!user) return []
-
-  const now = new Date()
-
-  const events = await prisma.event.findMany({
-    where: {
-      date: {
-        gte: now
-      }
-    },
-    orderBy: {
-      date: 'asc'
-    },
-    include: {
-      registrations: {
-        where: {
-          userId: user.id
-        },
-        take: 1
-      }
-    }
-  })
-
-  return events.map(event => ({
-    ...event,
-    isRegistered: event.registrations.length > 0,
-    registration: event.registrations[0] || null
-  }))
-}
-
-export async function getPublicEventDetails(id: string) {
-  const event = await prisma.event.findUnique({
-    where: { id },
-    include: {
-      registrations: true
-    }
-  })
-
-  if (!event) return null
-
-  const now = new Date()
-  const isOpen = event.date > now
-
-  return {
-    id: event.id,
-    title: event.title,
-    description: event.description,
-    date: event.date,
-    location: event.location,
-    bannerUrl: event.bannerUrl,
-    isOpen,
-    totalRegistrations: event.registrations.length,
-    price: event.price
-  }
-}
-
-// Atualizar status de pagamento manualmente
-export async function updateRegistrationPayment(registrationId: string, status: 'PENDING' | 'PAID' | 'CANCELED') {
-  try {
-    const registration = await prisma.registration.update({
-      where: { id: registrationId },
-      data: {
-        paymentStatus: status,
-        // Se marcar como PAGO, mantemos o valor (undefined não altera), se não, zeramos
-        paidAmount: status === 'PAID' ? undefined : 0,
-      },
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { isOpen }
     })
 
     revalidatePath('/admin/eventos')
-    revalidatePath(`/admin/eventos/${registration.eventId}`)
-    return { success: true, registration }
-
+    revalidatePath(`/eventos/${eventId}`)
+    return { success: true }
   } catch (error) {
-    console.error("Erro ao atualizar pagamento:", error)
-    return { error: "Erro ao atualizar status" }
+    console.error('Erro ao alterar status do evento:', error)
+    return { error: 'Erro ao alterar status do evento.' }
   }
 }

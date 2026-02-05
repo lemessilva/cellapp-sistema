@@ -53,6 +53,13 @@ export async function updateSiteConfiguration(data: any) {
       heroBgImage: data.heroBgImage,
       heroCtaText: data.heroCtaText,
       heroCtaLink: data.heroCtaLink,
+      
+      // Alert Fields
+      alertActive: data.alertActive,
+      alertText: data.alertText,
+      alertColor: data.alertColor,
+      alertLink: data.alertLink,
+
       weeklySchedule: data.weeklySchedule,
       contactWhatsapp: data.contactWhatsapp,
       socialInstagram: data.socialInstagram,
@@ -65,4 +72,48 @@ export async function updateSiteConfiguration(data: any) {
   revalidatePath('/')
   revalidatePath('/admin/website')
   return config
+}
+
+export async function toggleLiveStatus() {
+  const user = await getUser()
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+    throw new Error('Unauthorized')
+  }
+
+  const current = await prisma.siteConfiguration.findUnique({
+    where: { id: 1 },
+    select: { isLive: true }
+  })
+
+  if (!current) throw new Error('Config not found')
+
+  const updated = await prisma.siteConfiguration.update({
+    where: { id: 1 },
+    data: { isLive: !current.isLive }
+  })
+
+  revalidatePath('/')
+  revalidatePath('/admin/website')
+  revalidatePath('/media')
+  return updated
+}
+
+export async function updateGlobalAlertSettings(data: { alertActive: boolean, alertText: string, alertLink: string }) {
+  const user = await getUser()
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
+    throw new Error('Unauthorized')
+  }
+
+  const updated = await prisma.siteConfiguration.update({
+    where: { id: 1 },
+    data: {
+      alertActive: data.alertActive,
+      alertText: data.alertText,
+      alertLink: data.alertLink
+    }
+  })
+
+  revalidatePath('/')
+  revalidatePath('/media')
+  return updated
 }

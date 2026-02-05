@@ -6,16 +6,36 @@ import { getBanners } from '@/app/actions/banners'
 import { getResources } from '@/app/actions/resources'
 import { getBioLinks } from '@/app/actions/bio-links'
 import { getSermonSeries } from '@/app/actions/sermons'
+import { getBrandAssets, getGalleryImages, getNotificationHistory } from '@/app/actions/media'
 import WebsiteEditor from './WebsiteEditor'
 
-export default async function WebsiteAdminPage() {
+export default async function WebsiteAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const user = await getUser()
   
   if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
     redirect('/app')
   }
 
-  const [config, banners, resources, cellsRaw, eventsRaw, churchInfo, bioLinks, sermonSeries] = await Promise.all([
+  const { tab } = await searchParams
+  const activeTab = typeof tab === 'string' ? tab : undefined
+
+  const [
+    config, 
+    banners, 
+    resources, 
+    cellsRaw, 
+    eventsRaw, 
+    churchInfo, 
+    bioLinks, 
+    sermonSeries,
+    brandAssets,
+    galleryImages,
+    notificationHistory
+  ] = await Promise.all([
     getSiteConfiguration(),
     getBanners(),
     getResources(),
@@ -31,7 +51,10 @@ export default async function WebsiteAdminPage() {
       where: { id: 'main' }
     }),
     getBioLinks(),
-    getSermonSeries()
+    getSermonSeries(),
+    getBrandAssets(),
+    getGalleryImages(),
+    getNotificationHistory()
   ])
 
   // Map cells to match FindCellSection interface
@@ -50,15 +73,7 @@ export default async function WebsiteAdminPage() {
   // Map events to serialize Decimal types
   const events = eventsRaw.map(event => ({
     ...event,
-    price: event.price.toNumber(), // Convert Decimal to number
-    // Ensure dates are also serialized if needed, but Date objects are usually fine in Next.js props (they are serialized to ISO strings automatically in recent versions, or maybe not?)
-    // Actually, Date objects are allowed in Server Actions but NOT in Client Components props in Next.js 13+ unless they are simple JSON-serializable.
-    // Wait, Date objects ARE supported in Client Component props?
-    // "Warning: Only plain objects can be passed to Client Components from Server Components. Date objects are not supported."
-    // Yes, Date objects are NOT supported directly. They need to be strings.
-    // But usually Prisma dates work if the component doesn't strict check, or if Next.js serializes them?
-    // No, Next.js warns about Date objects too.
-    // So I should probably convert dates to strings too to be safe.
+    price: event.price.toNumber(), 
   }))
 
   return (
@@ -69,6 +84,7 @@ export default async function WebsiteAdminPage() {
       </div>
       
       <WebsiteEditor 
+        initialTab={activeTab}
         initialConfig={config} 
         initialBanners={banners} 
         initialResources={resources}
@@ -77,6 +93,9 @@ export default async function WebsiteAdminPage() {
         initialChurchInfo={churchInfo}
         initialBioLinks={bioLinks}
         initialSermonSeries={sermonSeries}
+        initialBrandAssets={brandAssets}
+        initialGalleryImages={galleryImages}
+        initialNotificationHistory={notificationHistory}
       />
     </div>
   )

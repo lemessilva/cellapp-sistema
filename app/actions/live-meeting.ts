@@ -49,7 +49,24 @@ export async function startLiveMeeting(cellId: string, date: string) {
     const start = startOfWeek(now, { locale: ptBR })
     const end = endOfWeek(now, { locale: ptBR })
 
-    // 2. Busque QUALQUER reunião pendente nesta janela de tempo
+    // 2. Busque se JÁ EXISTE uma célula REALIZADA (COMPLETED) nesta semana
+    // O usuário pediu bloqueio para COMPLETED e IN_PROGRESS.
+    // Mas bloquear IN_PROGRESS impediria o RESUME (retomar célula que caiu).
+    // Portanto, vamos bloquear apenas as FINALIZADAS para evitar duplicidade de envio.
+    // Se houver uma IN_PROGRESS, a lógica abaixo (existente) irá retomá-la.
+    const existingCompleted = await prisma.meetingReport.findFirst({
+      where: {
+        cellId,
+        date: { gte: start, lte: end },
+        status: { in: [ReportStatus.ENVIADO_LIDER, ReportStatus.APROVADO, ReportStatus.NAO_HOUVE] }
+      }
+    })
+
+    if (existingCompleted) {
+      throw new Error('Já existe uma célula realizada nesta semana! Edite o relatório existente.')
+    }
+
+    // 3. Busque QUALQUER reunião pendente nesta janela de tempo
     let meeting = await prisma.meetingReport.findFirst({
       where: {
         cellId,
@@ -99,9 +116,9 @@ export async function startLiveMeeting(cellId: string, date: string) {
     // Opcional: verificar se já notificou recentemente para evitar spam
     
     return { success: true, reportId: meeting.id, startedAt: meeting.startedAt }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error starting live meeting:', error)
-    return { error: 'Falha ao iniciar célula' }
+    return { error: error.message || 'Falha ao iniciar célula' }
   }
 }
 
@@ -175,7 +192,8 @@ export async function finishLiveMeeting(
       where: { id: finalId },
       data: {
         status: ReportStatus.ENVIADO_LIDER, // = COMPLETED
-        endedAt: new Date()
+        endedAt: new Date(),
+        realEndTime: new Date() // <--- CRONOMETRAGEM EXATA
       }
     })
 

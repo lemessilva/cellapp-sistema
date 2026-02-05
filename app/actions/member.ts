@@ -120,3 +120,32 @@ export async function updateMemberCell(userId: string, newCellId: string) {
     return { error: 'Erro ao atualizar célula do membro.' }
   }
 }
+
+export async function getMemberAttendanceHistory(memberId: string) {
+  const user = await getUser()
+  if (!user) return { error: 'Não autorizado' }
+  
+  try {
+    const attendance = await prisma.meetingAttendance.findMany({
+      where: { userId: memberId },
+      include: {
+        report: {
+          select: {
+            date: true,
+            studyTheme: true
+          }
+        }
+      },
+      orderBy: {
+        report: {
+          date: 'desc'
+        }
+      }
+    })
+    
+    return { data: attendance }
+  } catch (error) {
+    console.error('Error fetching attendance:', error)
+    return { error: 'Erro ao buscar histórico.' }
+  }
+}

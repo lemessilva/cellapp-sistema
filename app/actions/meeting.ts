@@ -42,6 +42,10 @@ export async function submitMeetingReport(data: SubmitReportParams) {
 
     const reportDate = new Date(data.date)
     
+    // Bloqueio de Duplicidade
+    const start = startOfWeek(reportDate, { locale: ptBR })
+    const end = endOfWeek(reportDate, { locale: ptBR })
+
     // Find existing report to get ID or create new ID
     const existingReport = await prisma.meetingReport.findFirst({
         where: {
@@ -53,6 +57,19 @@ export async function submitMeetingReport(data: SubmitReportParams) {
         }
     })
 
+    const duplicate = await prisma.meetingReport.findFirst({
+        where: {
+            cellId: data.cellId,
+            date: { gte: start, lte: end },
+            status: { in: ['ENVIADO_LIDER', 'APROVADO', 'NAO_HOUVE', 'DEVOLVIDO'] },
+            id: existingReport ? { not: existingReport.id } : undefined
+        }
+    })
+
+    if (duplicate) {
+        return { error: 'Já existe um relatório enviado/finalizado para esta semana.' }
+    }
+
     // Upsert Report
     // We use transaction to ensure consistency
     const result = await prisma.$transaction(async (tx) => {
@@ -63,6 +80,8 @@ export async function submitMeetingReport(data: SubmitReportParams) {
             date: reportDate,
             startTime: data.startTime,
             endTime: data.endTime,
+            realStartTime: data.realStartTime,
+            realEndTime: data.realEndTime,
             studyTheme: data.studyTheme,
             observations: data.observations,
             offerDetails: data.offerDetails,
@@ -348,7 +367,11 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
             include: {
                 attendance: true,
                 visitors: true,
-                kidsPillars: true
+                kidsPillars: true,
+                corrections: { 
+                    orderBy: { createdAt: 'desc' },
+                    include: { author: { select: { nome: true } } }
+                }
             },
             orderBy: { date: 'asc' }
         })
@@ -381,6 +404,10 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
         const reportSummaries = reports.map(r => {
             const dateStr = format(r.date, 'dd/MM')
             
+            // Format Real Times
+            const realStart = r.realStartTime ? format(r.realStartTime, 'HH:mm') : null
+            const realEnd = r.realEndTime ? format(r.realEndTime, 'HH:mm') : null
+            
             // Financials
             const tithe = r.attendance.reduce((acc, a) => acc + a.titheValue, 0) + 
                           r.kidsPillars.reduce((acc, k) => acc + k.titheValue, 0)
@@ -392,6 +419,9 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
 
             return {
                 date: dateStr,
+                realStart,
+                realEnd,
+                corrections: r.corrections || [],
                 theme: r.studyTheme || '',
                 observations: r.observations || '',
                 offerDetails: r.offerDetails || '',

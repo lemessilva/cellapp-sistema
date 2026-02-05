@@ -8,18 +8,19 @@ import { ChevronLeft, Calendar, User, Tag, AlertCircle } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function FeedbackDetailPage({ params }: Props) {
+  const { id } = await params
   const user = await getUser()
   if (!user || user.role !== 'ADMIN') {
     redirect('/app')
   }
 
-  const feedback = await getSystemFeedbackById(params.id)
+  const feedback = await getSystemFeedbackById(id)
 
   if (!feedback) {
     return (

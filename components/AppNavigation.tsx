@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
@@ -32,7 +32,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
     ]
 
     if (['LIDER', 'SUPERVISOR', 'ADMIN'].includes(role) || isSecretary) {
-      links.splice(links.length - 1, 0, { href: '/app/celula/reuniao', label: 'Relatório', icon: FileText })
+      links.splice(links.length - 1, 0, { href: '/reports/list', label: 'Relatórios', icon: FileText })
     }
 
     if (['LIDER', 'SUPERVISOR', 'ADMIN'].includes(role)) {
@@ -49,6 +49,9 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
       links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Calendar })
     }
   }
+
+  // Add Homepage link for everyone
+  links.push({ href: '/', label: 'Ir para o Site', icon: ExternalLink })
 
   return (
     <>

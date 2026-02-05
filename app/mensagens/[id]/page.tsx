@@ -6,8 +6,9 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { notFound } from 'next/navigation'
 
-export default async function SeriesDetailsPage({ params }: { params: { id: string } }) {
-  const series = await getSermonSeriesById(params.id)
+export default async function SeriesDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const series = await getSermonSeriesById(id)
   
   if (!series) {
     notFound()

@@ -14,6 +14,11 @@ export default async function PublicEventPage({ params }: { params: Promise<{ id
     return notFound()
   }
 
+  // Check if deadline passed
+  const now = new Date()
+  const deadlinePassed = event.registrationDeadline && now > new Date(event.registrationDeadline)
+  const isRegistrationOpen = event.isOpen && !deadlinePassed
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
       {/* Banner */}
@@ -48,8 +53,8 @@ export default async function PublicEventPage({ params }: { params: Promise<{ id
           {/* Main Info */}
           <div className="flex-1 space-y-8">
             <div>
-              <span className="inline-block px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm font-bold mb-4 border border-indigo-500/20">
-                {event.isOpen ? 'Inscrições Abertas' : 'Inscrições Encerradas'}
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold mb-4 border ${isRegistrationOpen ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/20' : 'bg-red-500/20 text-red-300 border-red-500/20'}`}>
+                {isRegistrationOpen ? 'Inscrições Abertas' : 'Inscrições Encerradas'}
               </span>
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
                 {event.title}
@@ -94,17 +99,27 @@ export default async function PublicEventPage({ params }: { params: Promise<{ id
                    </div>
                 </div>
 
-                {event.isOpen ? (
+                {isRegistrationOpen ? (
                     <SmartRegistrationForm 
                       eventId={event.id} 
                       eventTitle={event.title}
                       eventDate={event.date}
                       eventLocation={event.location}
                       currentUser={user}
+                      formConfig={event.formConfig as any}
+                      requiresCpf={event.requiresCpf}
                     />
                 ) : (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center text-red-200">
-                        Inscrições encerradas para este evento.
+                    <div className="bg-slate-950 rounded-xl p-6 text-center border border-slate-800">
+                        <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Clock className="w-6 h-6 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white mb-2">Inscrições Encerradas</h3>
+                        <p className="text-slate-400 text-sm">
+                           {deadlinePassed 
+                              ? `O prazo de inscrição encerrou em ${new Date(event.registrationDeadline!).toLocaleDateString('pt-BR')} às ${new Date(event.registrationDeadline!).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}.` 
+                              : 'As inscrições para este evento não estão disponíveis no momento.'}
+                        </p>
                     </div>
                 )}
              </div>

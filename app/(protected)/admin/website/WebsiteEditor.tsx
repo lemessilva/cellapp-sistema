@@ -4,14 +4,20 @@ import { useState } from 'react'
 import { updateChurchInfo } from '@/app/actions/church-info'
 import { updateSiteConfiguration } from '@/app/actions/website'
 import { createBanner, deleteBanner, toggleBannerStatus } from '@/app/actions/banners'
-import { createResource, deleteResource } from '@/app/actions/resources'
-import { BioLinksManager } from '@/components/admin/BioLinksManager'
-import { SermonsManager } from '@/components/admin/SermonsManager'
-import { Layout, Calendar, Share2, Save, Plus, Trash2, Image as ImageIcon, Loader2, X, Eye, EyeOff, FileText, RadioTower, Smartphone, Crop as CropIcon, User, Link as LinkIcon, Video, Palette } from 'lucide-react'
+import { uploadBrandAsset, deleteAsset, uploadGalleryImage, sendPushNotification } from '@/app/actions/media'
+import { Layout, Calendar, Share2, Save, Plus, Trash2, Image as ImageIcon, Loader2, X, Eye, EyeOff, FileText, RadioTower, Smartphone, Crop as CropIcon, User, Link as LinkIcon, Video, Palette, Megaphone, Send, Grid, Download, Copy, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { IPhoneSimulator } from '@/components/admin/IPhoneSimulator'
 import { InlineImageCropper } from '@/components/admin/ImageCropper'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
 type WebsiteEditorProps = {
   initialConfig: any
@@ -22,6 +28,9 @@ type WebsiteEditorProps = {
   initialChurchInfo: any
   initialBioLinks: any[]
   initialSermonSeries: any[]
+  initialBrandAssets: any[]
+  initialGalleryImages: any[]
+  initialNotificationHistory: any[]
 }
 
 export default function WebsiteEditor({ 
@@ -32,11 +41,29 @@ export default function WebsiteEditor({
   initialEvents,
   initialChurchInfo,
   initialBioLinks,
-  initialSermonSeries
+  initialSermonSeries,
+  initialBrandAssets,
+  initialGalleryImages,
+  initialNotificationHistory,
+  initialTab
 }: WebsiteEditorProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('appearance')
   const [loading, setLoading] = useState(false)
+  
+  const defaultTab = initialTab === 'push' ? 'notifications' : (initialTab || 'general')
+  
+  // New Media States
+  const [brandAssets] = useState(initialBrandAssets)
+  const [galleryImages] = useState(initialGalleryImages)
+  const [notificationHistory] = useState(initialNotificationHistory)
+
+  // Blaster Form
+  const [blastForm, setBlastForm] = useState({
+    title: '',
+    message: '',
+    link: '',
+    target: 'ALL'
+  })
   
   // States for Cropper & Library
   const [cropperState, setCropperState] = useState<{
@@ -65,27 +92,6 @@ export default function WebsiteEditor({
     liveLink: initialConfig.liveLink || '',
   })
 
-  // New Banner Form State
-  const [newBanner, setNewBanner] = useState({
-    title: '',
-    subtitle: '',
-    linkBotao: '',
-    textoBotao: '',
-    desktopFile: null as Blob | null,
-    mobileFile: null as Blob | null,
-    // Previews for UI
-    desktopPreview: null as string | null,
-    mobilePreview: null as string | null
-  })
-
-  // Resource Form State
-  const [newResource, setNewResource] = useState({
-    titulo: '',
-    tipo: 'PDF',
-    publicoAlvo: 'GERAL',
-    file: null as File | null
-  })
-
   // Church Info State
   const [churchInfo, setChurchInfo] = useState({
     name: initialChurchInfo?.name || '',
@@ -99,7 +105,132 @@ export default function WebsiteEditor({
     heroVideoUrl: initialChurchInfo?.heroVideoUrl || ''
   })
 
-  // Handlers
+  // New Banner Form State
+  const [newBanner, setNewBanner] = useState({
+    title: '',
+    subtitle: '',
+    linkBotao: '',
+    textoBotao: '',
+    desktopFile: null as Blob | null,
+    mobileFile: null as Blob | null,
+    desktopPreview: null as string | null,
+    mobilePreview: null as string | null
+  })
+
+  // --- HANDLERS ---
+
+  // 1. Brand & Media Handlers
+  async function handleUploadBrand(e: React.ChangeEvent<HTMLInputElement>, type: string) {
+    if (!e.target.files || e.target.files.length === 0) return
+    const file = e.target.files[0]
+    
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('title', file.name)
+    formData.append('type', type)
+    formData.append('file', file)
+
+    try {
+      const res = await uploadBrandAsset(formData)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success('Arquivo enviado!')
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Erro no upload')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveColor(hex: string) {
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('title', 'Cor da Marca')
+    formData.append('type', 'PALETTE')
+    formData.append('colorHex', hex)
+
+    try {
+      const res = await uploadBrandAsset(formData)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success('Cor salva!')
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Erro ao salvar cor')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDeleteAsset(id: string, model: 'BrandAsset' | 'GalleryImage') {
+    if (!confirm('Tem certeza?')) return
+    setLoading(true)
+    try {
+      const res = await deleteAsset(id, model)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success('Item removido!')
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleUploadGallery(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files || e.target.files.length === 0) return
+    
+    setLoading(true)
+    const formData = new FormData()
+    Array.from(e.target.files).forEach(file => {
+      formData.append('files', file)
+    })
+
+    try {
+      const res = await uploadGalleryImage(formData)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success(`${res.count} fotos enviadas!`)
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Erro no upload')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSendBlast() {
+    if (!blastForm.title || !blastForm.message) {
+      return toast.error('Preencha título e mensagem')
+    }
+    setLoading(true)
+    try {
+      const res = await sendPushNotification(blastForm)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success(`Enviado para ${res.count} pessoas!`)
+        setBlastForm({ ...blastForm, title: '', message: '' })
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error('Erro no envio')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copiado!')
+  }
+
+  // 2. Banner Handlers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
@@ -136,6 +267,59 @@ export default function WebsiteEditor({
     setCropperState({ isOpen: false, imageSrc: null, aspect: 16/9, target: 'desktop' })
   }
 
+  const handleAddBanner = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newBanner.desktopFile) {
+      return alert('É necessário definir a imagem do banner (Desktop).')
+    }
+    
+    setLoading(true)
+    try {
+      const data = new FormData()
+      data.append('title', newBanner.title)
+      data.append('subtitle', newBanner.subtitle)
+      data.append('linkBotao', newBanner.linkBotao)
+      data.append('textoBotao', newBanner.textoBotao)
+      
+      if (newBanner.desktopFile) data.append('desktopFile', newBanner.desktopFile, 'desktop-banner.jpg')
+      if (newBanner.mobileFile) data.append('mobileFile', newBanner.mobileFile, 'mobile-banner.jpg')
+
+      const result = await createBanner(data)
+      if (result.error) throw new Error(result.error)
+
+      toast.success('Banner criado com sucesso!')
+      handleClearEditor()
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao criar banner.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteBanner = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este banner?')) return
+    try {
+      await deleteBanner(id)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao deletar banner.')
+    }
+  }
+
+  const handleToggleBanner = async (id: string) => {
+    try {
+      await toggleBannerStatus(id)
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro ao alterar status.')
+    }
+  }
+
+  // 3. Config Handlers
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
@@ -165,10 +349,10 @@ export default function WebsiteEditor({
         ...formData,
         weeklySchedule: JSON.stringify(formData.weeklySchedule)
       })
-      alert('Configurações salvas com sucesso!')
+      toast.success('Configurações salvas!')
     } catch (error) {
       console.error(error)
-      alert('Erro ao salvar configurações.')
+      toast.error('Erro ao salvar.')
     } finally {
       setLoading(false)
     }
@@ -192,223 +376,78 @@ export default function WebsiteEditor({
       const result = await updateChurchInfo(data)
       if (result.error) throw new Error(result.error)
 
-      alert('Identidade atualizada com sucesso!')
+      toast.success('Identidade atualizada!')
       router.refresh()
     } catch (error) {
       console.error(error)
-      alert('Erro ao atualizar identidade.')
+      toast.error('Erro ao atualizar identidade.')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleAddBanner = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newBanner.desktopFile) {
-      return alert('É necessário definir a imagem do banner (Desktop).')
-    }
-    
-    setLoading(true)
-    try {
-      const data = new FormData()
-      data.append('title', newBanner.title)
-      data.append('subtitle', newBanner.subtitle)
-      data.append('linkBotao', newBanner.linkBotao)
-      data.append('textoBotao', newBanner.textoBotao)
-      
-      if (newBanner.desktopFile) data.append('desktopFile', newBanner.desktopFile, 'desktop-banner.jpg')
-      if (newBanner.mobileFile) data.append('mobileFile', newBanner.mobileFile, 'mobile-banner.jpg')
-
-      const result = await createBanner(data)
-      if (result.error) throw new Error(result.error)
-
-      alert('Banner criado com sucesso!')
-      handleClearEditor()
-      router.refresh()
-    } catch (error) {
-      console.error(error)
-      alert('Erro ao criar banner.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDeleteBanner = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este banner?')) return
-    try {
-      await deleteBanner(id)
-      router.refresh()
-    } catch (error) {
-      console.error(error)
-      alert('Erro ao deletar banner.')
-    }
-  }
-
-  const handleToggleBanner = async (id: string) => {
-    try {
-      await toggleBannerStatus(id)
-      router.refresh()
-    } catch (error) {
-      console.error(error)
-      alert('Erro ao alterar status.')
     }
   }
 
   return (
     <div className="grid lg:grid-cols-12 gap-8 items-start">
       {/* LEFT COLUMN: Editor & Config */}
-      <div className="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Tabs Header */}
-        <div className="flex border-b overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('appearance')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'appearance' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Layout className="w-4 h-4" />
-            Banners (Carrossel)
-          </button>
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'schedule' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Programação
-          </button>
-          <button
-            onClick={() => setActiveTab('identity')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'identity' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            Identidade & Contato
-          </button>
-          <button
-            onClick={() => setActiveTab('links')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'links' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <LinkIcon className="w-4 h-4" />
-            Links na Bio
-          </button>
-          <button
-            onClick={() => setActiveTab('sermons')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'sermons' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Video className="w-4 h-4" />
-            Mensagens
-          </button>
-          <button
-            onClick={() => setActiveTab('resources')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'resources' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            Recursos
-          </button>
-          <button
-            onClick={() => setActiveTab('live')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'live' 
-                ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' 
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <RadioTower className="w-4 h-4" />
-            Transmissão
-          </button>
-        </div>
+      <div className="lg:col-span-7">
+        <Tabs defaultValue={defaultTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-4 mb-6">
+            <TabsTrigger value="general">Geral</TabsTrigger>
+            <TabsTrigger value="brand">Brand Kit</TabsTrigger>
+            <TabsTrigger value="notifications">Notificações</TabsTrigger>
+            <TabsTrigger value="gallery">Galeria</TabsTrigger>
+          </TabsList>
 
-        {/* Content */}
-        <div className="p-6">
-          
-          {/* Tab: Appearance (Banners) */}
-          {activeTab === 'appearance' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              
-              {/* 1. Add/Edit Banner Section (Inline) */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5 text-indigo-600" />
-                    Adicionar / Editar Banner
-                  </h3>
-                  <p className="text-sm text-slate-500">Crie um novo banner para o carrossel da home.</p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6">
-                  {/* File Input & Cropper */}
+          {/* TAB 1: GERAL (Banners, Identity, Schedule) */}
+          <TabsContent value="general" className="space-y-6">
+            
+            {/* 1.1 Banners */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-indigo-600" />
+                  Banners da Home
+                </CardTitle>
+                <CardDescription>Gerencie o carrossel principal.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Banner Form */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
                   <div className="space-y-4">
-                    {/* If no image selected, show upload */}
                     {!cropperState.imageSrc ? (
                       <div className="w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-white hover:bg-slate-50 transition-colors group">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-white hover:bg-slate-50 transition-colors group">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                               <Plus className="w-6 h-6" />
-                            </div>
-                            <p className="text-sm font-medium text-slate-700">Clique para selecionar imagem</p>
-                            <p className="text-xs text-slate-400 mt-1">Recomendado: 1920x1080 (16:9)</p>
+                            <Plus className="w-8 h-8 text-slate-400 group-hover:text-indigo-500 mb-2 transition-colors" />
+                            <p className="text-sm font-medium text-slate-700">Novo Banner</p>
+                            <p className="text-xs text-slate-400">1920x1080 (16:9)</p>
                           </div>
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={handleFileSelect}
-                            className="hidden" 
-                          />
+                          <input type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                         </label>
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {/* Aspect Control Tabs */}
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => setCropperState(prev => ({ ...prev, isOpen: true, aspect: 16/9, target: 'desktop' }))}
                             className={`flex-1 py-2 text-xs font-medium rounded-lg border flex items-center justify-center gap-2 ${
-                              cropperState.target === 'desktop' 
-                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                              cropperState.target === 'desktop' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'
                             }`}
                           >
-                            <Smartphone className="w-3 h-3 rotate-90" />
-                            Ajuste Desktop (16:9)
+                            <Smartphone className="w-3 h-3 rotate-90" /> Desktop
                           </button>
                           <button
                             type="button"
                             onClick={() => setCropperState(prev => ({ ...prev, isOpen: true, aspect: 16/9, target: 'mobile' }))}
                             className={`flex-1 py-2 text-xs font-medium rounded-lg border flex items-center justify-center gap-2 ${
-                              cropperState.target === 'mobile' 
-                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                              cropperState.target === 'mobile' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-200'
                             }`}
                           >
-                             <Smartphone className="w-3 h-3" />
-                             Ajuste Mobile (16:9)
+                            <Smartphone className="w-3 h-3" /> Mobile
                           </button>
                         </div>
 
-                        {/* Cropper or Preview */}
                         {cropperState.isOpen ? (
                           <div className="animate-in fade-in zoom-in-95 duration-200">
                              <InlineImageCropper
@@ -420,7 +459,6 @@ export default function WebsiteEditor({
                           </div>
                         ) : (
                           <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-video group">
-                             {/* Show the preview of the currently selected target, or fallback */}
                              {/* eslint-disable-next-line @next/next/no-img-element */}
                              <img 
                                 src={cropperState.target === 'desktop' ? newBanner.desktopPreview! : (newBanner.mobilePreview || newBanner.desktopPreview!)} 
@@ -428,764 +466,431 @@ export default function WebsiteEditor({
                                 className="w-full h-full object-contain" 
                              />
                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                <button 
-                                  onClick={() => setCropperState(prev => ({ ...prev, isOpen: true }))}
-                                  className="px-4 py-2 bg-white text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-50"
-                                >
-                                  <CropIcon className="w-4 h-4 inline mr-2" />
-                                  Ajustar Recorte
+                                <button onClick={() => setCropperState(prev => ({ ...prev, isOpen: true }))} className="px-3 py-1 bg-white text-indigo-600 rounded-lg text-xs font-bold">
+                                  Ajustar
                                 </button>
-                                <button 
-                                  onClick={handleClearEditor}
-                                  className="px-4 py-2 bg-white text-red-600 rounded-lg font-medium text-sm hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4 inline mr-2" />
+                                <button onClick={handleClearEditor} className="px-3 py-1 bg-white text-red-600 rounded-lg text-xs font-bold">
                                   Remover
                                 </button>
                              </div>
-                             <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 text-white text-xs rounded backdrop-blur-sm">
-                                {cropperState.target === 'desktop' ? 'Preview Desktop' : 'Preview Mobile'}
-                             </div>
                           </div>
                         )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                           <input type="text" placeholder="Título" value={newBanner.title} onChange={e => setNewBanner({...newBanner, title: e.target.value})} className="px-3 py-2 rounded-lg border text-sm" />
+                           <input type="text" placeholder="Subtítulo" value={newBanner.subtitle} onChange={e => setNewBanner({...newBanner, subtitle: e.target.value})} className="px-3 py-2 rounded-lg border text-sm" />
+                           <input type="text" placeholder="Texto Botão" value={newBanner.textoBotao} onChange={e => setNewBanner({...newBanner, textoBotao: e.target.value})} className="px-3 py-2 rounded-lg border text-sm" />
+                           <input type="text" placeholder="Link Botão" value={newBanner.linkBotao} onChange={e => setNewBanner({...newBanner, linkBotao: e.target.value})} className="px-3 py-2 rounded-lg border text-sm" />
+                        </div>
+                        <Button onClick={handleAddBanner as any} disabled={loading || !newBanner.desktopFile} className="w-full">
+                          {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4 mr-2" />} Salvar Banner
+                        </Button>
                       </div>
                     )}
                   </div>
-
-                  {/* Text Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Título Principal</label>
-                      <input 
-                        type="text" 
-                        value={newBanner.title}
-                        onChange={(e) => setNewBanner(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Ex: Bem-vindo à nossa casa"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Subtítulo</label>
-                      <textarea 
-                        value={newBanner.subtitle}
-                        onChange={(e) => setNewBanner(prev => ({ ...prev, subtitle: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]"
-                        placeholder="Ex: Uma igreja família para você pertencer..."
-                      />
-                    </div>
-                    <div>
-                       <label className="block text-xs font-medium text-slate-500 mb-1">Texto do Botão</label>
-                       <input 
-                         type="text" 
-                         value={newBanner.textoBotao}
-                         onChange={(e) => setNewBanner(prev => ({ ...prev, textoBotao: e.target.value }))}
-                         className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                         placeholder="Ex: Saiba Mais"
-                       />
-                    </div>
-                    <div>
-                       <label className="block text-xs font-medium text-slate-500 mb-1">Link do Botão</label>
-                       <input 
-                         type="text" 
-                         value={newBanner.linkBotao}
-                         onChange={(e) => setNewBanner(prev => ({ ...prev, linkBotao: e.target.value }))}
-                         className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                         placeholder="Ex: /celulas"
-                       />
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                     <Button 
-                       onClick={handleAddBanner as any} 
-                       disabled={loading || !newBanner.desktopFile}
-                       className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12"
-                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Salvar Banner
-                     </Button>
-                  </div>
                 </div>
-              </div>
 
-              {/* Existing Banners List */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-slate-800">Banners Ativos</h3>
-                <div className="grid grid-cols-1 gap-4">
+                {/* Banner List */}
+                <div className="space-y-3">
                   {initialBanners.map((banner) => (
-                    <div key={banner.id} className="flex gap-4 p-4 bg-white rounded-xl border border-slate-200 items-center">
-                      <div className="w-24 aspect-video bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 relative group cursor-pointer"
-                           onClick={() => {
-                             // Optional: Edit existing banner? For now, just view
-                           }}
-                      >
+                    <div key={banner.id} className="flex gap-4 p-3 bg-white rounded-lg border border-slate-200 items-center">
+                      <div className="w-16 h-9 bg-slate-100 rounded overflow-hidden flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={banner.desktopUrl} alt={banner.titulo} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-slate-900 truncate">{banner.titulo}</h4>
+                        <h4 className="font-bold text-sm text-slate-900 truncate">{banner.titulo}</h4>
                         <p className="text-xs text-slate-500 truncate">{banner.subtitulo}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleToggleBanner(banner.id)}
-                          className={`p-2 rounded-lg transition-colors ${banner.ativo ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-slate-400 bg-slate-50 hover:bg-slate-100'}`}
-                          title={banner.ativo ? "Desativar" : "Ativar"}
-                        >
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleToggleBanner(banner.id)} className={`p-2 rounded hover:bg-slate-100 ${banner.ativo ? 'text-green-600' : 'text-slate-400'}`}>
                           {banner.ativo ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         </button>
-                        <button
-                          onClick={() => handleDeleteBanner(banner.id)}
-                          className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                          title="Excluir"
-                        >
+                        <button onClick={() => handleDeleteBanner(banner.id)} className="p-2 text-red-600 hover:bg-red-50 rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
-                  {initialBanners.length === 0 && (
-                    <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-sm">
-                      Nenhum banner cadastrado.
-                    </div>
-                  )}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Alert Bar Configuration */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 space-y-4 opacity-80 hover:opacity-100 transition-opacity">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
-                      <RadioTower className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Barra de Avisos Global</h3>
-                    </div>
+            {/* 1.2 Identidade Visual */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-pink-600" />
+                  Identidade & Contato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome da Igreja</Label>
+                    <Input value={churchInfo.name} onChange={e => setChurchInfo({...churchInfo, name: e.target.value})} />
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.alertActive}
-                      onChange={(e) => handleChange('alertActive', e.target.checked)}
-                      className="sr-only peer"
+                  <div className="space-y-2">
+                    <Label>Cor Principal (Tema)</Label>
+                    <Select value={churchInfo.themeColor} onValueChange={v => setChurchInfo({...churchInfo, themeColor: v})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="blue">Azul</SelectItem>
+                        <SelectItem value="red">Vermelho</SelectItem>
+                        <SelectItem value="green">Verde</SelectItem>
+                        <SelectItem value="amber">Laranja</SelectItem>
+                        <SelectItem value="purple">Roxo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>WhatsApp</Label>
+                    <Input value={churchInfo.whatsapp} onChange={e => setChurchInfo({...churchInfo, whatsapp: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Instagram (@)</Label>
+                    <Input value={churchInfo.instagram} onChange={e => setChurchInfo({...churchInfo, instagram: e.target.value})} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Vídeo Hero (YouTube URL)</Label>
+                  <Input value={churchInfo.heroVideoUrl} onChange={e => setChurchInfo({...churchInfo, heroVideoUrl: e.target.value})} placeholder="https://youtube.com/watch?v=..." />
+                </div>
+                <Button onClick={handleSaveChurchInfo} disabled={loading} className="w-full">
+                  <Save className="w-4 h-4 mr-2" /> Salvar Identidade
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* 1.3 Programação Semanal */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-orange-600" />
+                  Programação Semanal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.weeklySchedule.map((item: any, idx: number) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <Select value={item.dia} onValueChange={(v) => handleScheduleChange(idx, 'dia', v)}>
+                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(d => (
+                          <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input 
+                      className="w-24" 
+                      value={item.horario} 
+                      onChange={(e) => handleScheduleChange(idx, 'horario', e.target.value)} 
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-
-                {formData.alertActive && (
-                  <div className="grid grid-cols-1 gap-4 pt-2">
-                    <div>
-                      <input 
-                        type="text" 
-                        value={formData.alertText || ''}
-                        onChange={(e) => handleChange('alertText', e.target.value)}
-                        placeholder="Texto do aviso..."
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <select 
-                        value={formData.alertColor}
-                        onChange={(e) => handleChange('alertColor', e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                      >
-                        <option value="bg-blue-600">Azul</option>
-                        <option value="bg-red-600">Vermelho</option>
-                        <option value="bg-yellow-500">Amarelo</option>
-                        <option value="bg-green-600">Verde</option>
-                      </select>
-                      <input 
-                        type="text" 
-                        value={formData.alertLink || ''}
-                        onChange={(e) => handleChange('alertLink', e.target.value)}
-                        placeholder="Link (opcional)"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tab: Schedule */}
-          {activeTab === 'schedule' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-slate-800">Dias de Culto</h3>
-                <button
-                  onClick={addScheduleItem}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Adicionar Dia
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {formData.weeklySchedule.map((item: any, index: number) => (
-                  <div key={index} className="flex gap-3 items-start p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Dia da Semana</label>
-                        <select
-                          value={item.dia}
-                          onChange={(e) => handleScheduleChange(index, 'dia', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        >
-                          <option value="Domingo">Domingo</option>
-                          <option value="Segunda-feira">Segunda-feira</option>
-                          <option value="Terça-feira">Terça-feira</option>
-                          <option value="Quarta-feira">Quarta-feira</option>
-                          <option value="Quinta-feira">Quinta-feira</option>
-                          <option value="Sexta-feira">Sexta-feira</option>
-                          <option value="Sábado">Sábado</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Horário</label>
-                        <input
-                          type="time"
-                          value={item.horario}
-                          onChange={(e) => handleScheduleChange(index, 'horario', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-slate-500 mb-1">Título do Culto</label>
-                        <input
-                          type="text"
-                          value={item.titulo}
-                          onChange={(e) => handleScheduleChange(index, 'titulo', e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Ex: Culto da Família"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeScheduleItem(index)}
-                      className="mt-6 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <Input 
+                      className="flex-1" 
+                      value={item.titulo} 
+                      onChange={(e) => handleScheduleChange(idx, 'titulo', e.target.value)} 
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeScheduleItem(idx)}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
                   </div>
                 ))}
-                {formData.weeklySchedule.length === 0 && (
-                  <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    Nenhum horário cadastrado.
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={addScheduleItem} className="flex-1">
+                    <Plus className="w-4 h-4 mr-2" /> Adicionar Culto
+                  </Button>
+                  <Button onClick={handleSaveConfig} className="flex-1">
+                    <Save className="w-4 h-4 mr-2" /> Salvar Agenda
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 1.4 Live Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <RadioTower className="w-5 h-5 text-red-600" />
+                  Status da Live
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Estamos ao vivo?</Label>
+                    <p className="text-sm text-slate-500">Isso exibirá um aviso no topo do site.</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isLive} 
+                    onCheckedChange={(checked) => handleChange('isLive', checked)} 
+                  />
+                </div>
+                {formData.isLive && (
+                  <div className="space-y-2">
+                    <Label>Link da Transmissão</Label>
+                    <Input value={formData.liveLink} onChange={e => handleChange('liveLink', e.target.value)} placeholder="https://youtube.com/..." />
                   </div>
                 )}
-              </div>
-            </div>
-          )}
+                <Button onClick={handleSaveConfig} className="w-full">
+                  <Save className="w-4 h-4 mr-2" /> Atualizar Status
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Tab: Identity & Contact */}
-          {activeTab === 'identity' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              
-              {/* Branding Section */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <User className="w-5 h-5 text-indigo-600" />
-                    Branding & Identidade
-                  </h3>
-                  <p className="text-sm text-slate-500">Logo e nome da igreja.</p>
+          {/* TAB 2: BRAND KIT */}
+          <TabsContent value="brand" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Logotipos e Ícones</CardTitle>
+                <CardDescription>Upload de arquivos PNG/SVG com fundo transparente.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer relative">
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleUploadBrand(e, 'LOGO')} accept="image/png,image/svg+xml" />
+                    <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
+                    <span className="text-sm font-medium">Upload Logo Principal</span>
+                    <span className="text-xs text-slate-500">PNG ou SVG</span>
+                  </div>
+                  <div className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer relative">
+                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleUploadBrand(e, 'ICON')} accept="image/png,image/svg+xml" />
+                    <StarIcon className="w-8 h-8 text-slate-400 mb-2" />
+                    <span className="text-sm font-medium">Upload Ícone (Favicon)</span>
+                    <span className="text-xs text-slate-500">Quadrado (1:1)</span>
+                  </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Logo do Site</label>
-                    <div className="flex items-center gap-6">
-                      <div className="w-24 h-24 bg-white rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
-                        {churchInfo.logoUrl || churchInfo.logoFile ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img 
-                            src={churchInfo.logoFile ? URL.createObjectURL(churchInfo.logoFile) : churchInfo.logoUrl} 
-                            alt="Logo Preview" 
-                            className="w-full h-full object-contain p-2"
-                          />
-                        ) : (
-                          <ImageIcon className="w-8 h-8 text-slate-300" />
-                        )}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-900">Arquivos da Marca</h4>
+                  {brandAssets.filter(a => ['LOGO', 'ICON'].includes(a.type)).map(asset => (
+                    <div key={asset.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                      <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center p-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={asset.fileUrl} alt={asset.title} className="max-w-full max-h-full" />
                       </div>
                       <div className="flex-1">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              setChurchInfo(prev => ({ ...prev, logoFile: e.target.files![0] }))
-                            }
-                          }}
-                          className="block w-full text-sm text-slate-500
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-full file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-indigo-50 file:text-indigo-700
-                            hover:file:bg-indigo-100"
-                        />
-                        <p className="text-xs text-slate-500 mt-2">Recomendado: PNG Transparente, Quadrado.</p>
+                        <p className="font-medium text-sm">{asset.title}</p>
+                        <p className="text-xs text-slate-500">{asset.type}</p>
                       </div>
+                      <Button variant="ghost" size="icon" onClick={() => copyToClipboard(asset.fileUrl)}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAsset(asset.id, 'BrandAsset')}>
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Igreja</label>
-                    <input
-                      type="text"
-                      value={churchInfo.name}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: Minha Igreja"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Usado quando a logo não está disponível.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">URL do Vídeo de Fundo (MP4)</label>
-                    <input
-                      type="text"
-                      value={churchInfo.heroVideoUrl}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, heroVideoUrl: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="https://exemplo.com/video.mp4"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Link direto para o vídeo que será exibido no fundo da Hero Section. Deixe em branco para usar a imagem.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Theme Section */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-indigo-600" />
-                    Tema Visual
-                  </h3>
-                  <p className="text-sm text-slate-500">Escolha a cor principal do site.</p>
-                </div>
-
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    { id: 'blue', name: 'Azul (Padrão)', color: 'bg-blue-600' },
-                    { id: 'red', name: 'Vermelho (Paixão)', color: 'bg-red-600' },
-                    { id: 'dark', name: 'Dark (Jovens)', color: 'bg-slate-900' },
-                    { id: 'gold', name: 'Dourado (Especial)', color: 'bg-yellow-500' },
-                  ].map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => setChurchInfo(prev => ({ ...prev, themeColor: theme.id }))}
-                      className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
-                        churchInfo.themeColor === theme.id
-                          ? 'border-indigo-600 bg-white shadow-sm'
-                          : 'border-transparent bg-white hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-full ${theme.color} shadow-sm`} />
-                      <span className={`text-sm font-medium ${
-                        churchInfo.themeColor === theme.id ? 'text-slate-900' : 'text-slate-600'
-                      }`}>
-                        {theme.name}
-                      </span>
-                      {churchInfo.themeColor === theme.id && (
-                        <div className="absolute top-[-8px] right-[-8px] bg-indigo-600 text-white p-1 rounded-full shadow-md">
-                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                           </svg>
-                        </div>
-                      )}
-                    </button>
                   ))}
+                  {brandAssets.length === 0 && <p className="text-sm text-slate-500 italic">Nenhum arquivo enviado.</p>}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Contact Section */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Smartphone className="w-5 h-5 text-indigo-600" />
-                    Contato
-                  </h3>
-                  <p className="text-sm text-slate-500">Informações de contato e endereço.</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp</label>
-                    <input
-                      type="text"
-                      value={churchInfo.whatsapp}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, whatsapp: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: (11) 99999-9999"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Atualiza o botão flutuante do site.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço Completo</label>
-                    <textarea
-                      value={churchInfo.address}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, address: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]"
-                      placeholder="Ex: Rua das Flores, 123 - Centro, São Paulo - SP"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Exibido no rodapé do site.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Social Section */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Share2 className="w-5 h-5 text-indigo-600" />
-                    Redes Sociais
-                  </h3>
-                  <p className="text-sm text-slate-500">Links para suas redes.</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Instagram (Link ou @usuario)</label>
-                    <input
-                      type="text"
-                      value={churchInfo.instagram}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, instagram: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: @minhaigreja"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">YouTube (Link do Canal)</label>
-                    <input
-                      type="text"
-                      value={churchInfo.youtube}
-                      onChange={(e) => setChurchInfo(prev => ({ ...prev, youtube: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: https://youtube.com/c/minhaigreja"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button 
-                  onClick={handleSaveChurchInfo} 
-                  disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-8"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                  Salvar Identidade
-                </Button>
-              </div>
-
-            </div>
-          )}
-
-          {/* Tab: Bio Links */}
-          {activeTab === 'links' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-               <BioLinksManager initialLinks={initialBioLinks} />
-            </div>
-          )}
-
-          {/* Tab: Sermons */}
-          {activeTab === 'sermons' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-               <SermonsManager initialSeries={initialSermonSeries} />
-            </div>
-          )}
-
-          {/* Tab: Resources */}
-          {activeTab === 'resources' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-medium text-slate-800">Recursos para Download</h3>
-                  <p className="text-sm text-slate-500">Envie materiais para a igreja e para a liderança.</p>
-                </div>
-              </div>
-
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault()
-                  if (!newResource.file) {
-                    alert('Selecione um arquivo')
-                    return
-                  }
-                  setLoading(true)
-                  try {
-                    const data = new FormData()
-                    data.append('titulo', newResource.titulo)
-                    data.append('tipo', newResource.tipo)
-                    data.append('publicoAlvo', newResource.publicoAlvo)
-                    data.append('file', newResource.file)
-
-                    const result = await createResource(data)
-                    if (result.error) {
-                      alert(result.error)
-                    } else {
-                      alert('Recurso criado com sucesso!')
-                      setNewResource({
-                        titulo: '',
-                        tipo: 'PDF',
-                        publicoAlvo: 'GERAL',
-                        file: null
-                      })
-                      router.refresh()
-                    }
-                  } catch (error) {
-                    console.error(error)
-                    alert('Erro ao criar recurso.')
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                className="space-y-4 bg-slate-50 border border-slate-200 rounded-xl p-4"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Título do arquivo</label>
-                    <input
-                      type="text"
-                      value={newResource.titulo}
-                      onChange={(e) => setNewResource(prev => ({ ...prev, titulo: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: Manual do Líder"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Público alvo</label>
-                    <select
-                      value={newResource.publicoAlvo}
-                      onChange={(e) => setNewResource(prev => ({ ...prev, publicoAlvo: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="GERAL">Todos</option>
-                      <option value="LIDERES">Líderes</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-                    <select
-                      value={newResource.tipo}
-                      onChange={(e) => setNewResource(prev => ({ ...prev, tipo: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="PDF">PDF</option>
-                      <option value="IMAGEM">Imagem</option>
-                      <option value="OUTRO">Outro</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Arquivo</label>
-                    <div className="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:bg-slate-50 transition-colors relative cursor-pointer">
-                      <input
-                        type="file"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) {
-                            setNewResource(prev => ({ ...prev, file: e.target.files![0] }))
-                          }
-                        }}
-                      />
-                      {newResource.file ? (
-                        <div className="text-sm text-indigo-600 font-medium flex items-center justify-center gap-2">
-                          <FileText className="w-4 h-4" />
-                          {newResource.file.name}
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <FileText className="w-6 h-6 text-slate-400 mx-auto" />
-                          <p className="text-sm text-slate-500">Clique para selecionar um arquivo</p>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                      📄 Formatos aceitos: PDF, DOCX ou Imagens. Ideal para escalas e esboços.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Adicionar recurso
-                  </button>
-                </div>
-              </form>
-
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-slate-700">Lista de recursos</h4>
-                <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-slate-50">
-                  {initialResources.length === 0 && (
-                    <div className="px-4 py-6 text-center text-sm text-slate-400">
-                      Nenhum recurso cadastrado.
-                    </div>
-                  )}
-                  {initialResources.map((resource) => (
-                    <div key={resource.id} className="flex items-center justify-between px-4 py-3 bg-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{resource.titulo}</p>
-                          <p className="text-xs text-slate-500">
-                            {resource.tipo === 'PDF' ? 'PDF' : resource.tipo === 'IMAGEM' ? 'Imagem' : 'Outro'} •{' '}
-                            {resource.publicoAlvo === 'LIDERES' ? 'Líderes' : 'Todos'}
-                          </p>
-                        </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Cores da Marca</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="flex items-end gap-4">
+                    <div className="space-y-2 flex-1">
+                      <Label>Adicionar Cor (Hex)</Label>
+                      <div className="flex gap-2">
+                        <Input type="color" className="w-12 p-1 h-10" id="colorPicker" onChange={(e) => {
+                          const input = document.getElementById('hexInput') as HTMLInputElement
+                          if(input) input.value = e.target.value
+                        }} />
+                        <Input id="hexInput" placeholder="#000000" className="uppercase" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={resource.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        >
-                          Baixar
-                        </a>
-                        <button
-                          onClick={async () => {
-                            if (!confirm('Deseja realmente excluir este recurso?')) return
-                            try {
-                              const result = await deleteResource(resource.id)
-                              if (result.error) {
-                                alert(result.error)
-                              } else {
-                                router.refresh()
-                              }
-                            } catch (error) {
-                              console.error(error)
-                              alert('Erro ao excluir recurso.')
-                            }
-                          }}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                          title="Excluir"
+                    </div>
+                    <Button onClick={() => {
+                      const input = document.getElementById('hexInput') as HTMLInputElement
+                      if(input && input.value) handleSaveColor(input.value)
+                    }}>Adicionar</Button>
+                 </div>
+                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-4 mt-6">
+                    {brandAssets.filter(a => a.type === 'PALETTE').map(asset => (
+                      <div key={asset.id} className="group relative">
+                        <div 
+                          className="w-full aspect-square rounded-lg shadow-sm border"
+                          style={{ backgroundColor: asset.colorHex }}
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1 rounded-lg">
+                           <button onClick={() => copyToClipboard(asset.colorHex)} className="text-white hover:text-indigo-200"><Copy className="w-4 h-4" /></button>
+                           <button onClick={() => handleDeleteAsset(asset.id, 'BrandAsset')} className="text-white hover:text-red-200"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                        <p className="text-xs text-center mt-1 font-mono text-slate-500">{asset.colorHex}</p>
+                      </div>
+                    ))}
+                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 3: NOTIFICATIONS (PUSH) */}
+          <TabsContent value="notifications" className="space-y-6">
+             <Card>
+               <CardHeader>
+                 <CardTitle className="flex items-center gap-2">
+                   <Megaphone className="w-5 h-5 text-indigo-600" />
+                   Enviar Notificação Push
+                 </CardTitle>
+                 <CardDescription>Envie alertas para o app dos membros.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                   <Label>Título</Label>
+                   <Input 
+                      placeholder="Ex: Culto de Jovens hoje!" 
+                      value={blastForm.title}
+                      onChange={e => setBlastForm({...blastForm, title: e.target.value})}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Mensagem</Label>
+                   <Textarea 
+                      placeholder="Escreva sua mensagem curta..." 
+                      rows={3}
+                      value={blastForm.message}
+                      onChange={e => setBlastForm({...blastForm, message: e.target.value})}
+                   />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Link (Opcional)</Label>
+                      <Input 
+                        placeholder="/eventos" 
+                        value={blastForm.link}
+                        onChange={e => setBlastForm({...blastForm, link: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Público Alvo</Label>
+                      <Select value={blastForm.target} onValueChange={v => setBlastForm({...blastForm, target: v})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todos os Usuários</SelectItem>
+                          <SelectItem value="MEMBERS">Apenas Membros</SelectItem>
+                          <SelectItem value="LEADERS">Liderança</SelectItem>
+                          <SelectItem value="WORSHIP">Equipe de Louvor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                 </div>
+                 <Button onClick={handleSendBlast} disabled={loading} className="w-full">
+                   {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                   Enviar Notificação
+                 </Button>
+               </CardContent>
+             </Card>
+
+             <Card>
+               <CardHeader><CardTitle>Histórico de Envios</CardTitle></CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {notificationHistory.map((notif: any) => (
+                     <div key={notif.id} className="flex justify-between items-start p-3 border-b last:border-0">
+                       <div>
+                         <h4 className="font-bold text-sm">{notif.title}</h4>
+                         <p className="text-sm text-slate-600">{notif.message}</p>
+                         <div className="flex gap-2 mt-1">
+                           <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">{notif.target}</span>
+                           <span className="text-xs text-slate-400">{new Date(notif.sentAt).toLocaleDateString()}</span>
+                         </div>
+                       </div>
+                       <div className="text-right">
+                         <span className="text-xs font-bold text-indigo-600">{notif.sentCount} envios</span>
+                       </div>
+                     </div>
+                   ))}
+                   {notificationHistory.length === 0 && <p className="text-sm text-slate-500">Nenhum envio recente.</p>}
+                 </div>
+               </CardContent>
+             </Card>
+          </TabsContent>
+
+          {/* TAB 4: GALLERY */}
+          <TabsContent value="gallery" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Grid className="w-5 h-5 text-indigo-600" />
+                  Galeria da Home
+                </CardTitle>
+                <CardDescription>Fotos exibidas no grid da página inicial.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer relative group">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                    onChange={handleUploadGallery}
+                  />
+                  <div className="bg-indigo-50 p-4 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                    <Plus className="w-8 h-8 text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">Adicionar Fotos</h3>
+                  <p className="text-sm text-slate-500 mt-1">Arraste ou clique para selecionar (Múltiplos)</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {galleryImages.map((img) => (
+                    <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img.url} alt="Gallery" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          onClick={() => handleDeleteAsset(img.id, 'GalleryImage')}
+                          className="rounded-full"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Tab: Live */}
-          {activeTab === 'live' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium text-slate-800">Transmissão Ao Vivo</h3>
-                <p className="text-sm text-slate-500">
-                  Controle o modo ao vivo do site e o link da transmissão.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => handleChange('isLive', !formData.isLive)}
-                  className={`w-full max-w-md flex items-center justify-between px-4 py-3 rounded-2xl border transition-colors ${
-                    formData.isLive
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                      formData.isLive ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      <RadioTower className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formData.isLive ? 'Ao vivo ativado' : 'Ao vivo desligado'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Quando ligado, uma barra vermelha aparece na Home com o link da transmissão.
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`w-10 h-6 rounded-full flex items-center px-1 transition-colors ${
-                      formData.isLive ? 'bg-red-500' : 'bg-slate-300'
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${
-                        formData.isLive ? 'translate-x-4' : ''
-                      }`}
-                    />
-                  </div>
-                </button>
-
-                <div className="max-w-xl">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Link da Live (YouTube ou outro)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.liveLink}
-                    onChange={(e) => handleChange('liveLink', e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="https://youtube.com/..."
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Este link será usado na barra de alerta quando o modo ao vivo estiver ativado.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Footer Actions (Only for Config Tabs) */}
-        {activeTab !== 'appearance' && (
-          <div className="p-6 bg-slate-50 border-t flex justify-end">
-            <button
-              onClick={handleSaveConfig}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Salvar Alterações
-            </button>
-          </div>
-        )}
+        </Tabs>
       </div>
 
       {/* RIGHT COLUMN: Simulator */}
       <div className="hidden lg:block lg:col-span-5 sticky top-6">
         <IPhoneSimulator 
           config={formData}
-          banners={initialBanners}
-          cells={initialCells}
-          // We pass the MOBILE preview if available, otherwise desktop preview, otherwise null
-          imageUrl={newBanner.mobilePreview || newBanner.desktopPreview}
-          schedule={formData.weeklySchedule}
+          banners={initialBanners} // Note: Simulator might not update live with newBanner state unless we merge them, but for now using initial is safe or we can try to merge.
+          churchInfo={churchInfo}
         />
+        <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-xl text-sm">
+          <p className="font-bold mb-1">Dica:</p>
+          O simulador mostra uma prévia aproximada. Sempre verifique no dispositivo real.
+        </div>
       </div>
     </div>
+  )
+}
+
+function StarIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
   )
 }

@@ -5,42 +5,60 @@ import { useRouter } from 'next/navigation'
 import { createEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { Loader2, Calendar, MapPin, DollarSign, Image as ImageIcon, Users } from 'lucide-react'
+import { useForm, Controller } from 'react-hook-form'
+import { EventFormBuilder, FormField } from './EventFormBuilder'
+
+interface EventFormData {
+  title: string
+  date: string
+  location: string
+  price: number
+  maxCapacity: number | null
+  registrationDeadline: string | null
+  description: string
+  bannerUrl: string
+  bannerFile: FileList | null
+  coverFile: FileList | null
+  formConfig: FormField[]
+  requiresCpf: boolean
+}
 
 export function EventForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<EventFormData>({
+    defaultValues: {
+      price: 0,
+      requiresCpf: false,
+      formConfig: []
+    }
+  })
 
-  async function handleSubmit(formData: FormData) {
+  async function onSubmit(data: EventFormData) {
     setIsSubmitting(true)
     
     try {
-      // Basic validation
-      const title = formData.get('title')
-      const date = formData.get('date')
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('date', data.date)
+      formData.append('location', data.location)
+      formData.append('price', data.price.toString())
+      if (data.maxCapacity) formData.append('maxCapacity', data.maxCapacity.toString())
+      if (data.registrationDeadline) formData.append('registrationDeadline', data.registrationDeadline)
+      formData.append('description', data.description)
+      if (data.bannerUrl) formData.append('bannerUrl', data.bannerUrl)
       
-      if (!title || !date) {
-        toast.error('Preencha os campos obrigatórios')
-        setIsSubmitting(false)
-        return
+      if (data.bannerFile && data.bannerFile[0]) {
+        formData.append('bannerFile', data.bannerFile[0])
       }
-
-      // Convert inputs to match action expectation
-      // const price = parseFloat(formData.get('price') as string || '0')
-      // const maxCapacity = formData.get('maxCapacity') ? parseInt(formData.get('maxCapacity') as string) : undefined
+       if (data.coverFile && data.coverFile[0]) {
+        formData.append('coverFile', data.coverFile[0])
+      }
       
-      // const payload = {
-      //   title: title as string,
-      //   description: formData.get('description') as string,
-      //   date: new Date(date as string).toISOString(),
-      //   location: formData.get('location') as string,
-      //   price,
-      //   bannerUrl: formData.get('bannerUrl') as string,
-      //   maxCapacity
-      // }
+      formData.append('formConfig', JSON.stringify(data.formConfig))
+      formData.append('requiresCpf', data.requiresCpf.toString())
 
-      // const result = await createEvent(payload)
-      
-      // Now we pass FormData directly
       const result = await createEvent(formData)
 
       if (result.error) {
@@ -58,16 +76,16 @@ export function EventForm() {
   }
 
   return (
-    <form action={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">Título do Evento *</label>
           <input 
-            name="title" 
-            required 
+            {...register('title', { required: true })}
             placeholder="Ex: Retiro de Jovens 2024"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
+          {errors.title && <span className="text-xs text-red-500">Obrigatório</span>}
         </div>
 
         <div className="space-y-2">
@@ -76,10 +94,10 @@ export function EventForm() {
           </label>
           <input 
             type="datetime-local" 
-            name="date" 
-            required 
+            {...register('date', { required: true })}
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
+           {errors.date && <span className="text-xs text-red-500">Obrigatório</span>}
         </div>
 
         <div className="space-y-2">
@@ -87,7 +105,7 @@ export function EventForm() {
             <MapPin className="w-4 h-4 text-slate-400" /> Local
           </label>
           <input 
-            name="location" 
+            {...register('location')}
             placeholder="Ex: Chácara Recanto Feliz"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
@@ -99,10 +117,9 @@ export function EventForm() {
           </label>
           <input 
             type="number" 
-            name="price" 
+            {...register('price')}
             min="0" 
             step="0.01" 
-            defaultValue="0"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
           <p className="text-xs text-slate-500">Deixe 0 para gratuito.</p>
@@ -114,7 +131,7 @@ export function EventForm() {
           </label>
           <input 
             type="number" 
-            name="maxCapacity" 
+            {...register('maxCapacity')}
             min="1" 
             placeholder="Ilimitado"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -123,11 +140,23 @@ export function EventForm() {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-slate-400" /> Encerramento Inscrições
+          </label>
+          <input 
+            type="datetime-local" 
+            {...register('registrationDeadline')}
+            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <p className="text-xs text-slate-500">Deixe em branco se não houver prazo.</p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
             <ImageIcon className="w-4 h-4 text-slate-400" /> Banner
           </label>
           <input 
             type="file"
-            name="bannerFile" 
+            {...register('bannerFile')}
             accept="image/*"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
@@ -136,7 +165,7 @@ export function EventForm() {
           </p>
           {/* Fallback URL input if needed */}
           <input 
-            name="bannerUrl" 
+            {...register('bannerUrl')}
             placeholder="Ou cole uma URL (https://...)"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none mt-2 text-sm"
           />
@@ -148,7 +177,7 @@ export function EventForm() {
           </label>
           <input 
             type="file"
-            name="coverFile" 
+            {...register('coverFile')}
             accept="image/*"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
@@ -159,12 +188,14 @@ export function EventForm() {
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-700">Descrição</label>
         <textarea 
-          name="description" 
+          {...register('description')}
           rows={4}
           placeholder="Detalhes sobre o evento..."
           className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
         />
       </div>
+
+      <EventFormBuilder control={control} register={register} />
 
       <div className="flex justify-end pt-4 border-t border-slate-100">
         <button

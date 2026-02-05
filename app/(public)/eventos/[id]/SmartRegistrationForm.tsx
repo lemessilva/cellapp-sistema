@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { registerForEvent } from '@/app/actions/events'
 import { toast } from 'sonner'
-import { Loader2, Ticket, CheckCircle, User, ArrowRight, Smartphone } from 'lucide-react'
+import { Loader2, Ticket, CheckCircle, User, ArrowRight, Smartphone, FileText } from 'lucide-react'
 import QRCode from 'react-qr-code'
-import { PhoneInput } from '@/components/ui/phone-input'
+import { useForm, Controller } from 'react-hook-form'
+import { DynamicEventForm, FormField } from '@/components/events/DynamicEventForm'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 type SmartRegistrationFormProps = {
   eventId: string
@@ -15,55 +18,86 @@ type SmartRegistrationFormProps = {
   eventDate: Date
   eventLocation: string | null
   currentUser: { nome: string } | null
+  formConfig?: FormField[]
+  requiresCpf?: boolean
 }
 
-export default function SmartRegistrationForm({ eventId, eventTitle, eventDate, eventLocation, currentUser }: SmartRegistrationFormProps) {
-  const router = useRouter()
-  
-  const [loading, setLoading] = useState(false)
-  const [guestName, setGuestName] = useState('')
-  const [guestPhone, setGuestPhone] = useState('')
-  const [confirmedRegistrationId, setConfirmedRegistrationId] = useState<string | null>(null)
+type RegistrationFormData = {
+  name: string
+  phone: string
+  cpf: string
+  answers: any
+}
 
-  // Handlers
-  const handleLoggedUserRegistration = async () => {
-    setLoading(true)
-    try {
-        const result = await registerForEvent(eventId)
-        if (result.error) {
-            toast.error(result.error)
-        } else {
-            toast.success('Inscrição confirmada!')
-            router.push('/app/dashboard')
-        }
-    } catch (error) {
-        toast.error('Erro ao realizar inscrição')
-    } finally {
-        setLoading(false)
+export default function SmartRegistrationForm({ 
+    eventId, 
+    eventTitle, 
+    currentUser,
+    formConfig = [],
+    requiresCpf = false
+}: SmartRegistrationFormProps) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [confirmedRegistrationId, setConfirmedRegistrationId] = useState<string | null>(null)
+  const [guestName, setGuestName] = useState('') // For success screen
+
+  const { register, control, handleSubmit, formState: { errors }, watch } = useForm<RegistrationFormData>({
+    defaultValues: {
+        name: currentUser?.nome || '',
+        phone: '',
+        cpf: '',
+        answers: {}
     }
+  })
+
+  // CPF Mask Logic
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>, onChange: (value: string) => void) => {
+    let value = e.target.value.replace(/\D/g, '')
+    if (value.length > 11) value = value.slice(0, 11)
+    
+    // Apply mask 999.999.999-99
+    if (value.length > 9) {
+        value = value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*/, '$1.$2.$3-$4')
+    } else if (value.length > 6) {
+        value = value.replace(/^(\d{3})(\d{3})(\d{3}).*/, '$1.$2.$3')
+    } else if (value.length > 3) {
+        value = value.replace(/^(\d{3})(\d{3}).*/, '$1.$2')
+    }
+    
+    onChange(value)
   }
 
-  const handleGuestRegistration = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!guestName || !guestPhone) {
-        toast.error('Preencha todos os campos')
-        return
-    }
-
+  const onSubmit = async (data: RegistrationFormData) => {
     setLoading(true)
     try {
-        const result = await registerForEvent(eventId, { name: guestName, phone: guestPhone })
-        if ('error' in result && result.error) {
+        // If not logged in, require name and phone
+        if (!currentUser && (!data.name || !data.phone)) {
+            toast.error('Preencha nome e telefone')
+            setLoading(false)
+            return
+        }
+
+        // Prepare payload
+        const payload = {
+            name: currentUser ? undefined : data.name,
+            phone: currentUser ? undefined : data.phone,
+            cpf: requiresCpf ? data.cpf : undefined,
+            answers: data.answers
+        }
+
+        const result = await registerForEvent(eventId, payload)
+
+        if (result.error) {
             toast.error(result.error)
-        } else if ('success' in result && result.success) {
+        } else if (result.success) {
             toast.success('Inscrição confirmada!')
-            if ('registrationId' in result && result.registrationId) {
+            setGuestName(currentUser?.nome || data.name)
+            
+            if (result.registrationId) {
                 setConfirmedRegistrationId(result.registrationId)
             } else {
                 setConfirmedRegistrationId('ID-PENDING')
             }
-        } else {
-            toast.error('Erro ao processar resposta da inscrição')
         }
     } catch (error) {
         toast.error('Erro ao realizar inscrição')
@@ -72,7 +106,7 @@ export default function SmartRegistrationForm({ eventId, eventTitle, eventDate, 
     }
   }
 
-  // 1. Success State (Visitor Ticket)
+  // 1. Success State (Ticket)
   if (confirmedRegistrationId) {
     return (
         <div className="animate-in fade-in zoom-in duration-300">
@@ -123,11 +157,11 @@ export default function SmartRegistrationForm({ eventId, eventTitle, eventDate, 
     )
   }
 
-  // 2. Logged User View
-  if (currentUser) {
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* User Info Section */}
+        {currentUser ? (
+             <div className="flex items-center gap-3 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-4">
                 <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
                     {currentUser.nome?.[0] || 'U'}
                 </div>
@@ -136,82 +170,94 @@ export default function SmartRegistrationForm({ eventId, eventTitle, eventDate, 
                     <p className="font-bold text-white">{currentUser.nome}</p>
                 </div>
             </div>
-            
-            <button
-                onClick={handleLoggedUserRegistration}
-                disabled={loading}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                    <>
-                        <Ticket className="w-5 h-5" />
-                        Confirmar Presença
-                    </>
-                )}
-            </button>
-            <p className="text-xs text-center text-slate-500">
-                Sua inscrição ficará vinculada ao seu perfil de membro.
-            </p>
-        </div>
-    )
-  }
+        ) : (
+            <>
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Nome Completo</label>
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                        <Input 
+                            {...register('name', { required: true })}
+                            className="pl-10 bg-slate-950 border-slate-800 text-white"
+                            placeholder="Ex: João Silva"
+                        />
+                    </div>
+                    {errors.name && <span className="text-xs text-red-500">Nome é obrigatório</span>}
+                </div>
 
-  // 3. Visitor View
-  return (
-    <form onSubmit={handleGuestRegistration} className="space-y-4">
-        <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Nome Completo</label>
-            <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input 
-                    type="text" 
-                    value={guestName}
-                    onChange={e => setGuestName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    placeholder="Ex: João Silva"
-                    required
-                />
-            </div>
-        </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">WhatsApp</label>
+                    <div className="relative">
+                        <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                        <Input 
+                            {...register('phone', { required: true })}
+                            type="tel"
+                            className="pl-10 bg-slate-950 border-slate-800 text-white"
+                            placeholder="(00) 00000-0000"
+                        />
+                    </div>
+                    {errors.phone && <span className="text-xs text-red-500">Telefone é obrigatório</span>}
+                </div>
+            </>
+        )}
 
-        <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">WhatsApp</label>
-            <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input 
-                    type="tel" 
-                    value={guestPhone}
-                    onChange={e => setGuestPhone(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    placeholder="(00) 00000-0000"
-                    required
-                />
+        {/* CPF Section */}
+        {requiresCpf && (
+            <div className="pt-2">
+                <label className="block text-sm font-medium text-slate-300 mb-1">CPF (Obrigatório)</label>
+                <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <Controller
+                        control={control}
+                        name="cpf"
+                        rules={{ required: true, minLength: 14 }}
+                        render={({ field }) => (
+                            <Input 
+                                {...field}
+                                onChange={(e) => handleCpfChange(e, field.onChange)}
+                                className="pl-10 bg-slate-950 border-slate-800 text-white"
+                                placeholder="000.000.000-00"
+                                maxLength={14}
+                            />
+                        )}
+                    />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">O CPF é solicitado para garantir sua vaga exclusiva.</p>
+                {errors.cpf && <span className="text-xs text-red-500">CPF inválido ou obrigatório</span>}
             </div>
-        </div>
+        )}
+
+        {/* Dynamic Fields */}
+        <DynamicEventForm 
+            formConfig={formConfig} 
+            register={register} 
+            control={control} 
+            errors={errors}
+        />
 
         <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-white hover:bg-slate-200 text-slate-900 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
         >
             {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
                 <>
-                    Garantir meu Lugar
-                    <ArrowRight className="w-5 h-5" />
+                    {currentUser ? <Ticket className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+                    {currentUser ? 'Confirmar Presença' : 'Garantir meu Lugar'}
                 </>
             )}
         </button>
-        
-        <div className="pt-4 text-center border-t border-slate-800">
-            <p className="text-xs text-slate-500 mb-2">Já é membro da igreja?</p>
-            <Link href="/login" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
-                Fazer Login
-            </Link>
-        </div>
+
+        {!currentUser && (
+            <div className="pt-4 text-center border-t border-slate-800 mt-4">
+                <p className="text-xs text-slate-500 mb-2">Já é membro da igreja?</p>
+                <Link href="/login" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                    Fazer Login
+                </Link>
+            </div>
+        )}
     </form>
   )
 }

@@ -71,7 +71,9 @@ export async function closeMonthlyReport(cellId: string, month: number, year: nu
         totalMeetings,
         totalOffer,
         totalMissions,
-        avgAttendance
+        avgAttendance,
+        submittedAt: now,
+        isLate: isLate
       },
       create: {
         cellId,
@@ -81,7 +83,9 @@ export async function closeMonthlyReport(cellId: string, month: number, year: nu
         totalMeetings,
         totalOffer,
         totalMissions,
-        avgAttendance
+        avgAttendance,
+        submittedAt: now,
+        isLate: isLate
       }
     });
 

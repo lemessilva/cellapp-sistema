@@ -17,7 +17,7 @@ import { PhoneInput } from '@/components/ui/phone-input'
 
 const PDFDownloadLink = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFDownloadLink), { ssr: false })
 
-export default function LeaderScreen({ user, members, pendingReports = [] }: { user: any, members: any[], pendingReports?: any[] }) {
+export default function LeaderScreen({ user, members }: { user: any, members: any[] }) {
   const [selectedMember, setSelectedMember] = useState<any>(null)
   const [growthModalMember, setGrowthModalMember] = useState<any>(null)
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false)
@@ -99,33 +99,7 @@ export default function LeaderScreen({ user, members, pendingReports = [] }: { u
         <StartLiveMeetingButton cellId={cell.id} />
       )}
 
-      {/* Relatórios Pendentes */}
-      {pendingReports.length > 0 && (
-        <section className="bg-amber-50 border border-amber-200 rounded-xl p-4 animate-in fade-in slide-in-from-top-4">
-           <h2 className="font-bold text-amber-800 mb-4 flex items-center gap-2">
-              <FileCheck className="w-5 h-5" />
-              Relatórios Pendentes ({pendingReports.length})
-           </h2>
-           <div className="space-y-3">
-              {pendingReports.map((report: any) => (
-                 <div key={report.id} className="bg-white p-4 rounded-lg shadow-sm border border-amber-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                       <p className="font-bold text-slate-800">
-                          Reunião de {new Date(report.date).toLocaleDateString('pt-BR')}
-                       </p>
-                       <p className="text-xs text-slate-500">Tema: {report.studyTheme}</p>
-                    </div>
-                    <button 
-                       onClick={() => handleApprove(report.id)}
-                       className="w-full sm:w-auto bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors shadow-sm shadow-amber-200"
-                    >
-                       Aprovar Relatório
-                    </button>
-                 </div>
-              ))}
-           </div>
-        </section>
-      )}
+
 
       {/* Escala e Planejamento */}
       <div 

@@ -93,14 +93,5 @@ export default async function LeaderPage() {
       celulaLiderada: targetCell
   }
 
-  // Buscar relatórios pendentes de aprovação
-  const pendingReports = await prisma.meetingReport.findMany({
-    where: {
-      cellId: cellId,
-      status: 'ENVIADO_LIDER'
-    },
-    orderBy: { date: 'desc' }
-  })
-
-  return <LeaderScreen user={fullUser} members={members} pendingReports={pendingReports} />
+  return <LeaderScreen user={fullUser} members={members} />
 }

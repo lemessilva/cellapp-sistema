@@ -36,6 +36,23 @@ async function main() {
   })
 
   console.log('Usuário Admin criado/atualizado:', admin.email)
+
+  const media = await prisma.user.upsert({
+    where: { email: 'midia@cellapp.com.br' },
+    update: {
+      nome: 'Equipe de Mídia',
+      password: passwordHash,
+      role: Role.MIDIA,
+    },
+    create: {
+      nome: 'Equipe de Mídia',
+      email: 'midia@cellapp.com.br',
+      password: passwordHash,
+      role: Role.MIDIA,
+    },
+  })
+
+  console.log('Usuário Mídia criado/atualizado:', media.email)
 }
 
 main()

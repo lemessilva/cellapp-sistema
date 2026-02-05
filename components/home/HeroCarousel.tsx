@@ -109,7 +109,7 @@ export function HeroCarousel({ banners = [], config = {}, isPreview = false, pre
     const heroCtaLink = config.heroCtaLink || "#celulas"
 
     return (
-      <section className="relative w-full h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden bg-slate-900">
+      <section className="mt-20 relative w-full h-[600px] md:h-[700px] flex items-center justify-center overflow-hidden bg-slate-900">
         <div className="absolute inset-0 z-10">
           <div className="absolute inset-0">
              {config.heroVideoUrl ? (
@@ -166,7 +166,7 @@ export function HeroCarousel({ banners = [], config = {}, isPreview = false, pre
 
   // Carousel Mode
   return (
-    <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden bg-slate-900 group">
+    <section className="mt-20 relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden bg-slate-900 group">
       {banners.map((banner, index) => (
         <div 
           key={banner.id}

@@ -1,4 +1,6 @@
-import { getAdminEvents } from '@/app/actions/events'
+import { getAdminEvents, deleteEvent } from '@/app/actions/events'
+import { DeleteEventButton } from '@/components/admin/DeleteEventButton'
+import { ToggleEventStatusButton } from '@/components/admin/ToggleEventStatusButton'
 import Link from 'next/link'
 import { Plus, Calendar, Users, DollarSign } from 'lucide-react'
 import { getUser } from '@/lib/auth'
@@ -121,13 +123,15 @@ export default async function AdminEventsPage() {
                         event.registrations.reduce((sum, r) => sum + Number(r.paidAmount), 0)
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
                       <Link 
                         href={`/admin/eventos/${event.id}`}
                         className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
                       >
                         Gerenciar
                       </Link>
+                      <ToggleEventStatusButton eventId={event.id} isOpen={event.isOpen} />
+                      <DeleteEventButton eventId={event.id} eventTitle={event.title} />
                     </td>
                   </tr>
                 ))

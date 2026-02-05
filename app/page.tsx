@@ -7,14 +7,15 @@ import { getUser } from '@/lib/auth'
 import { LandingNavbar } from '@/components/LandingNavbar'
 import { getYouTubeId } from '@/lib/utils'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
+import { getGalleryImages } from '@/app/actions/media'
 import { FindCellSection } from '@/components/home/FindCellSection'
 import { AgendaSection } from '@/components/home/AgendaSection'
 import { PrayerRequestSection } from '@/components/home/PrayerRequestSection'
 import { PlanVisitSection } from '@/components/home/PlanVisitSection'
 import { AlertBar } from '@/components/home/AlertBar'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
+import { GallerySection } from '@/components/home/GallerySection'
 import { Footer } from '@/components/Footer'
-import { FloatingWhatsAppButton } from '@/components/FloatingWhatsAppButton'
 import { FloatingPrayerButton } from '@/components/home/FloatingPrayerButton'
 
 export default async function LandingPage() {
@@ -25,6 +26,7 @@ export default async function LandingPage() {
   })
 
   const pastoralMessage = await getActivePastoralMessage()
+  const galleryImages = await getGalleryImages()
   const schedule = config.weeklySchedule ? JSON.parse(config.weeklySchedule) : []
   
   const banners = await prisma.siteBanner.findMany({
@@ -312,6 +314,9 @@ export default async function LandingPage() {
       {/* 4.5 Seção Pedidos de Oração */}
       <PrayerRequestSection />
 
+      {/* 4.8 Galeria Nossa Vida */}
+      <GallerySection images={galleryImages} />
+
       {/* 5. Rodapé (Footer) */}
       <Footer 
         contactWhatsapp={contactWhatsapp} 
@@ -323,7 +328,6 @@ export default async function LandingPage() {
         logoUrl={logoUrl}
       />
       
-      <FloatingWhatsAppButton whatsapp={contactWhatsapp} />
       <FloatingPrayerButton />
     </div>
   )
