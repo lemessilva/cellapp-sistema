@@ -403,3 +403,30 @@ export async function toggleEventStatus(eventId: string, isOpen: boolean) {
     return { error: 'Erro ao alterar status do evento.' }
   }
 }
+
+export async function getFutureEvents() {
+  const user = await getUser()
+  
+  const events = await prisma.event.findMany({
+    where: {
+      date: { gte: new Date() },
+      isOpen: true
+    },
+    orderBy: { date: 'asc' },
+    include: {
+      registrations: {
+        where: {
+          userId: user?.id
+        },
+        take: 1
+      }
+    }
+  })
+
+  return events.map(event => ({
+    ...event,
+    price: Number(event.price),
+    isRegistered: event.registrations.length > 0,
+    registration: event.registrations[0] || null
+  }))
+}
