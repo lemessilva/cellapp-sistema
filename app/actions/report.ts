@@ -115,7 +115,7 @@ export async function getReportsList(
     // Role Filter
     if (user.role === 'ADMIN') {
         if (filters.cellId && filters.cellId !== 'all') where.cellId = filters.cellId
-    } else if (user.role === 'SUPERVISOR' || user.role === 'COORDENADOR') {
+    } else if (user.role === 'SUPERVISOR') {
         // Find cells supervised
         const cells = await prisma.cell.findMany({
             where: { OR: [{ supervisorId: user.id }, { supervisor2Id: user.id }] },

@@ -37,12 +37,23 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const churchInfo = await prisma.churchInfo.findUnique({
-    where: { id: 'main' },
-    select: { 
-      themeColor: true
-    }
-  });
+  const [churchInfo, siteConfig] = await Promise.all([
+    prisma.churchInfo.findUnique({
+      where: { id: 'main' },
+      select: { 
+        themeColor: true
+      }
+    }),
+    prisma.siteConfiguration.findUnique({
+      where: { id: 1 },
+      select: {
+        alertActive: true,
+        alertText: true,
+        alertColor: true,
+        alertLink: true
+      }
+    })
+  ]);
 
   const user = await getUser();
 
@@ -53,10 +64,11 @@ export default async function RootLayout({
       >
         <ThemeWrapper themeColor={churchInfo?.themeColor || 'blue'} />
         <SidebarProvider>
-          <AlertBar info={{
-            isAlertActive: false,
-            globalAlertTitle: null,
-            globalAlertMessage: null
+          <AlertBar config={{
+            alertActive: siteConfig?.alertActive || false,
+            alertText: siteConfig?.alertText || null,
+            alertColor: siteConfig?.alertColor || 'bg-indigo-600',
+            alertLink: siteConfig?.alertLink || null
           }} />
           <LiveMeetingWatcher cellId={user?.celula?.id} />
           {children}

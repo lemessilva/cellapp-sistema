@@ -58,6 +58,11 @@ export async function closeMonthlyReport(cellId: string, month: number, year: nu
     const totalPresent = summaries.reduce((acc: number, curr: any) => acc + curr.present, 0)
     const avgAttendance = totalMeetings > 0 ? totalPresent / totalMeetings : 0
 
+    const now = new Date()
+    // Deadline: 5th day of the following month
+    const deadline = new Date(year, month, 5, 23, 59, 59) 
+    const isLate = now > deadline
+
     const closure = await prisma.monthlyClosure.upsert({
       where: {
         cellId_month_year: {

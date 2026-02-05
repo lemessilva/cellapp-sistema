@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateRegistrationPayment } from '@/app/actions/events'
 import { toast } from 'sonner'
 import { Check, Loader2, Copy, Undo2, DollarSign } from 'lucide-react'
 import PaymentManagementModal from './PaymentManagementModal'

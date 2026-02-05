@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
-import { startOfMonth, endOfMonth, format, parseISO, startOfDay, endOfDay, getDay, addDays, isSameMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, format, parseISO, startOfDay, endOfDay, getDay, addDays, isSameMonth, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 // --- Interfaces ---
@@ -13,6 +13,8 @@ interface SubmitReportParams {
   date: Date
   startTime: string
   endTime: string
+  realStartTime?: string
+  realEndTime?: string
   studyTheme: string
   visitors: any[]
   offerValue: number

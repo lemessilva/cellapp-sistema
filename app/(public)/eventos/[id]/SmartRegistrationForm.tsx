@@ -85,7 +85,12 @@ export default function SmartRegistrationForm({
             answers: data.answers
         }
 
-        const result = await registerForEvent(eventId, payload)
+        const result = await registerForEvent({
+            eventId,
+            guestName: payload.name,
+            cpf: payload.cpf,
+            answers: payload.answers
+        })
 
         if (result.error) {
             toast.error(result.error)

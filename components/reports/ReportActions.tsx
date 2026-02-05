@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { handleReturnReport } from '@/app/actions/report'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, FileText, X, UploadCloud } from 'lucide-react'
 
 interface ReportActionsProps {
     reportId: string
@@ -19,6 +19,7 @@ interface ReportActionsProps {
 export function ReportActions({ reportId, status, userRole }: ReportActionsProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const router = useRouter()
 
     // Permite visualização para LIDER, ADMIN, SUPERVISOR

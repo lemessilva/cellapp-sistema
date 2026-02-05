@@ -33,7 +33,7 @@ export function EventList({ events, userName }: { events: Event[], userName: str
 
     setLoadingId(event.id)
     try {
-      const result = await registerForEvent(event.id)
+      const result = await registerForEvent({ eventId: event.id })
       if (result.error) {
         toast.error(result.error)
       } else {

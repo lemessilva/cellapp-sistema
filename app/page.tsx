@@ -26,7 +26,10 @@ export default async function LandingPage() {
   })
 
   const pastoralMessage = await getActivePastoralMessage()
-  const galleryImages = await getGalleryImages()
+  const galleryImages = (await getGalleryImages()).map(img => ({
+    ...img,
+    caption: img.caption || undefined
+  }))
   const schedule = config.weeklySchedule ? JSON.parse(config.weeklySchedule) : []
   
   const banners = await prisma.siteBanner.findMany({

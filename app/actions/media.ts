@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadToMidiaBucket } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 
 // --- Brand Assets ---
 
@@ -210,5 +211,34 @@ export async function sendPushNotification(data: {
   } catch (error) {
     console.error('Erro sendPushNotification:', error)
     return { error: 'Erro ao enviar notificações.' }
+  }
+}
+
+export async function listMediaFiles() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) return []
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data, error } = await supabase.storage.from('midia').list()
+
+    if (error) {
+      console.error('Error listing files:', error)
+      return []
+    }
+
+    return data.map(file => {
+        const { data: { publicUrl } } = supabase.storage.from('midia').getPublicUrl(file.name)
+        return {
+            name: file.name,
+            url: publicUrl
+        }
+    })
+  } catch (error) {
+    console.error('Error listing media:', error)
+    return []
   }
 }

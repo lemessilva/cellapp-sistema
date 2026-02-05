@@ -31,6 +31,7 @@ type WebsiteEditorProps = {
   initialBrandAssets: any[]
   initialGalleryImages: any[]
   initialNotificationHistory: any[]
+  initialTab?: string
 }
 
 export default function WebsiteEditor({ 
@@ -45,7 +46,7 @@ export default function WebsiteEditor({
   initialBrandAssets,
   initialGalleryImages,
   initialNotificationHistory,
-  initialTab
+  initialTab = 'general'
 }: WebsiteEditorProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)

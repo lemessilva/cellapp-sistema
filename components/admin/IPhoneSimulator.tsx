@@ -13,6 +13,7 @@ interface IPhoneSimulatorProps {
   cells?: any[]
   schedule?: any[]
   mode?: 'full' | 'banner-only'
+  churchInfo?: any
 }
 
 export function IPhoneSimulator({ 
@@ -21,7 +22,8 @@ export function IPhoneSimulator({
   banners = [], 
   cells = [],
   schedule = [],
-  mode = 'full'
+  mode = 'full',
+  churchInfo
 }: IPhoneSimulatorProps) {
   // If imageUrl is present, we are previewing a banner (or specific image).
   // We should show the Site with THIS image as the banner.
