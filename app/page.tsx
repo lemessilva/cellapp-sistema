@@ -117,7 +117,7 @@ export default async function LandingPage() {
         <section className="py-20 bg-white border-b border-slate-100">
            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                 <div className="order-2 lg:order-1 relative aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/10 bg-slate-100">
+                 <div className="relative aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/10 bg-slate-100">
                     {pastoralMessage.imageUrl ? (
                        <img src={pastoralMessage.imageUrl} alt={pastoralMessage.titulo} className="w-full h-full object-cover" />
                     ) : (
@@ -126,7 +126,7 @@ export default async function LandingPage() {
                        </div>
                     )}
                  </div>
-                 <div className="order-1 lg:order-2 space-y-6">
+                 <div className="space-y-6">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium">
                        <User className="w-4 h-4" />
                        <span>Palavra do Pastor</span>
