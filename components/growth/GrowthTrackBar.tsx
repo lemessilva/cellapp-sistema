@@ -64,8 +64,8 @@ export function GrowthTrackBar({ steps, userProgress }: GrowthTrackBarProps) {
             const isLocked = index > firstIncompleteIndex
 
             // Resolve Icon
-            const IconName = step.icon as keyof typeof LucideIcons
-            const IconComponent = LucideIcons[IconName] || LucideIcons.Circle
+            const IconName = (step.icon || 'Circle') as keyof typeof LucideIcons
+            const IconComponent = (LucideIcons[IconName] as React.ElementType) || LucideIcons.Circle
 
             return (
               <div key={step.id} className="flex flex-col items-center group relative">
