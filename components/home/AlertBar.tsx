@@ -6,6 +6,7 @@ import { useState } from 'react'
 interface AlertBarProps {
   config: {
     alertActive: boolean
+    alertTitle?: string | null
     alertText?: string | null
     alertColor?: string
     alertLink?: string | null
@@ -15,12 +16,15 @@ interface AlertBarProps {
 export function AlertBar({ config }: AlertBarProps) {
   const [isVisible, setIsVisible] = useState(true)
 
-  if (!config || !config.alertActive || !isVisible || !config.alertText) return null
+  if (!config || !config.alertActive || !isVisible || (!config.alertText && !config.alertTitle)) return null
 
   return (
     <div className={`relative z-50 w-full ${config.alertColor || 'bg-indigo-600'} text-white px-4 py-3 shadow-md`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex-1 text-center text-sm md:text-base font-medium flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2">
+          {config.alertTitle && (
+            <span className="font-bold uppercase tracking-wide opacity-90">{config.alertTitle}:</span>
+          )}
           <span>{config.alertText}</span>
           {config.alertLink && (
             <a href={config.alertLink} className="underline hover:text-white/80 ml-2 text-xs uppercase tracking-wider font-bold">

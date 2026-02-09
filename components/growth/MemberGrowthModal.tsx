@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Check, X, Loader2 } from 'lucide-react'
 import { getGrowthSteps, getMemberProgress, toggleStepProgress } from '@/app/actions/growth-track'
 import { cn } from '@/lib/utils'
+import { Switch } from '@/components/ui/switch'
 
 interface MemberGrowthModalProps {
   member: {
@@ -103,15 +104,14 @@ export default function MemberGrowthModal({ member, isOpen, onClose }: MemberGro
                     </div>
 
                     <div className={cn(
-                      "p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+                      "p-4 rounded-xl border transition-all hover:shadow-md",
                       isCompleted 
                         ? "bg-indigo-50/50 border-indigo-200" 
                         : "bg-white border-slate-200 hover:border-indigo-300"
                     )}
-                    onClick={() => !isToggling && handleToggle(step.id, isCompleted)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
+                      <div className="flex justify-between items-center gap-4">
+                        <div className="flex-1">
                           <h4 className={cn(
                             "font-bold",
                             isCompleted ? "text-indigo-900" : "text-slate-700"
@@ -122,7 +122,14 @@ export default function MemberGrowthModal({ member, isOpen, onClose }: MemberGro
                             <p className="text-sm text-slate-500 mt-1">{step.description}</p>
                           )}
                         </div>
-                        {isToggling && <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />}
+                        <div className="flex items-center gap-3">
+                          {isToggling && <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />}
+                          <Switch
+                            checked={isCompleted}
+                            onCheckedChange={() => !isToggling && handleToggle(step.id, isCompleted)}
+                            className="data-[state=checked]:bg-indigo-600"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

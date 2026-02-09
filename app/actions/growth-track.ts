@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/lib/auth'
+import { sendNotification } from './notifications'
 
 export async function getGrowthSteps() {
   try {
@@ -16,7 +17,7 @@ export async function getGrowthSteps() {
   }
 }
 
-export async function createGrowthStep(data: { title: string, description?: string }) {
+export async function createGrowthStep(data: { title: string, description?: string, icon?: string }) {
   const user = await getUser()
   if (!user || user.role !== 'ADMIN') {
     return { error: 'Unauthorized' }
@@ -34,6 +35,7 @@ export async function createGrowthStep(data: { title: string, description?: stri
       data: {
         title: data.title,
         description: data.description,
+        icon: data.icon,
         orderIndex: newOrderIndex
       }
     })
@@ -43,6 +45,30 @@ export async function createGrowthStep(data: { title: string, description?: stri
   } catch (error) {
     console.error('Error creating growth step:', error)
     return { error: 'Failed to create step' }
+  }
+}
+
+export async function updateGrowthStep(id: string, data: { title: string, description?: string, icon?: string }) {
+  const user = await getUser()
+  if (!user || user.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const step = await prisma.growthTrackStep.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        icon: data.icon
+      }
+    })
+
+    revalidatePath('/admin/trilho')
+    return { success: true, step }
+  } catch (error) {
+    console.error('Error updating growth step:', error)
+    return { error: 'Failed to update step' }
   }
 }
 
@@ -112,6 +138,8 @@ export async function toggleStepProgress(userId: string, stepId: string, isCompl
 
   try {
     if (isCompleted) {
+      const step = await prisma.growthTrackStep.findUnique({ where: { id: stepId } })
+
       await prisma.memberGrowthProgress.upsert({
         where: {
           userId_stepId: {
@@ -130,28 +158,26 @@ export async function toggleStepProgress(userId: string, stepId: string, isCompl
           completedAt: new Date()
         }
       })
+
+      // Send notification
+      if (step) {
+        await sendNotification({
+          userId,
+          title: 'Etapa Concluída! 🎉',
+          message: `Parabéns! Você concluiu a etapa ${step.title}. Continue avançando no seu crescimento!`,
+          type: 'SUCCESS',
+          link: '/perfil'
+        })
+      }
+
     } else {
-      // Option 1: Delete the record (simpler for checking existence)
-      // Option 2: Set to PENDING. 
-      // User prompt says: "Se desmarcar, remova o registro ou mude para PENDING."
-      // I will remove it to keep it clean, or set to PENDING if we want to keep history? 
-      // Let's set to PENDING so we don't lose the record if we want to track "started" later. 
-      // But for now, if it's just check/uncheck, maybe delete is fine?
-      // Actually, if I set to PENDING, `completedAt` should be null.
-      await prisma.memberGrowthProgress.update({
+      // Remove o progresso se desmarcar
+      await prisma.memberGrowthProgress.deleteMany({
         where: {
-            userId_stepId: {
-              userId,
-              stepId
-            }
-        },
-        data: {
-            status: 'PENDING',
-            completedAt: null
+          userId,
+          stepId
         }
       })
-      // If it doesn't exist, update throws. So we should probably just delete or upsert to PENDING.
-      // But if it's not checked, it shouldn't exist or be PENDING.
     }
 
     revalidatePath('/app/lideranca')

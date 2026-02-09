@@ -12,7 +12,6 @@ import { FindCellSection } from '@/components/home/FindCellSection'
 import { AgendaSection } from '@/components/home/AgendaSection'
 import { PrayerRequestSection } from '@/components/home/PrayerRequestSection'
 import { PlanVisitSection } from '@/components/home/PlanVisitSection'
-import { AlertBar } from '@/components/home/AlertBar'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { GallerySection } from '@/components/home/GallerySection'
 import { Footer } from '@/components/Footer'
@@ -56,7 +55,6 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
-      <AlertBar config={config} />
       <LandingNavbar 
         isAuthenticated={!!user} 
         isLive={config.isLive} 

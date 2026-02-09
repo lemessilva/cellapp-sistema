@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft, History } from 'lucide-react'
+import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft, History, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import { MemberAttendanceHistoryModal } from './MemberAttendanceHistoryModal'
+import MemberGrowthModal from '@/components/growth/MemberGrowthModal'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { getPrayerReportData } from '@/app/actions/report'
 import { updateMemberCell } from '@/app/actions/member'
@@ -94,6 +95,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   
   // History State
   const [memberForHistory, setMemberForHistory] = useState<Member | null>(null)
+  const [memberForGrowth, setMemberForGrowth] = useState<Member | null>(null)
 
   // Cell Move State
   const [memberToMove, setMemberToMove] = useState<Member | null>(null)
@@ -295,6 +297,13 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                           <History className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => setMemberForGrowth(member)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                          title="Trilho de Crescimento"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => setSelectedMember(member)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
                           title="Relatório de Oração"
@@ -479,6 +488,19 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
         memberId={memberForHistory?.id || null}
         memberName={memberForHistory?.nome || null}
       />
+
+      {/* Member Growth Modal */}
+      {memberForGrowth && (
+        <MemberGrowthModal
+          member={{
+            id: memberForGrowth.id,
+            name: memberForGrowth.nome,
+            image: memberForGrowth.foto_url
+          }}
+          isOpen={!!memberForGrowth}
+          onClose={() => setMemberForGrowth(null)}
+        />
+      )}
     </>
   )
 }

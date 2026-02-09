@@ -2,38 +2,88 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, GripVertical, Trash2, Edit2 } from 'lucide-react'
-import { createGrowthStep, updateGrowthStepOrder, deleteGrowthStep } from '@/app/actions/growth-track'
+import { Plus, GripVertical, Trash2, Edit2, Droplets, BookOpen, User, Star, Heart, Award, CheckCircle } from 'lucide-react'
+import { createGrowthStep, updateGrowthStep, updateGrowthStepOrder, deleteGrowthStep } from '@/app/actions/growth-track'
+import * as LucideIcons from 'lucide-react'
 
 interface Step {
   id: string
   title: string
   description: string | null
+  icon: string | null
   orderIndex: number
   isMandatory: boolean
 }
+
+const AVAILABLE_ICONS = [
+  { name: 'Droplets', icon: Droplets, label: 'Batismo' },
+  { name: 'BookOpen', icon: BookOpen, label: 'Curso' },
+  { name: 'User', icon: User, label: 'Membro' },
+  { name: 'Star', icon: Star, label: 'Liderança' },
+  { name: 'Heart', icon: Heart, label: 'Serviço' },
+  { name: 'Award', icon: Award, label: 'Conclusão' },
+  { name: 'CheckCircle', icon: CheckCircle, label: 'Check' }
+]
 
 export default function GrowthTrackManager({ initialSteps }: { initialSteps: Step[] }) {
   const [steps, setSteps] = useState<Step[]>(initialSteps)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [newStep, setNewStep] = useState({ title: '', description: '' })
+  const [editingStep, setEditingStep] = useState<Step | null>(null)
+  const [formData, setFormData] = useState({ title: '', description: '', icon: 'BookOpen' })
 
-  const handleCreate = async () => {
-    if (!newStep.title) return toast.error('O título é obrigatório')
+  const handleSave = async () => {
+    if (!formData.title) return toast.error('O título é obrigatório')
     
     setLoading(true)
-    const res = await createGrowthStep(newStep)
-    setLoading(false)
-    
-    if (res.error) {
-      toast.error(res.error)
-    } else if (res.step) {
-      toast.success('Passo criado com sucesso!')
-      setSteps([...steps, res.step])
-      setIsModalOpen(false)
-      setNewStep({ title: '', description: '' })
+
+    if (editingStep) {
+        const res = await updateGrowthStep(editingStep.id, formData)
+        setLoading(false)
+
+        if (res.error) {
+            toast.error(res.error)
+        } else if (res.step) {
+            toast.success('Passo atualizado!')
+            const updatedStep = { ...res.step, icon: res.step.icon || null }
+            setSteps(steps.map(s => s.id === editingStep.id ? updatedStep : s))
+            closeModal()
+        }
+    } else {
+        const res = await createGrowthStep(formData)
+        setLoading(false)
+        
+        if (res.error) {
+            toast.error(res.error)
+        } else if (res.step) {
+            toast.success('Passo criado com sucesso!')
+            const createdStep = { ...res.step, icon: res.step.icon || null }
+            setSteps([...steps, createdStep])
+            closeModal()
+        }
     }
+  }
+
+  const openNewModal = () => {
+    setEditingStep(null)
+    setFormData({ title: '', description: '', icon: 'BookOpen' })
+    setIsModalOpen(true)
+  }
+
+  const openEditModal = (step: Step) => {
+    setEditingStep(step)
+    setFormData({ 
+        title: step.title, 
+        description: step.description || '', 
+        icon: step.icon || 'BookOpen' 
+    })
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingStep(null)
+    setFormData({ title: '', description: '', icon: 'BookOpen' })
   }
 
   const handleDelete = async (id: string) => {
@@ -71,7 +121,7 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-slate-800">Passos do Trilho</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={openNewModal}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -109,8 +159,11 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
 
               <div className="flex-1">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
-                    {index + 1}
+                  <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+                    {(() => {
+                        const IconComponent = AVAILABLE_ICONS.find(i => i.name === step.icon)?.icon || BookOpen
+                        return <IconComponent className="w-4 h-4" />
+                    })()}
                   </span>
                   {step.title}
                   {step.isMandatory && (
@@ -120,11 +173,18 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
                   )}
                 </h3>
                 {step.description && (
-                  <p className="text-sm text-slate-500 mt-1 ml-8">{step.description}</p>
+                  <p className="text-sm text-slate-500 mt-1 ml-10">{step.description}</p>
                 )}
               </div>
 
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  onClick={() => openEditModal(step)}
+                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                  title="Editar"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
                 <button 
                   onClick={() => handleDelete(step.id)}
                   className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
@@ -138,12 +198,14 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
         )}
       </div>
 
-      {/* Modal de Criação */}
+      {/* Modal de Criação/Edição */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Novo Passo do Trilho</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {editingStep ? 'Editar Passo' : 'Novo Passo do Trilho'}
+              </h3>
             </div>
             
             <div className="p-6 space-y-4">
@@ -153,8 +215,8 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
                 </label>
                 <input 
                   type="text" 
-                  value={newStep.title}
-                  onChange={e => setNewStep({ ...newStep, title: e.target.value })}
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Ex: Batismo, Escola de Líderes..."
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
@@ -165,29 +227,50 @@ export default function GrowthTrackManager({ initialSteps }: { initialSteps: Ste
                   Descrição (Opcional)
                 </label>
                 <textarea 
-                  value={newStep.description}
-                  onChange={e => setNewStep({ ...newStep, description: e.target.value })}
-                  placeholder="O que o membro precisa fazer neste passo?"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  rows={3}
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Breve descrição do que é necessário para concluir..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none"
                 />
               </div>
-            </div>
 
-            <div className="p-4 bg-slate-50 flex justify-end gap-3">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg font-medium"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleCreate}
-                disabled={loading}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {loading ? 'Salvando...' : 'Adicionar Passo'}
-              </button>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Ícone
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {AVAILABLE_ICONS.map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => setFormData({ ...formData, icon: item.name })}
+                      className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
+                        formData.icon === item.name
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-600 ring-1 ring-indigo-600'
+                          : 'border-slate-200 hover:border-indigo-300 text-slate-500'
+                      }`}
+                    >
+                      <item.icon className="w-6 h-6 mb-1" />
+                      <span className="text-[10px]">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  onClick={closeModal}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loading ? 'Salvando...' : (editingStep ? 'Salvar Alterações' : 'Criar Passo')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

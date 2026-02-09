@@ -19,6 +19,7 @@ export async function getSiteConfiguration() {
         heroCtaLink: "#schedule",
         // Barra de Avisos (Default)
         alertActive: false,
+        alertTitle: "Aviso Importante",
         alertText: "",
         alertColor: "bg-blue-600",
         alertLink: "",
@@ -56,6 +57,7 @@ export async function updateSiteConfiguration(data: any) {
       
       // Alert Fields
       alertActive: data.alertActive,
+      alertTitle: data.alertTitle,
       alertText: data.alertText,
       alertColor: data.alertColor,
       alertLink: data.alertLink,
@@ -98,7 +100,11 @@ export async function toggleLiveStatus() {
   return updated
 }
 
-export async function updateGlobalAlertSettings(data: { alertActive: boolean, alertText: string, alertLink: string }) {
+export async function updateAlertSettings(data: {
+  active: boolean
+  title: string
+  message: string
+}) {
   const user = await getUser()
   if (!user || (user.role !== 'ADMIN' && user.role !== 'MIDIA')) {
     throw new Error('Unauthorized')
@@ -107,9 +113,9 @@ export async function updateGlobalAlertSettings(data: { alertActive: boolean, al
   const updated = await prisma.siteConfiguration.update({
     where: { id: 1 },
     data: {
-      alertActive: data.alertActive,
-      alertText: data.alertText,
-      alertLink: data.alertLink
+      alertActive: data.active,
+      alertTitle: data.title,
+      alertText: data.message,
     }
   })
 
@@ -117,3 +123,5 @@ export async function updateGlobalAlertSettings(data: { alertActive: boolean, al
   revalidatePath('/media')
   return updated
 }
+
+

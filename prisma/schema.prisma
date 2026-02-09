@@ -154,6 +154,12 @@ model User {
   
   // Cartas de Correção criadas
   correctionsWritten ReportCorrection[]
+
+  // Carteirinha
+  memberSince     DateTime? @default(now()) // Data de entrada como membro
+  bloodType       String?   // Ex: A+, O-
+  emergencyContact String?  // Nome e Telefone
+  status          String    @default("VISITANTE") // VISITANTE, ATIVO, INATIVO
 }
 
 model ChurchInfo {
@@ -280,6 +286,7 @@ model GrowthTrackStep {
   id          String   @id @default(cuid())
   title       String
   description String?
+  icon        String? // Nome do ícone Lucide
   orderIndex  Int
   isMandatory Boolean  @default(false)
   
@@ -663,6 +670,7 @@ model SiteConfiguration {
   
   // Barra de Avisos
   alertActive     Boolean  @default(false)
+  alertTitle      String?
   alertText       String?
   alertColor      String   @default("bg-indigo-600")
   alertLink       String?

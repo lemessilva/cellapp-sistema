@@ -48,6 +48,7 @@ export default async function RootLayout({
       where: { id: 1 },
       select: {
         alertActive: true,
+        alertTitle: true,
         alertText: true,
         alertColor: true,
         alertLink: true
@@ -66,6 +67,7 @@ export default async function RootLayout({
         <SidebarProvider>
           <AlertBar config={{
             alertActive: siteConfig?.alertActive || false,
+            alertTitle: siteConfig?.alertTitle || null,
             alertText: siteConfig?.alertText || null,
             alertColor: siteConfig?.alertColor || 'bg-indigo-600',
             alertLink: siteConfig?.alertLink || null

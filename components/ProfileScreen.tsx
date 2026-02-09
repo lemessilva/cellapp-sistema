@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { updateProfile, addOikos, removeOikos } from '@/app/actions/profile'
 import { toast } from 'sonner'
-import { User, Save, Trash2, Plus, Phone, MapPin, Calendar, Heart, LogOut, FileText, Camera } from 'lucide-react'
+import { User, Save, Trash2, Plus, Phone, MapPin, Calendar, Heart, LogOut, FileText, Camera, Award } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { PhoneInput } from '@/components/ui/phone-input'
+import { GrowthTrackBar } from '@/components/growth/GrowthTrackBar'
 
-export default function ProfileScreen({ user, reportData }: { user: any, reportData?: ReportData }) {
+export default function ProfileScreen({ user, reportData, growthSteps = [], userProgress = [] }: { user: any, reportData?: ReportData, growthSteps?: any[], userProgress?: any[] }) {
   const [loading, setLoading] = useState(false)
   const [oikosName, setOikosName] = useState('')
   const [estadoCivil, setEstadoCivil] = useState(
@@ -108,6 +109,17 @@ export default function ProfileScreen({ user, reportData }: { user: any, reportD
           <LogOut className="w-4 h-4" /> Sair
         </button>
       </header>
+
+      {/* Trilho de Crescimento */}
+      {growthSteps.length > 0 && (
+        <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+          <div className="flex items-center gap-2 text-indigo-600 mb-2">
+             <Award className="w-5 h-5" />
+             <h2 className="font-bold text-lg">Trilho de Crescimento</h2>
+          </div>
+          <GrowthTrackBar steps={growthSteps} userProgress={userProgress} />
+        </section>
+      )}
 
       <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
         <div className="flex items-center gap-2 text-indigo-600 mb-2">
