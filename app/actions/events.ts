@@ -1,5 +1,6 @@
 'use server'
 
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { uploadFile, uploadToMidiaBucket } from '@/lib/supabase'
@@ -91,24 +92,30 @@ export async function getAdminEvents() {
   return events
 }
 
-export async function getEventDetails(eventId: string) {
+const eventDetailsInclude = {
+  registrations: {
+    include: { 
+      user: true,
+      transactions: {
+        orderBy: { date: 'desc' }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  },
+  _count: {
+    select: { registrations: true }
+  }
+} satisfies Prisma.EventInclude
+
+export type EventDetails = Prisma.EventGetPayload<{
+  include: typeof eventDetailsInclude
+}>
+
+export async function getEventDetails(eventId: string): Promise<{ event: EventDetails } | { error: string }> {
   try {
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: {
-        registrations: {
-          include: { 
-            user: true,
-            transactions: {
-              orderBy: { date: 'desc' }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        },
-        _count: {
-          select: { registrations: true }
-        }
-      }
+      include: eventDetailsInclude
     })
 
     if (!event) {
