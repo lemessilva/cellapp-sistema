@@ -20,6 +20,9 @@ import { getPrayerReportData } from '@/app/actions/report'
 import { updateMemberCell } from '@/app/actions/member'
 import { toggleUserActiveStatus } from '@/app/(protected)/admin/actions'
 
+import { pdf } from '@react-pdf/renderer'
+import MemberRegistrationPDF from './MemberRegistrationPDF'
+
 type Member = {
   id: string
   nome: string
@@ -101,6 +104,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   const [memberToMove, setMemberToMove] = useState<Member | null>(null)
   const [targetCellId, setTargetCellId] = useState<string>('')
   const [isMoving, setIsMoving] = useState(false)
+  const [pdfGeneratingId, setPdfGeneratingId] = useState<string | null>(null)
 
   const rows = useMemo(() => members, [members])
 
@@ -145,6 +149,20 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
       toast.error('Erro ao mover membro.')
     } finally {
       setIsMoving(false)
+    }
+  }
+
+  const handleGeneratePDF = async (member: Member) => {
+    try {
+      setPdfGeneratingId(member.id)
+      const blob = await pdf(<MemberRegistrationPDF member={member as any} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error)
+      toast.error('Erro ao gerar a ficha cadastral.')
+    } finally {
+      setPdfGeneratingId(null)
     }
   }
 
@@ -279,15 +297,20 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                           <ArrowRightLeft className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() =>
-                            toast.info(
-                              'Em breve: Ficha cadastral em PDF para este membro.'
-                            )
-                          }
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                          onClick={() => handleGeneratePDF(member)}
+                          disabled={pdfGeneratingId === member.id}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            pdfGeneratingId === member.id 
+                              ? 'text-slate-300 cursor-not-allowed' 
+                              : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'
+                          }`}
                           title="Ficha Cadastral"
                         >
-                          <FileText className="w-4 h-4" />
+                          {pdfGeneratingId === member.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <FileText className="w-4 h-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => setMemberForHistory(member)}

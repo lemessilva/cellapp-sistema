@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink, CreditCard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
@@ -25,20 +25,26 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
   } else {
     links = [
       { href: '/app', label: 'Início', icon: Home },
+      { href: '/carteirinha', label: 'Carteirinha', icon: CreditCard },
       { href: '/app/oracao', label: 'Oração Diária', icon: Heart },
       { href: '/app/meus-ingressos', label: 'Meus Ingressos', icon: Ticket },
       { href: '/app/feedback', label: 'Feedback / Bugs', icon: Bug },
-      { href: '/app/perfil', label: 'Perfil', icon: User },
     ]
 
-    if (['LIDER', 'SUPERVISOR', 'ADMIN'].includes(role) || isSecretary) {
-      links.splice(links.length - 1, 0, { href: '/reports/list', label: 'Relatórios', icon: FileText })
+    // Regra de Ouro de Visibilidade
+    const canViewReports = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY'].includes(role) || isSecretary
+    const canViewCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER'].includes(role)
+
+    if (canViewReports) {
+      links.push({ href: '/reports/list', label: 'Relatórios', icon: FileText })
     }
 
-    if (['LIDER', 'SUPERVISOR', 'ADMIN'].includes(role)) {
-      const perfilIndex = links.findIndex((l) => l.href === '/app/perfil')
-      links.splice(perfilIndex, 0, { href: '/app/lideranca', label: 'Célula', icon: Users })
+    if (canViewCell) {
+      links.push({ href: '/app/lideranca', label: 'Minha Célula', icon: Users })
     }
+
+    // Perfil sempre por último na lista do usuário comum
+    links.push({ href: '/app/perfil', label: 'Perfil', icon: User })
 
     if (role === 'ADMIN') {
       links.push({ href: '/admin', label: 'Admin', icon: Shield })
