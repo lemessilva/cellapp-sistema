@@ -113,7 +113,7 @@ export async function saveCell(formData: FormData) {
 
     if (id) {
       // Update
-      // Buscar estado atual para comparação de notificações
+      // Buscar estado atual para comparação de notificações E para lógica de rebaixamento
       const currentCell = await prisma.cell.findUnique({
         where: { id },
         select: {
@@ -129,6 +129,9 @@ export async function saveCell(formData: FormData) {
           supervisor2Id: true
         }
       })
+
+      const oldLeaderId = currentCell?.liderId
+      const oldLeader2Id = currentCell?.lider2Id
 
       await prisma.cell.update({
         where: { id },
@@ -149,6 +152,74 @@ export async function saveCell(formData: FormData) {
           louvorId: louvorId || null
         }
       })
+
+      // === LÓGICA DE PROMOÇÃO (Novos Líderes) ===
+      if (liderId && liderId !== oldLeaderId) {
+        const newLeader = await prisma.user.findUnique({ where: { id: liderId } })
+        if (newLeader && (newLeader.role === 'MEMBRO' || newLeader.role === 'MEMBER')) {
+          await prisma.user.update({
+            where: { id: liderId },
+            data: { role: 'LIDER' }
+          })
+        }
+      }
+      if (lider2Id && lider2Id !== oldLeader2Id) {
+        const newLeader2 = await prisma.user.findUnique({ where: { id: lider2Id } })
+        if (newLeader2 && (newLeader2.role === 'MEMBRO' || newLeader2.role === 'MEMBER')) {
+          await prisma.user.update({
+            where: { id: lider2Id },
+            data: { role: 'LIDER' }
+          })
+        }
+      }
+
+      // === LÓGICA DE REBAIXAMENTO (Ex-Líderes) ===
+      // Verifica o Líder principal antigo
+      if (oldLeaderId && oldLeaderId !== liderId) {
+        // Conta quantas células ele ainda lidera (como lider ou lider2)
+        const remainingCellsCount = await prisma.cell.count({
+          where: {
+            OR: [
+              { liderId: oldLeaderId },
+              { lider2Id: oldLeaderId }
+            ]
+          }
+        })
+
+        // Se não lidera mais nada, rebaixa para MEMBRO
+        if (remainingCellsCount === 0) {
+          const oldUser = await prisma.user.findUnique({ where: { id: oldLeaderId } })
+          // Só rebaixa se for LIDER (não rebaixa ADMIN ou SUPERVISOR)
+          if (oldUser && oldUser.role === 'LIDER') {
+            await prisma.user.update({
+              where: { id: oldLeaderId },
+              data: { role: 'MEMBRO' }
+            })
+          }
+        }
+      }
+
+      // Verifica o Co-Líder antigo
+      if (oldLeader2Id && oldLeader2Id !== lider2Id) {
+        const remainingCellsCount = await prisma.cell.count({
+          where: {
+            OR: [
+              { liderId: oldLeader2Id },
+              { lider2Id: oldLeader2Id }
+            ]
+          }
+        })
+
+        if (remainingCellsCount === 0) {
+          const oldUser = await prisma.user.findUnique({ where: { id: oldLeader2Id } })
+          if (oldUser && oldUser.role === 'LIDER') {
+            await prisma.user.update({
+              where: { id: oldLeader2Id },
+              data: { role: 'MEMBRO' }
+            })
+          }
+        }
+      }
 
       // Verificar mudanças e notificar
       if (currentCell) {
@@ -207,6 +278,26 @@ export async function saveCell(formData: FormData) {
           louvorId: louvorId || null
         }
       })
+
+      // Auto-Promotion Logic (Create)
+      if (liderId) {
+        const newLeader = await prisma.user.findUnique({ where: { id: liderId } })
+        if (newLeader && (newLeader.role === 'MEMBRO' || newLeader.role === 'MEMBER')) {
+          await prisma.user.update({
+            where: { id: liderId },
+            data: { role: 'LIDER' }
+          })
+        }
+      }
+      if (lider2Id) {
+        const newLeader2 = await prisma.user.findUnique({ where: { id: lider2Id } })
+        if (newLeader2 && (newLeader2.role === 'MEMBRO' || newLeader2.role === 'MEMBER')) {
+          await prisma.user.update({
+            where: { id: lider2Id },
+            data: { role: 'LIDER' }
+          })
+        }
+      }
 
       // Notificar todos os cargos definidos na criação
       const rolesToNotify = [
