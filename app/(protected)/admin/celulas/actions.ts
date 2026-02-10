@@ -156,7 +156,7 @@ export async function saveCell(formData: FormData) {
       // === LÓGICA DE PROMOÇÃO (Novos Líderes) ===
       if (liderId && liderId !== oldLeaderId) {
         const newLeader = await prisma.user.findUnique({ where: { id: liderId } })
-        if (newLeader && (newLeader.role === 'MEMBRO' || newLeader.role === 'MEMBER')) {
+        if (newLeader && newLeader.role === 'MEMBRO') {
           await prisma.user.update({
             where: { id: liderId },
             data: { role: 'LIDER' }
@@ -165,7 +165,7 @@ export async function saveCell(formData: FormData) {
       }
       if (lider2Id && lider2Id !== oldLeader2Id) {
         const newLeader2 = await prisma.user.findUnique({ where: { id: lider2Id } })
-        if (newLeader2 && (newLeader2.role === 'MEMBRO' || newLeader2.role === 'MEMBER')) {
+        if (newLeader2 && newLeader2.role === 'MEMBRO') {
           await prisma.user.update({
             where: { id: lider2Id },
             data: { role: 'LIDER' }
@@ -282,7 +282,7 @@ export async function saveCell(formData: FormData) {
       // Auto-Promotion Logic (Create)
       if (liderId) {
         const newLeader = await prisma.user.findUnique({ where: { id: liderId } })
-        if (newLeader && (newLeader.role === 'MEMBRO' || newLeader.role === 'MEMBER')) {
+        if (newLeader && newLeader.role === 'MEMBRO') {
           await prisma.user.update({
             where: { id: liderId },
             data: { role: 'LIDER' }
@@ -291,7 +291,7 @@ export async function saveCell(formData: FormData) {
       }
       if (lider2Id) {
         const newLeader2 = await prisma.user.findUnique({ where: { id: lider2Id } })
-        if (newLeader2 && (newLeader2.role === 'MEMBRO' || newLeader2.role === 'MEMBER')) {
+        if (newLeader2 && newLeader2.role === 'MEMBRO') {
           await prisma.user.update({
             where: { id: lider2Id },
             data: { role: 'LIDER' }
