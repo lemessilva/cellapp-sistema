@@ -90,7 +90,8 @@ export default async function EventDetailsPage({ params }: { params: Promise<{ i
                 },
                 transactions: r.transactions.map(t => ({
                     ...t,
-                    amount: Number(t.amount)
+                    amount: Number(t.amount),
+                    date: t.createdAt
                 }))
             }))} 
             eventPrice={Number(event.price)} 
