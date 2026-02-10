@@ -105,6 +105,12 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                         ...updates,
                         customAddress: parts.join(', ')
                     }
+                } else {
+                    updates = {
+                        ...updates,
+                        customAddress: ''
+                    }
+                    toast.info(`O membro ${member.nome} não possui endereço completo no perfil.`)
                 }
             }
         }
