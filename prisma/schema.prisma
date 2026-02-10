@@ -7,8 +7,9 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  // Coloquei a sua URL direta aqui nas duas para GARANTIR que funciona
-  url       = "postgresql://postgres.utshqisoztujfbilrtms:samuelaratilemes@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+  // Porta 6543 + pgbouncer (Para aguentar o tranco do site)
+  url       = "postgresql://postgres.utshqisoztujfbilrtms:samuelaratilemes@aws-1-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
+  // Porta 5432 (Apenas para migrações internas)
   directUrl = "postgresql://postgres.utshqisoztujfbilrtms:samuelaratilemes@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
 }	
 
