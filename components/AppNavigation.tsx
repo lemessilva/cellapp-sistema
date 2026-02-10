@@ -11,9 +11,12 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
   const pathname = usePathname()
   const { isOpen, close } = useSidebar()
 
-  let links: { href: string; label: string; icon: any }[] = []
+  // Normaliza para maiúsculo para evitar erro de 'Lider' vs 'LIDER'
+  const normalizedRole = (role || 'MEMBRO').toUpperCase()
 
-  if (role === 'MIDIA') {
+  let links: { href: string; label: string; icon: any; header?: string }[] = []
+
+  if (normalizedRole === 'MIDIA') {
     links = [
       { href: '/app', label: 'Início', icon: Home },
       { href: '/media', label: 'Mídia', icon: LayoutGrid },
@@ -32,22 +35,19 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
     ]
 
     // Regra de Ouro de Visibilidade
-    const canViewReports = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY'].includes(role) || isSecretary
-    const canViewCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER'].includes(role)
-
-    if (canViewReports) {
+    const isManagement = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY'].includes(normalizedRole) || isSecretary
+    
+    // Links de Gestão
+    if (isManagement) {
+      links.push({ href: '/app/lideranca', label: 'Minha Célula', icon: Users, header: 'Gestão' })
       links.push({ href: '/reports/list', label: 'Relatórios', icon: FileText })
-    }
-
-    if (canViewCell) {
-      links.push({ href: '/app/lideranca', label: 'Minha Célula', icon: Users })
     }
 
     // Perfil sempre por último na lista do usuário comum
     links.push({ href: '/app/perfil', label: 'Perfil', icon: User })
 
-    if (role === 'ADMIN') {
-      links.push({ href: '/admin', label: 'Admin', icon: Shield })
+    if (normalizedRole === 'ADMIN') {
+      links.push({ href: '/admin', label: 'Admin', icon: Shield, header: 'Administração' })
       links.push({ href: '/admin/membros', label: 'Gerenciar Membros', icon: Users })
       links.push({ href: '/admin/website', label: 'Website', icon: Globe })
       links.push({ href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText })
@@ -75,26 +75,32 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
         )}
       >
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {links.map((link) => {
+          {links.map((link, index) => {
             const Icon = link.icon
             const isActive = pathname === link.href
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => {
-                  if (window.innerWidth < 768) {
-                    close()
-                  }
-                }}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                  isActive ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              <div key={link.href}>
+                {link.header && (
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider ml-4 mt-4 mb-2">
+                    {link.header}
+                  </p>
                 )}
-              >
-                <Icon className="w-5 h-5" />
-                {link.label}
-              </Link>
+                <Link
+                  href={link.href}
+                  onClick={() => {
+                    if (window.innerWidth < 768) {
+                      close()
+                    }
+                  }}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                    isActive ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  {link.label}
+                </Link>
+              </div>
             )
           })}
         </nav>
