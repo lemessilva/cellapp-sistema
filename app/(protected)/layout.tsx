@@ -7,6 +7,8 @@ import MainLayout from '@/components/MainLayout'
 import { SidebarProvider } from '@/components/providers/SidebarContext'
 import { Toaster } from 'sonner'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProtectedLayout({
   children,
 }: {
@@ -19,24 +21,9 @@ export default async function ProtectedLayout({
     redirect('/login')
   }
 
-  // 2. Busca Server-Side em Tempo Real (Garante Role atualizada)
-  const currentUser = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
-    select: {
-      id: true,
-      role: true,
-      dados_completos: true,
-      celula: {
-        select: {
-          secretarioId: true
-        }
-      }
-    }
-  })
-
-  if (!currentUser) {
-    redirect('/login')
-  }
+  // Use sessionUser directly since getUser already fetches fresh data from DB
+  // This ensures consistency with Dashboard and avoids redundant queries
+  const currentUser = sessionUser
 
   if (!currentUser.dados_completos) {
     redirect('/completar-cadastro')

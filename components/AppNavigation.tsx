@@ -11,12 +11,12 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
   const pathname = usePathname()
   const { isOpen, close } = useSidebar()
 
-  // Normaliza para maiúsculo para evitar erro de 'Lider' vs 'LIDER'
-  const normalizedRole = (role || 'MEMBRO').toUpperCase()
+  // 1. Normalize a Role para garantir que maiúsculas/minúsculas não quebrem
+  const userRole = (role || '').toUpperCase()
 
   let links: { href: string; label: string; icon: any; header?: string }[] = []
 
-  if (normalizedRole === 'MIDIA') {
+  if (userRole === 'MIDIA') {
     links = [
       { href: '/app', label: 'Início', icon: Home },
       { href: '/media', label: 'Mídia', icon: LayoutGrid },
@@ -35,19 +35,27 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
       { href: '/app/feedback', label: 'Feedback / Bugs', icon: Bug },
     ]
 
-    // Regra de Ouro de Visibilidade
-    const isManagement = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY'].includes(normalizedRole) || isSecretary
-    
+    // 2. Defina quem pode ver o menu de Célula (ADMIN, SUPERVISOR, LIDER, LEADER, SECRETARIO)
+    const canManageCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER'].includes(userRole) || isSecretary
+
+    // 3. Defina quem pode ver Relatórios (Geralmente os mesmos acima)
+    const canViewReports = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER'].includes(userRole) || isSecretary
+
     // Links de Gestão
-    if (isManagement) {
+    if (canManageCell) {
       links.push({ href: '/app/lideranca', label: 'Minha Célula', icon: Users, header: 'Gestão' })
-      links.push({ href: '/reports/list', label: 'Relatórios', icon: FileText })
+    }
+
+    if (canViewReports) {
+      // Se já adicionou o header em Minha Célula, não adiciona de novo
+      const header = canManageCell ? undefined : 'Gestão'
+      links.push({ href: '/reports/list', label: 'Relatórios', icon: FileText, header })
     }
 
     // Perfil sempre por último na lista do usuário comum
     links.push({ href: '/app/perfil', label: 'Perfil', icon: User })
 
-    if (normalizedRole === 'ADMIN') {
+    if (userRole === 'ADMIN') {
       links.push({ href: '/admin', label: 'Admin', icon: Shield, header: 'Administração' })
       links.push({ href: '/admin/membros', label: 'Gerenciar Membros', icon: Users })
       links.push({ href: '/admin/website', label: 'Website', icon: Globe })
