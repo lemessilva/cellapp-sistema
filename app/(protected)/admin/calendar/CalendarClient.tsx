@@ -31,7 +31,8 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
     if (!title || !date) return
 
     startTransition(async () => {
-      const result = await createCalendarEvent(title, new Date(date))
+      // Append T12:00:00 to ensure date stays correct regardless of timezone shifts
+      const result = await createCalendarEvent(title, new Date(`${date}T12:00:00`))
       if (result.success) {
         setTitle('')
         setDate('')
@@ -85,7 +86,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
               <Label htmlFor="date">Data</Label>
               <Input
                 id="date"
-                type="datetime-local"
+                type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
@@ -123,7 +124,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                     <div>
                       <h3 className="font-semibold text-slate-900">{event.title}</h3>
                       <p className="text-sm text-slate-500 capitalize">
-                        {format(new Date(event.date), "EEEE, HH:mm", { locale: ptBR })}
+                        {format(new Date(event.date), "EEEE", { locale: ptBR })}
                       </p>
                     </div>
                   </div>

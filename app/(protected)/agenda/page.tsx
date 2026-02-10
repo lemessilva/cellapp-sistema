@@ -87,10 +87,6 @@ export default async function AgendaPage() {
                           <h3 className={`font-bold ${isEventFuture ? 'text-slate-900' : 'text-slate-600'}`}>
                             {event.title}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{format(eventDate, 'HH:mm')}</span>
-                          </div>
                         </div>
                       </div>
                     )

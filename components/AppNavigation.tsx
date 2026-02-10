@@ -30,6 +30,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
       { href: '/app', label: 'Início', icon: Home },
       { href: '/carteirinha', label: 'Carteirinha', icon: CreditCard },
       { href: '/app/oracao', label: 'Oração Diária', icon: Heart },
+      { href: '/agenda', label: 'Agenda', icon: Calendar },
       { href: '/app/meus-ingressos', label: 'Meus Ingressos', icon: Ticket },
       { href: '/app/feedback', label: 'Feedback / Bugs', icon: Bug },
     ]
@@ -52,7 +53,8 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
       links.push({ href: '/admin/website', label: 'Website', icon: Globe })
       links.push({ href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText })
       links.push({ href: '/admin/trilho', label: 'Trilho', icon: BarChart3 })
-      links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Calendar })
+      links.push({ href: '/admin/calendar', label: 'Gestão Agenda', icon: Calendar })
+      links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Ticket })
     }
   }
 
