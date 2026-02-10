@@ -7,9 +7,10 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
+  // Coloquei a sua URL direta aqui nas duas para GARANTIR que funciona
+  url       = "postgresql://postgres.utshqisoztujfbilrtms:samuelaratilemes@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+  directUrl = "postgresql://postgres.utshqisoztujfbilrtms:samuelaratilemes@aws-1-us-east-2.pooler.supabase.com:5432/postgres"
+}	
 
 enum Role {
   ADMIN
@@ -682,60 +683,36 @@ model SiteConfiguration {
   footerAddress   String?
 
   isLive          Boolean  @default(false)
-  liveLink        String?
-  heroVideoUrl    String?  // URL do vídeo de fundo da Home
-
-  updatedAt       DateTime @updatedAt
 }
 
-model Resource {
-  id           String           @id @default(cuid())
-  titulo       String
-  tipo         ResourceType
-  fileUrl      String
-  publicoAlvo  ResourceAudience
-  createdAt    DateTime         @default(now())
-}
-
-model PastoralMessage {
-  id          String   @id @default(cuid())
-  titulo      String
-  conteudo    String   @db.Text
-  imageUrl    String?
-  publishedAt DateTime @default(now())
-  ativo       Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
+// System Feedback
 model SystemFeedback {
-  id        String   @id @default(cuid())
-  tipo      String
-  titulo    String
-  descricao String   @db.Text
-  status    String   @default("PENDENTE")
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@index([userId])
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+	type String @default("GERAL")
+  message String @default("Sem mensagem")
+  rating      Int?     // 1-5
+  status      String   @default("PENDING") // 'PENDING', 'REVIEWED', 'RESOLVED'
+  createdAt   DateTime @default(now())
 }
 
+// Payment Transaction (Stripe/Payment Gateway)
 model PaymentTransaction {
-  id             String       @id @default(cuid())
+  id            String   @id @default(cuid())
   registrationId String
-  amount         Decimal
-  date           DateTime     @default(now())
-  notes          String?      // Ex: "Pix", "Dinheiro na mão"
-  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  registration  Registration @relation(fields: [registrationId], references: [id])
+  amount        Decimal
+  currency      String   @default("BRL")
+ status String @default("PENDING")
+  providerId    String?  // ID do pagamento no Stripe/Gateway
+  createdAt     DateTime @default(now())
 }
 
-model PrayerRequest {
+// Calendar Event (Agenda Anual)
+model CalendarEvent {
   id        String   @id @default(cuid())
-  name      String   // Apenas o primeiro nome ou como a pessoa preferir
-  phone     String?  // Opcional (para contato posterior se ela quiser)
-  content   String   @db.Text // O pedido em si
-  status    String   @default("PENDING") // PENDING, PRAYED, ARCHIVED
+  title     String   // Ex: "Santa Ceia", "Dia da Bíblia"
+  date      DateTime // Data do evento
   createdAt DateTime @default(now())
 }

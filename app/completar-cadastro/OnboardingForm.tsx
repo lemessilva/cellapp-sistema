@@ -79,13 +79,13 @@ export default function OnboardingForm({ user }: { user: any }) {
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-indigo-700 border-b pb-2">Dados Pessoais</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="label">Nome Completo *</label>
                 <input 
                   name="nome" 
                   type="text" 
                   required 
-                  className="input-field" 
+                  className="input-field w-full" 
                   placeholder="Seu nome completo"
                   defaultValue={user?.nome} 
                 />
@@ -97,45 +97,49 @@ export default function OnboardingForm({ user }: { user: any }) {
                   name="data_nascimento" 
                   type="date" 
                   required 
-                  className="input-field"
+                  className="input-field w-full"
                   defaultValue={user?.data_nascimento ? new Date(user.data_nascimento).toISOString().split('T')[0] : ''} 
                 />
               </div>
 
               <div>
                 <label className="label">Sexo</label>
-                <select name="sexo" className="input-field" defaultValue={user?.sexo || user?.genero || ''}>
+                <select name="sexo" className="input-field w-full" defaultValue={user?.sexo || user?.genero || ''}>
                   <option value="">Selecione</option>
                   <option value="M">Masculino</option>
                   <option value="F">Feminino</option>
                 </select>
               </div>
 
-              <div>
-                <label className="label">Naturalidade (Cidade)</label>
-                <input name="naturalidade" type="text" className="input-field" placeholder="Ex: São Paulo" defaultValue={user?.naturalidade} />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3">
+                  <label className="label">Naturalidade (Cidade)</label>
+                  <input name="naturalidade" type="text" className="input-field w-full" placeholder="Ex: São Paulo" defaultValue={user?.naturalidade} />
+                </div>
+
+                <div className="md:col-span-1">
+                  <label className="label">UF Nascimento</label>
+                  <input name="ufNascimento" type="text" className="input-field w-full" placeholder="Ex: SP" maxLength={2} defaultValue={user?.ufNascimento} />
+                </div>
               </div>
 
-              <div>
-                <label className="label">UF Nascimento</label>
-                <input name="ufNascimento" type="text" className="input-field" placeholder="Ex: SP" maxLength={2} defaultValue={user?.ufNascimento} />
-              </div>
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Nome do Pai</label>
+                  <input name="nomePai" type="text" className="input-field w-full" defaultValue={user?.nomePai} />
+                </div>
 
-              <div>
-                <label className="label">Nome do Pai</label>
-                <input name="nomePai" type="text" className="input-field" defaultValue={user?.nomePai} />
-              </div>
-
-              <div>
-                <label className="label">Nome da Mãe</label>
-                <input name="nomeMae" type="text" className="input-field" defaultValue={user?.nomeMae} />
+                <div>
+                  <label className="label">Nome da Mãe</label>
+                  <input name="nomeMae" type="text" className="input-field w-full" defaultValue={user?.nomeMae} />
+                </div>
               </div>
 
               <div>
                 <label className="label">Estado Civil</label>
                 <select 
                   name="estadoCivil" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   value={estadoCivil} 
                   onChange={(e) => setEstadoCivil(e.target.value)}
                 >
@@ -148,9 +152,9 @@ export default function OnboardingForm({ user }: { user: any }) {
               </div>
 
               {estadoCivil === 'CASADO' && (
-                <div className="col-span-2 bg-indigo-50 p-4 rounded-xl">
+                <div className="md:col-span-2 bg-indigo-50 p-4 rounded-xl">
                   <label className="label text-indigo-800">Nome do Cônjuge</label>
-                  <input name="nomeConjuge" type="text" className="input-field" placeholder="Nome completo do esposo(a)" defaultValue={user?.nomeConjuge || user?.conjuge_nome} />
+                  <input name="nomeConjuge" type="text" className="input-field w-full" placeholder="Nome completo do esposo(a)" defaultValue={user?.nomeConjuge || user?.conjuge_nome} />
                 </div>
               )}
             </div>
@@ -160,24 +164,24 @@ export default function OnboardingForm({ user }: { user: any }) {
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-indigo-700 border-b pb-2">Contato e Endereço</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2 md:col-span-1">
+              <div>
                 <label className="label">Whatsapp / Telefone *</label>
                 <PhoneInput 
                   name="telefone" 
                   required 
-                  className="input-field" 
+                  className="input-field w-full" 
                   placeholder="(11) 99999-9999" 
                   defaultValue={user?.telefone || user?.whatsapp}
                 />
               </div>
 
-              <div className="col-span-2 md:col-span-1">
+              <div>
                 <label className="label">CEP</label>
                 <div className="relative">
                   <input 
                     name="cep" 
                     type="text" 
-                    className="input-field pr-10" 
+                    className="input-field w-full pr-10" 
                     placeholder="00000-000" 
                     maxLength={9}
                     value={cep} 
@@ -191,12 +195,12 @@ export default function OnboardingForm({ user }: { user: any }) {
                 </div>
               </div>
 
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="label">Endereço (Rua)</label>
                 <input 
                   name="endereco" 
                   type="text" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   value={endereco}
                   onChange={(e) => setEndereco(e.target.value)}
                 />
@@ -208,7 +212,7 @@ export default function OnboardingForm({ user }: { user: any }) {
                   id="numeroInput"
                   name="numero" 
                   type="text" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
                 />
@@ -219,7 +223,7 @@ export default function OnboardingForm({ user }: { user: any }) {
                 <input 
                   name="bairro" 
                   type="text" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   value={bairro}
                   onChange={(e) => setBairro(e.target.value)}
                 />
@@ -230,7 +234,7 @@ export default function OnboardingForm({ user }: { user: any }) {
                 <input 
                   name="cidade" 
                   type="text" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   value={cidade}
                   onChange={(e) => setCidade(e.target.value)}
                 />
@@ -241,21 +245,21 @@ export default function OnboardingForm({ user }: { user: any }) {
                 <input 
                   name="estado" 
                   type="text" 
-                  className="input-field" 
+                  className="input-field w-full" 
                   maxLength={2}
                   value={estado}
                   onChange={(e) => setEstado(e.target.value)}
                 />
               </div>
 
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="label">Ponto de Referência</label>
-                <input name="pontoReferencia" type="text" className="input-field" defaultValue={user?.pontoReferencia} />
+                <input name="pontoReferencia" type="text" className="input-field w-full" defaultValue={user?.pontoReferencia} />
               </div>
 
               {/* Google Maps Visualizer */}
               {(endereco || cidade) && (
-                <div className="col-span-2 mt-4">
+                <div className="md:col-span-2 mt-4">
                   <label className="label mb-2 block">Localização Aproximada</label>
                   <div className="w-full h-64 bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                     <iframe
@@ -282,35 +286,39 @@ export default function OnboardingForm({ user }: { user: any }) {
           <section className="space-y-4">
             <h3 className="text-lg font-semibold text-indigo-700 border-b pb-2">Outras Informações</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Escolaridade</label>
-                <select name="escolaridade" className="input-field" defaultValue={user?.escolaridade}>
-                  <option value="">Selecione</option>
-                  <option value="FUNDAMENTAL">Ensino Fundamental</option>
-                  <option value="MEDIO">Ensino Médio</option>
-                  <option value="SUPERIOR">Ensino Superior</option>
-                  <option value="POS">Pós-Graduação</option>
-                </select>
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Escolaridade</label>
+                  <select name="escolaridade" className="input-field w-full" defaultValue={user?.escolaridade}>
+                    <option value="">Selecione</option>
+                    <option value="FUNDAMENTAL">Ensino Fundamental</option>
+                    <option value="MEDIO">Ensino Médio</option>
+                    <option value="SUPERIOR">Ensino Superior</option>
+                    <option value="POS">Pós-Graduação</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label">Profissão</label>
+                  <input name="profissao" type="text" className="input-field w-full" defaultValue={user?.profissao} />
+                </div>
               </div>
 
-              <div>
-                <label className="label">Profissão</label>
-                <input name="profissao" type="text" className="input-field" defaultValue={user?.profissao} />
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Data de Conversão</label>
+                  <input name="dataConversao" type="date" className="input-field w-full" defaultValue={user?.dataConversao ? new Date(user.dataConversao).toISOString().split('T')[0] : ''} />
+                </div>
+
+                <div>
+                  <label className="label">Data de Batismo</label>
+                  <input name="dataBatismo" type="date" className="input-field w-full" defaultValue={user?.dataBatismo ? new Date(user.dataBatismo).toISOString().split('T')[0] : (user?.data_batismo ? new Date(user.data_batismo).toISOString().split('T')[0] : '')} />
+                </div>
               </div>
 
-              <div>
-                <label className="label">Data de Conversão</label>
-                <input name="dataConversao" type="date" className="input-field" defaultValue={user?.dataConversao ? new Date(user.dataConversao).toISOString().split('T')[0] : ''} />
-              </div>
-
-              <div>
-                <label className="label">Data de Batismo</label>
-                <input name="dataBatismo" type="date" className="input-field" defaultValue={user?.dataBatismo ? new Date(user.dataBatismo).toISOString().split('T')[0] : (user?.data_batismo ? new Date(user.data_batismo).toISOString().split('T')[0] : '')} />
-              </div>
-
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="label">Igreja Anterior (se houver)</label>
-                <input name="igrejaAnterior" type="text" className="input-field" defaultValue={user?.igrejaAnterior} />
+                <input name="igrejaAnterior" type="text" className="input-field w-full" defaultValue={user?.igrejaAnterior} />
               </div>
             </div>
           </section>
@@ -325,11 +333,11 @@ export default function OnboardingForm({ user }: { user: any }) {
             <div className="space-y-3">
               <div>
                 <label className="label text-yellow-900">1º Oikos</label>
-                <input name="oikos1" type="text" className="input-field border-yellow-200 focus:ring-yellow-500" placeholder="Nome completo" />
+                <input name="oikos1" type="text" className="input-field w-full border-yellow-200 focus:ring-yellow-500" placeholder="Nome completo" />
               </div>
               <div>
                 <label className="label text-yellow-900">2º Oikos</label>
-                <input name="oikos2" type="text" className="input-field border-yellow-200 focus:ring-yellow-500" placeholder="Nome completo" />
+                <input name="oikos2" type="text" className="input-field w-full border-yellow-200 focus:ring-yellow-500" placeholder="Nome completo" />
               </div>
             </div>
           </section>

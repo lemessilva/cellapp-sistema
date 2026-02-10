@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Calendar, Heart, MessageSquare, Bell, Flame, User } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
+import { NextEventCard } from '@/components/NextEventCard'
 
 export default async function DashboardPage() {
   const sessionUser = await getUser()
@@ -153,6 +154,9 @@ export default async function DashboardPage() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
+        {/* Widget: Próximo Evento */}
+        <NextEventCard />
+
         {/* Card 1: Prayer Life (Oikós) - Real Data */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-4">
