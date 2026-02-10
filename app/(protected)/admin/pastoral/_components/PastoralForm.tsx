@@ -43,9 +43,7 @@ export function PastoralForm({ initialData }: PastoralFormProps) {
         if (initialData.imageUrl) {
           formData.append('imageUrl', initialData.imageUrl)
         }
-        formData.append('ativo', String(initialData.ativo)) // Preserve status or add toggle in form? 
-        // Let's assume we preserve status or it's managed in the list. 
-        // Or we can add a status checkbox. I'll add a status checkbox.
+        formData.append('isActive', String(initialData.isActive))
         
         result = await updatePastoralMessage(initialData.id, formData)
       } else {
@@ -74,7 +72,7 @@ export function PastoralForm({ initialData }: PastoralFormProps) {
           <input 
             name="title" 
             required 
-            defaultValue={initialData?.titulo}
+            defaultValue={initialData?.title}
             placeholder="Ex: A Importância da Oração"
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
@@ -86,8 +84,8 @@ export function PastoralForm({ initialData }: PastoralFormProps) {
           </label>
           <input 
             type="datetime-local" 
-            name="publishedAt" 
-            defaultValue={initialData?.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16)}
+            name="createdAt" 
+            defaultValue={initialData?.createdAt ? new Date(initialData.createdAt).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16)}
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
           />
         </div>
@@ -124,7 +122,7 @@ export function PastoralForm({ initialData }: PastoralFormProps) {
             name="content" 
             required 
             rows={12}
-            defaultValue={initialData?.conteudo}
+            defaultValue={initialData?.content}
             placeholder="Escreva a mensagem aqui..."
             className="w-full p-4 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-y font-sans leading-relaxed"
           />
@@ -134,13 +132,13 @@ export function PastoralForm({ initialData }: PastoralFormProps) {
            <div className="flex items-center gap-2 md:col-span-2">
              <input 
                type="checkbox" 
-               name="ativo" 
+               name="isActive" 
                value="true"
-               defaultChecked={initialData.ativo}
-               id="ativo"
+               defaultChecked={initialData.isActive}
+               id="isActive"
                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
              />
-             <label htmlFor="ativo" className="text-sm text-slate-700 select-none cursor-pointer">
+             <label htmlFor="isActive" className="text-sm text-slate-700 select-none cursor-pointer">
                Mensagem Ativa (Visível no site)
              </label>
            </div>

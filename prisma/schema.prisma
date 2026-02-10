@@ -127,6 +127,7 @@ model User {
   
   // Funcionalidades
   oikos           Oikos[]
+  prayerRequests  PrayerRequest[]
   prayerLogs      PrayerLog[]
   invitesCriados  Invite[]  @relation("InviteCreator")
   attendance      MeetingAttendance[]
@@ -509,15 +510,7 @@ model MeetingKidsPillars {
   @@unique([reportId, userId])
 }
 
-model Oikos {
-  id        String   @id @default(cuid())
-  nome      String
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-}
+
 
 model BrandAsset {
   id        String   @id @default(cuid())
@@ -716,3 +709,43 @@ model CalendarEvent {
   date      DateTime // Data do evento
   createdAt DateTime @default(now())
 }
+
+model PastoralMessage {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  videoUrl  String?
+  imageUrl  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PrayerRequest {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  content   String
+  status    String   @default("PENDING")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  titulo      String
+  tipo        ResourceType
+  fileUrl     String
+  publicoAlvo ResourceAudience
+  createdAt   DateTime @default(now())
+}
+
+model Oikos {
+  id        String   @id @default(cuid())
+  nome      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+

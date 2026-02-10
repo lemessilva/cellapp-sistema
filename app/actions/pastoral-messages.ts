@@ -56,15 +56,15 @@ async function uploadToSupabase(file: File): Promise<string | null> {
 
 export async function getPastoralMessages() {
   const messages = await prisma.pastoralMessage.findMany({
-    orderBy: { publishedAt: 'desc' }
+    orderBy: { createdAt: 'desc' }
   })
   return messages
 }
 
 export async function getActivePastoralMessage() {
   const message = await prisma.pastoralMessage.findFirst({
-    where: { ativo: true },
-    orderBy: { publishedAt: 'desc' }
+    where: { isActive: true },
+    orderBy: { createdAt: 'desc' }
   })
   return message
 }
@@ -86,7 +86,7 @@ export async function createPastoralMessage(formData: FormData) {
     const title = formData.get('title') as string
     const content = formData.get('content') as string
     const imageFile = formData.get('imageFile') as File | null
-    const publishedAt = formData.get('publishedAt') as string
+    const createdAt = formData.get('createdAt') as string
     
     let imageUrl = null
 
@@ -102,11 +102,11 @@ export async function createPastoralMessage(formData: FormData) {
 
     await prisma.pastoralMessage.create({
       data: {
-        titulo: title,
-        conteudo: content,
+        title: title,
+        content: content,
         imageUrl: imageUrl,
-        publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
-        ativo: true
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
+        isActive: true
       }
     })
 
@@ -130,14 +130,14 @@ export async function updatePastoralMessage(id: string, formData: FormData) {
     const title = formData.get('title') as string
     const content = formData.get('content') as string
     const imageFile = formData.get('imageFile') as File | null
-    const publishedAt = formData.get('publishedAt') as string
-    const ativo = formData.get('ativo') === 'true'
+    const createdAt = formData.get('createdAt') as string
+    const isActive = formData.get('isActive') === 'true'
 
     const dataToUpdate: any = {
-        titulo: title,
-        conteudo: content,
-        publishedAt: publishedAt ? new Date(publishedAt) : undefined,
-        ativo: ativo
+        title: title,
+        content: content,
+        createdAt: createdAt ? new Date(createdAt) : undefined,
+        isActive: isActive
     }
 
     // Lógica Crítica: Só atualiza imageUrl se houver novo arquivo
@@ -199,7 +199,7 @@ export async function togglePastoralMessageStatus(id: string) {
 
     await prisma.pastoralMessage.update({
       where: { id },
-      data: { ativo: !message.ativo }
+      data: { isActive: !message.isActive }
     })
 
     revalidatePath('/admin/pastoral')

@@ -57,9 +57,9 @@ export default async function PastoralMessagesPage() {
                           <MessageSquare className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="font-medium text-slate-900">{msg.titulo}</div>
+                          <div className="font-medium text-slate-900">{msg.title}</div>
                           <div className="text-xs text-slate-500 truncate max-w-[200px]">
-                            {msg.conteudo.substring(0, 50)}...
+                            {msg.content.substring(0, 50)}...
                           </div>
                         </div>
                       </div>
@@ -67,11 +67,11 @@ export default async function PastoralMessagesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-slate-500 text-sm">
                         <Calendar className="w-4 h-4" />
-                        {new Date(msg.publishedAt).toLocaleDateString('pt-BR')}
+                        {new Date(msg.createdAt).toLocaleDateString('pt-BR')}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <TogglePastoralStatusButton id={msg.id} initialStatus={msg.ativo} />
+                      <TogglePastoralStatusButton id={msg.id} initialStatus={msg.isActive} />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">

@@ -31,8 +31,7 @@ export async function getSiteConfiguration() {
         contactWhatsapp: "5511999999999",
         socialInstagram: "@igreja",
         footerAddress: "Rua da Igreja, 123 - Centro",
-        isLive: false,
-        liveLink: null
+        isLive: false
       }
     })
   }
@@ -67,7 +66,6 @@ export async function updateSiteConfiguration(data: any) {
       socialInstagram: data.socialInstagram,
       footerAddress: data.footerAddress,
       isLive: data.isLive,
-      liveLink: data.liveLink,
     }
   })
 

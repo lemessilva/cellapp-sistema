@@ -39,7 +39,7 @@ export default async function AdminFeedbacksPage() {
                 Tipo
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Título
+                Resumo
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Status

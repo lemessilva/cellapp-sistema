@@ -20,15 +20,20 @@ interface FeedbackRowProps {
 export default function FeedbackRow({ feedback }: FeedbackRowProps) {
   const [isOpen, setIsOpen] = useState(false)
   
-  const isBug = feedback.tipo === 'BUG'
-  const isResolved = feedback.status === 'RESOLVIDO'
-  const isInAnalysis = feedback.status === 'EM_ANALISE'
+  const isBug = feedback.type === 'BUG'
+  const isResolved = feedback.status === 'RESOLVED'
+  const isReviewed = feedback.status === 'REVIEWED'
 
   const rowClass = isResolved
     ? 'bg-emerald-50'
-    : isInAnalysis
+    : isReviewed
     ? 'bg-amber-50'
     : ''
+
+  // Truncate message for display as title equivalent
+  const displayTitle = feedback.message.length > 50 
+    ? feedback.message.substring(0, 50) + '...' 
+    : feedback.message
 
   return (
     <tr className={`group hover:bg-slate-50 transition-colors ${rowClass}`}>
@@ -71,25 +76,25 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
               : 'bg-blue-100 text-blue-700'
           }`}
         >
-          {isBug ? 'Bug' : 'Sugestão'}
+          {isBug ? 'Bug' : feedback.type === 'PRAISE' ? 'Elogio' : 'Sugestão'}
         </span>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-800 max-w-[200px] truncate" title={feedback.titulo}>
-        {feedback.titulo}
+      <td className="px-4 py-3 text-sm text-slate-800 max-w-[200px] truncate" title={feedback.message}>
+        {displayTitle}
       </td>
       <td className="px-4 py-3 text-sm">
         <span
           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
             isResolved
               ? 'bg-emerald-100 text-emerald-700'
-              : isInAnalysis
+              : isReviewed
               ? 'bg-amber-100 text-amber-700'
               : 'bg-slate-100 text-slate-700'
           }`}
         >
-          {feedback.status === 'PENDENTE' && 'Pendente'}
-          {feedback.status === 'EM_ANALISE' && 'Em Análise'}
-          {feedback.status === 'RESOLVIDO' && 'Resolvido'}
+          {feedback.status === 'PENDING' && 'Pendente'}
+          {feedback.status === 'REVIEWED' && 'Em Análise'}
+          {feedback.status === 'RESOLVED' && 'Resolvido'}
         </span>
       </td>
       <td className="px-4 py-3 text-right text-sm">
@@ -109,7 +114,7 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
                       : 'bg-blue-100 text-blue-700'
                   }`}
                 >
-                  {isBug ? 'Bug' : 'Sugestão'}
+                  {isBug ? 'Bug' : feedback.type === 'PRAISE' ? 'Elogio' : 'Sugestão'}
                 </span>
                 <span className="text-sm text-slate-500">
                   {new Date(feedback.createdAt).toLocaleString('pt-BR', {
@@ -121,7 +126,7 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
                   })}
                 </span>
               </div>
-              <DialogTitle className="text-xl">{feedback.titulo}</DialogTitle>
+              <DialogTitle className="text-xl">Feedback de {feedback.user.nome}</DialogTitle>
               <DialogDescription>
                 Enviado por {feedback.user.nome} ({feedback.user.email})
               </DialogDescription>
@@ -129,7 +134,7 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
 
             <div className="space-y-6 py-4">
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-slate-700 whitespace-pre-wrap">
-                {feedback.descricao}
+                {feedback.message}
               </div>
 
               <div className="border-t pt-4">
@@ -147,9 +152,9 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
                     defaultValue={feedback.status}
                     className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="PENDENTE">Pendente</option>
-                    <option value="EM_ANALISE">Em Análise</option>
-                    <option value="RESOLVIDO">Resolvido</option>
+                    <option value="PENDING">Pendente</option>
+                    <option value="REVIEWED">Em Análise</option>
+                    <option value="RESOLVED">Resolvido</option>
                   </select>
                   <button
                     type="submit"

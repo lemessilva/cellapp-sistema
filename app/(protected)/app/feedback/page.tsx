@@ -51,21 +51,22 @@ export default function FeedbackPage() {
             Tipo de feedback
           </label>
           <select
-            name="tipo"
+            name="type"
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             defaultValue="BUG"
           >
             <option value="BUG">Encontrei um Erro (Bug)</option>
-            <option value="SUGESTAO">Sugestão de Melhoria</option>
+            <option value="SUGGESTION">Sugestão de Melhoria</option>
+            <option value="PRAISE">Elogio</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Título
+            Resumo / Título
           </label>
           <input
-            name="titulo"
+            name="title"
             type="text"
             required
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -75,10 +76,10 @@ export default function FeedbackPage() {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
-            Descrição
+            Mensagem
           </label>
           <textarea
-            name="descricao"
+            name="message"
             required
             rows={5}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"

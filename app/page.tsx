@@ -73,9 +73,10 @@ export default async function LandingPage() {
 
       <PlanVisitSection />
 
-      {config.isLive && config.liveLink && (
+      {/* Live Stream Section removed due to missing schema field */}
+      {/* 
+      {config.isLive && (
         <section id="transmissao" className="py-24 bg-black relative overflow-hidden border-b border-slate-800">
-           {/* Decorative */}
            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950 to-slate-950"></div>
            
            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -92,23 +93,14 @@ export default async function LandingPage() {
               </div>
 
               <div className="relative aspect-video w-full rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/10 border border-slate-800 bg-slate-900">
-                 {getYouTubeId(config.liveLink) ? (
-                    <iframe 
-                      src={`https://www.youtube.com/embed/${getYouTubeId(config.liveLink)}?autoplay=1`}
-                      title="Culto Ao Vivo"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="absolute inset-0 w-full h-full"
-                    ></iframe>
-                 ) : (
-                    <div className="flex items-center justify-center h-full text-slate-500">
-                       <p>Link de transmissão inválido.</p>
-                    </div>
-                 )}
+                 <div className="flex items-center justify-center h-full text-slate-500">
+                    <p>Transmissão em andamento. Acesse nosso canal no YouTube.</p>
+                 </div>
               </div>
            </div>
         </section>
-      )}
+      )} 
+      */}
 
       {/* 2.5 Pastoral Message Section */}
       {pastoralMessage && (
@@ -117,7 +109,7 @@ export default async function LandingPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                  <div className="relative aspect-video lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-indigo-900/10 bg-slate-100">
                     {pastoralMessage.imageUrl ? (
-                       <img src={pastoralMessage.imageUrl} alt={pastoralMessage.titulo} className="w-full h-full object-cover" />
+                       <img src={pastoralMessage.imageUrl} alt={pastoralMessage.title} className="w-full h-full object-cover" />
                     ) : (
                        <div className="w-full h-full flex items-center justify-center text-slate-300">
                           <MessageCircle className="w-20 h-20" />
@@ -130,10 +122,10 @@ export default async function LandingPage() {
                        <span>Palavra do Pastor</span>
                     </div>
                     <h2 className="text-3xl md:text-5xl font-bold text-slate-900 leading-tight">
-                       {pastoralMessage.titulo}
+                       {pastoralMessage.title}
                     </h2>
                     <p className="text-lg text-slate-600 leading-relaxed line-clamp-4 whitespace-pre-line">
-                       {pastoralMessage.conteudo}
+                       {pastoralMessage.content}
                     </p>
                     <div className="pt-4">
                        <Link 

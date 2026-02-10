@@ -97,7 +97,7 @@ const eventDetailsInclude = {
     include: { 
       user: true,
       transactions: {
-        orderBy: { date: 'desc' }
+        orderBy: { createdAt: 'desc' }
       }
     },
     orderBy: { createdAt: 'desc' }
@@ -282,8 +282,7 @@ export async function addPaymentTransaction(
     await prisma.paymentTransaction.create({
       data: {
         registrationId,
-        amount,
-        notes
+        amount
       }
     })
 

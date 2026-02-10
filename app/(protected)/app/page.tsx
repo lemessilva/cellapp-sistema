@@ -131,14 +131,14 @@ export default async function DashboardPage() {
                             <User className="w-3 h-3" />
                             <span>Palavra do Pastor</span>
                         </div>
-                        {new Date(pastoralMessage.publishedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                        {new Date(pastoralMessage.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold uppercase tracking-wide animate-pulse">
                                 Nova
                             </span>
                         )}
                     </div>
-                    <h3 className="text-xl font-bold">{pastoralMessage.titulo}</h3>
-                    <p className="text-indigo-100 text-sm line-clamp-1 max-w-xl">{pastoralMessage.conteudo}</p>
+                    <h3 className="text-xl font-bold">{pastoralMessage.title}</h3>
+                    <p className="text-indigo-100 text-sm line-clamp-1 max-w-xl">{pastoralMessage.content}</p>
                 </div>
                 
                 <Link 

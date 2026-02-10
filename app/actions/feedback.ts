@@ -11,23 +11,29 @@ export async function submitFeedback(formData: FormData) {
       return { error: 'Usuário não autenticado.' }
     }
 
-    const tipoRaw = (formData.get('tipo') as string) || 'BUG'
-    const titulo = (formData.get('titulo') as string || '').trim()
-    const descricao = (formData.get('descricao') as string || '').trim()
+    const typeRaw = (formData.get('type') as string) || (formData.get('tipo') as string) || 'BUG'
+    const messageRaw = (formData.get('message') as string) || (formData.get('descricao') as string) || ''
+    const titleRaw = (formData.get('title') as string) || (formData.get('titulo') as string) || ''
+    
+    // Combine title and message if title exists (since schema only has message)
+    const message = titleRaw ? `${titleRaw}\n\n${messageRaw}`.trim() : messageRaw.trim()
 
-    const allowedTipos = ['BUG', 'SUGESTAO']
-    const tipo = allowedTipos.includes(tipoRaw) ? tipoRaw : 'BUG'
+    // Map Portuguese types to English
+    let type = 'BUG'
+    if (typeRaw === 'SUGESTAO' || typeRaw === 'SUGGESTION') type = 'SUGGESTION'
+    else if (typeRaw === 'ELOGIO' || typeRaw === 'PRAISE') type = 'PRAISE'
+    else if (typeRaw === 'BUG') type = 'BUG'
+    else type = 'GERAL'
 
-    if (!titulo || !descricao) {
-      return { error: 'Preencha o título e a descrição do feedback.' }
+    if (!message) {
+      return { error: 'Preencha a mensagem do feedback.' }
     }
 
     await prisma.systemFeedback.create({
       data: {
-        tipo,
-        titulo,
-        descricao,
-        status: 'PENDENTE',
+        type,
+        message,
+        status: 'PENDING',
         userId: user.id,
       },
     })
@@ -82,9 +88,19 @@ export async function updateFeedbackStatus(formData: FormData): Promise<void> {
   }
 
   const id = formData.get('id') as string
-  const statusRaw = (formData.get('status') as string) || 'PENDENTE'
-  const allowedStatus = ['PENDENTE', 'EM_ANALISE', 'RESOLVIDO']
-  const status = allowedStatus.includes(statusRaw) ? statusRaw : 'PENDENTE'
+  const statusRaw = (formData.get('status') as string) || 'PENDING'
+  
+  // Update to English status values based on schema
+  const allowedStatus = ['PENDING', 'REVIEWED', 'RESOLVED']
+  // Map old Portuguese values just in case
+  let status = statusRaw
+  if (statusRaw === 'PENDENTE') status = 'PENDING'
+  if (statusRaw === 'EM_ANALISE') status = 'REVIEWED'
+  if (statusRaw === 'RESOLVIDO') status = 'RESOLVED'
+
+  if (!allowedStatus.includes(status)) {
+    status = 'PENDING'
+  }
 
   if (!id) {
     return
@@ -96,4 +112,5 @@ export async function updateFeedbackStatus(formData: FormData): Promise<void> {
   })
 
   revalidatePath('/admin/feedbacks')
+  revalidatePath(`/admin/feedbacks/${id}`)
 }

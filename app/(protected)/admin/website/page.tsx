@@ -58,7 +58,7 @@ export default async function WebsiteAdminPage({
   ])
 
   // Map cells to match FindCellSection interface
-  const cells = cellsRaw.map(cell => ({
+  const cells = cellsRaw.map((cell: any) => ({
     id: cell.id,
     nome: cell.nome,
     liderNome: cell.lider?.nome || 'Líder',
@@ -71,7 +71,7 @@ export default async function WebsiteAdminPage({
   }))
 
   // Map events to serialize Decimal types
-  const events = eventsRaw.map(event => ({
+  const events = eventsRaw.map((event: any) => ({
     ...event,
     price: event.price.toNumber(), 
   }))

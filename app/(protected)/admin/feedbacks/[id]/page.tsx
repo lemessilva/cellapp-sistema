@@ -33,9 +33,9 @@ export default async function FeedbackDetailPage({ params }: Props) {
     )
   }
 
-  const isBug = feedback.tipo === 'BUG'
-  const isResolved = feedback.status === 'RESOLVIDO'
-  const isInAnalysis = feedback.status === 'EM_ANALISE'
+  const isBug = feedback.type === 'BUG'
+  const isResolved = feedback.status === 'RESOLVED'
+  const isInAnalysis = feedback.status === 'REVIEWED'
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -64,7 +64,7 @@ export default async function FeedbackDetailPage({ params }: Props) {
                   isBug ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                 }`}
               >
-                {isBug ? 'Bug / Erro' : 'Sugestão'}
+                {isBug ? 'Bug / Erro' : feedback.type === 'PRAISE' ? 'Elogio' : 'Sugestão'}
               </span>
               <span className="text-slate-400 text-sm">•</span>
               <span className="text-sm text-slate-500 flex items-center gap-1">
@@ -79,11 +79,9 @@ export default async function FeedbackDetailPage({ params }: Props) {
               </span>
             </div>
 
-            <h2 className="text-xl font-bold text-slate-900 mb-4">{feedback.titulo}</h2>
-
             <div className="prose prose-slate max-w-none">
               <div className="bg-slate-50 rounded-xl p-4 text-slate-700 whitespace-pre-wrap leading-relaxed">
-                {feedback.descricao}
+                {feedback.message}
               </div>
             </div>
           </div>
@@ -133,8 +131,8 @@ export default async function FeedbackDetailPage({ params }: Props) {
                   <input
                     type="radio"
                     name="status"
-                    value="PENDENTE"
-                    defaultChecked={feedback.status === 'PENDENTE'}
+                    value="PENDING"
+                    defaultChecked={feedback.status === 'PENDING'}
                     className="text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="text-sm font-medium text-slate-700">Pendente</span>
@@ -144,8 +142,8 @@ export default async function FeedbackDetailPage({ params }: Props) {
                   <input
                     type="radio"
                     name="status"
-                    value="EM_ANALISE"
-                    defaultChecked={feedback.status === 'EM_ANALISE'}
+                    value="REVIEWED"
+                    defaultChecked={feedback.status === 'REVIEWED'}
                     className="text-amber-600 focus:ring-amber-500"
                   />
                   <span className="text-sm font-medium text-amber-900">Em Análise</span>
@@ -155,8 +153,8 @@ export default async function FeedbackDetailPage({ params }: Props) {
                   <input
                     type="radio"
                     name="status"
-                    value="RESOLVIDO"
-                    defaultChecked={feedback.status === 'RESOLVIDO'}
+                    value="RESOLVED"
+                    defaultChecked={feedback.status === 'RESOLVED'}
                     className="text-emerald-600 focus:ring-emerald-500"
                   />
                   <span className="text-sm font-medium text-emerald-900">Resolvido</span>

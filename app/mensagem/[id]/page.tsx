@@ -11,7 +11,7 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
   const { id } = await params
   const message = await getPastoralMessageById(id)
   
-  if (!message || !message.ativo) {
+  if (!message || !message.isActive) {
     notFound()
   }
 
@@ -44,7 +44,7 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
             <div className="h-64 md:h-96 w-full relative">
               <img 
                 src={message.imageUrl} 
-                alt={message.titulo}
+                alt={message.title}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
@@ -54,11 +54,11 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
                     <span>Palavra do Pastor</span>
                  </div>
                  <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-2">
-                    {message.titulo}
+                    {message.title}
                  </h1>
                  <div className="flex items-center gap-2 text-slate-200 text-sm">
                     <Calendar className="w-4 h-4" />
-                    {new Date(message.publishedAt).toLocaleDateString('pt-BR', { 
+                    {new Date(message.createdAt).toLocaleDateString('pt-BR', { 
                       day: 'numeric', 
                       month: 'long', 
                       year: 'numeric' 
@@ -75,11 +75,11 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
                   <span>Palavra do Pastor</span>
                </div>
                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-                  {message.titulo}
+                  {message.title}
                </h1>
                <div className="flex items-center gap-2 text-slate-500 text-sm">
                   <Calendar className="w-4 h-4" />
-                  {new Date(message.publishedAt).toLocaleDateString('pt-BR', { 
+                  {new Date(message.createdAt).toLocaleDateString('pt-BR', { 
                     day: 'numeric', 
                     month: 'long', 
                     year: 'numeric' 
@@ -89,7 +89,7 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
           )}
 
           <div className="p-8 md:p-12 prose prose-slate max-w-none prose-lg prose-headings:text-slate-900 prose-p:text-slate-600 prose-a:text-indigo-600 hover:prose-a:text-indigo-700">
-            {message.conteudo.split('\n').map((paragraph, idx) => (
+            {message.content.split('\n').map((paragraph, idx) => (
               <p key={idx} className="mb-4 whitespace-pre-line">
                 {paragraph}
               </p>

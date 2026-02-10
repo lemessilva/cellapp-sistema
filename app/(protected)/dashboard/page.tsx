@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { Calendar, Users, Heart, Share2 } from 'lucide-react'
 import { getUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
     const user = await getUser()
     if (!user) redirect('/login')
