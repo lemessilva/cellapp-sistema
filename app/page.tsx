@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music, User } from 'lucide-react'
+import { ArrowRight, MapPin, Calendar, Instagram, Facebook, MessageCircle, ChevronRight, Users, Heart, Music, User, Camera, Clock } from 'lucide-react'
 import { getSiteConfiguration } from '@/app/actions/website'
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
@@ -8,14 +8,14 @@ import { LandingNavbar } from '@/components/LandingNavbar'
 import { getYouTubeId } from '@/lib/utils'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 import { getGalleryImages } from '@/app/actions/media'
-import { FindCellSection } from '@/components/home/FindCellSection'
-import { AgendaSection } from '@/components/home/AgendaSection'
 import { PrayerRequestSection } from '@/components/home/PrayerRequestSection'
 import { PlanVisitSection } from '@/components/home/PlanVisitSection'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { GallerySection } from '@/components/home/GallerySection'
 import { Footer } from '@/components/Footer'
 import { FloatingPrayerButton } from '@/components/home/FloatingPrayerButton'
+import { formatDistanceToNow } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default async function LandingPage() {
   const user = await getUser()
@@ -29,7 +29,6 @@ export default async function LandingPage() {
     ...img,
     caption: img.caption || undefined
   }))
-  const schedule = config.weeklySchedule ? JSON.parse(config.weeklySchedule) : []
   
   const banners = await prisma.siteBanner.findMany({
     where: { ativo: true },
@@ -44,6 +43,38 @@ export default async function LandingPage() {
     take: 3,
     orderBy: { date: 'asc' }
   })
+
+  // Mural photos
+  const latestPhotos = await prisma.cellPhoto.findMany({
+    take: 6, // Pegar as 6 últimas
+    orderBy: { createdAt: 'desc' },
+    include: {
+      cell: { select: { nome: true } }
+    }
+  })
+
+  // Smart Cell Logic (Upcoming)
+  const allCells = await prisma.cell.findMany({
+    where: { ativo: true },
+    include: { lider: { select: { nome: true, whatsapp: true, telefone: true } } }
+  })
+
+  const dayMap: { [key: string]: number } = {
+    'DOMINGO': 0, 'SEGUNDA': 1, 'TERCA': 2, 'QUARTA': 3, 'QUINTA': 4, 'SEXTA': 5, 'SABADO': 6
+  }
+
+  const today = new Date().getDay()
+  
+  const upcomingCells = allCells
+    .filter(cell => cell.diaSemana && dayMap[cell.diaSemana.split('-')[0].toUpperCase()] !== undefined)
+    .map(cell => {
+       const dayIndex = dayMap[cell.diaSemana!.split('-')[0].toUpperCase()]
+       let daysUntil = dayIndex - today
+       if (daysUntil < 0) daysUntil += 7 // Move to next week
+       return { ...cell, dayIndex, daysUntil }
+    })
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+    .slice(0, 4) // Show top 4 upcoming
 
   // Prioritize ChurchInfo, fallback to Config (legacy) or Defaults
   const contactWhatsapp = churchInfo?.whatsapp || config.contactWhatsapp || ""
@@ -142,11 +173,7 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* 2.8 Seção Encontre uma Célula */}
-      <FindCellSection />
 
-      {/* 3. Seção 'Nossa Programação' */}
-      <AgendaSection schedule={schedule} />
 
       {/* 3.5 Seção 'Próximos Eventos' */}
       <section id="eventos" className="py-20 bg-slate-950 border-t border-slate-800/50">
@@ -212,6 +239,66 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* 3.8 Seção 'Mural das Células' */}
+      {latestPhotos.length > 0 && (
+        <section id="mural" className="py-20 bg-slate-900 border-t border-slate-800/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-6">
+              <div className="text-center md:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 text-pink-500 text-sm font-bold mb-4">
+                   <Camera className="w-4 h-4" />
+                   <span>Mural das Células</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white">
+                  Momentos da Família
+                </h2>
+                <p className="text-slate-400 mt-2 text-lg">
+                  Um pouco do que rola em nossas reuniões semanais.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {latestPhotos.map((photo) => (
+                <div key={photo.id} className="bg-slate-800 rounded-2xl border border-slate-700/50 overflow-hidden shadow-sm hover:shadow-xl hover:border-pink-500/30 transition-all group">
+                  {/* Imagem */}
+                  <div className="aspect-square relative bg-slate-950">
+                    <Image
+                      src={photo.url}
+                      alt={photo.caption || `Foto da célula ${photo.cell.nome}`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                    
+                    {/* Badge da Célula sobre a foto */}
+                    <div className="absolute bottom-4 left-4 right-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                       <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-lg">
+                             {photo.cell.nome.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-white font-bold text-sm truncate">{photo.cell.nome}</p>
+                             <p className="text-slate-300 text-xs flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatDistanceToNow(new Date(photo.createdAt), { addSuffix: true, locale: ptBR })}
+                             </p>
+                          </div>
+                       </div>
+                       {photo.caption && (
+                          <p className="text-slate-300 text-xs mt-2 line-clamp-2 leading-relaxed pl-11">
+                             {photo.caption}
+                          </p>
+                       )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 4. Seção 'Células' (O Diferencial) */}
       <section id="celulas" className="py-24 bg-slate-900 relative overflow-hidden">
         {/* Decorative blobs */}
@@ -255,41 +342,46 @@ export default async function LandingPage() {
               {/* Placeholder Buscador Futuro */}
               <div className="bg-slate-950 rounded-3xl p-8 border border-slate-800 shadow-2xl">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="font-bold text-xl text-white">Encontre uma célula perto de você</h3>
-                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">Em breve</span>
+                  <h3 className="font-bold text-xl text-white">Próximas Células</h3>
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">
+                     {upcomingCells.length} Encontradas
+                  </span>
                 </div>
 
-                {/* Cards Estáticos de Exemplo */}
                 <div className="space-y-4">
-                  <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
-                      <MapPin className="w-6 h-6" />
+                  {upcomingCells.map((cell) => (
+                    <div key={cell.id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-colors flex flex-col gap-3">
+                       <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-indigo-400 shrink-0 mt-1">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-white truncate">{cell.nome}</h4>
+                            <p className="text-sm text-slate-400 capitalize">
+                              {cell.diaSemana?.toLowerCase().replace('-feira', '')} às {cell.horario}
+                            </p>
+                            <p className="text-xs text-slate-500 truncate">
+                               {cell.bairro} • Líder {cell.lider?.nome?.split(' ')[0]}
+                            </p>
+                          </div>
+                       </div>
+                       
+                       <a 
+                   href={`https://wa.me/55${(cell.lider?.whatsapp || cell.lider?.telefone || contactWhatsapp).replace(/\D/g, '')}?text=Olá, gostaria de visitar a ${cell.nome}!`}
+                   target="_blank"
+                   className="w-full mt-2 py-2 flex items-center justify-center gap-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 text-xs font-bold rounded-lg transition-colors"
+                 >
+                          <MessageCircle className="w-3 h-3" />
+                          Entre em Contato
+                       </a>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-white">Célula Morumbi</h4>
-                      <p className="text-sm text-slate-400">Quarta-feira às 20h • Líder João</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors flex items-center gap-4">
-                     <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white">Célula Centro</h4>
-                      <p className="text-sm text-slate-400">Quinta-feira às 19:30h • Líder Maria</p>
-                    </div>
-                  </div>
+                  ))}
                   
-                  <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors flex items-center gap-4">
-                     <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
-                      <MapPin className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white">Célula Jovens</h4>
-                      <p className="text-sm text-slate-400">Sábado às 17h • Líder Pedro</p>
-                    </div>
-                  </div>
+                  {upcomingCells.length === 0 && (
+                     <div className="text-center py-8 text-slate-500">
+                        Nenhuma célula encontrada para os próximos dias.
+                     </div>
+                  )}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-slate-800 text-center">

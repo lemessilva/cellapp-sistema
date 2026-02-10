@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StartLiveMeetingButton } from '@/components/live/StartLiveMeetingButton'
 import { prisma } from '@/lib/prisma'
+import { PhotoUpload } from '@/components/photos/PhotoUpload'
 
 export default async function MemberCellPage() {
   const user = await getUser()
@@ -59,14 +60,19 @@ export default async function MemberCellPage() {
           <h1 className="text-2xl font-bold text-slate-900">Minha Célula</h1>
           <p className="text-slate-500">Informações sobre sua comunidade</p>
         </div>
-        {user.role === 'ADMIN' && (
-          <Link href="/admin/celulas">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Nova Célula
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+            {celula && canStartMeeting && (
+                <PhotoUpload cellId={celula.id} cellName={celula.nome} />
+            )}
+            {user.role === 'ADMIN' && (
+            <Link href="/admin/celulas">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Nova Célula
+                </Button>
+            </Link>
+            )}
+        </div>
       </header>
 
       {!celula ? (

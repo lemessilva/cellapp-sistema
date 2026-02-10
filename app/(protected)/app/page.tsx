@@ -1,10 +1,11 @@
 import { getUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Calendar, Heart, MessageSquare, Bell, Flame, User } from 'lucide-react'
+import { Calendar, Heart, MessageSquare, Bell, Flame, User, Camera } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 import { NextEventCard } from '@/components/NextEventCard'
+import { PhotoFeedCard } from '@/components/photos/PhotoFeedCard'
 
 export default async function DashboardPage() {
   const sessionUser = await getUser()
@@ -17,6 +18,7 @@ export default async function DashboardPage() {
     where: { id: sessionUser.id },
     include: {
       celulaLiderada: true,
+      celulaLiderada2: true,
       celulasSupervisionadas: true
     }
   })
@@ -94,6 +96,15 @@ export default async function DashboardPage() {
 
   const pastoralMessage = await getActivePastoralMessage()
 
+  // Passo 1: Buscar os Dados (Server Component)
+  const latestPhotos = await prisma.cellPhoto.findMany({
+    take: 6, // Pegar as 6 últimas
+    orderBy: { createdAt: 'desc' },
+    include: {
+      cell: { select: { nome: true } }
+    }
+  })
+
   return (
     <div className="space-y-6">
       {/* Greeting */}
@@ -150,6 +161,42 @@ export default async function DashboardPage() {
             </div>
         </div>
       )}
+
+      {/* Mural das Células (Community Feed) */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-pink-50 rounded-lg text-pink-600">
+            <Camera className="w-5 h-5" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Mural das Células</h2>
+        </div>
+
+        {latestPhotos.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {latestPhotos.map((photo) => {
+              const canEdit = ['ADMIN', 'SUPERVISOR'].includes(user.role) || 
+                              user.celulaLiderada?.id === photo.cellId || 
+                              user.celulaLiderada2?.id === photo.cellId
+              
+              return (
+                <PhotoFeedCard 
+                  key={photo.id} 
+                  photo={photo} 
+                  canEdit={canEdit} 
+                />
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-8 text-center border border-slate-100 border-dashed">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+              <Camera className="w-6 h-6" />
+            </div>
+            <p className="text-slate-600 font-medium">Nenhuma foto compartilhada esta semana.</p>
+            <p className="text-sm text-slate-400">Líderes, postem seus momentos!</p>
+          </div>
+        )}
+      </section>
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

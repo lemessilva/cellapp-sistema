@@ -321,6 +321,7 @@ model Cell {
   diaSemana   String?  // Ex: "QUARTA", "QUINTA" (Normalizado para filtro)
   horario     String?  // Ex: "20:00"
   endereco    String?
+  ativo       Boolean  @default(true)
   
   // Campos para Busca Pública (Geolocalização)
   enderecoBase String? // Endereço completo usado apenas para gerar as coordenadas
@@ -384,8 +385,20 @@ model Cell {
   // Convites vinculados a esta célula
   invites     Invite[]
   
+  // Fotos do Mural
+  photos      CellPhoto[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model CellPhoto {
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?  // Legenda opcional
+  cellId    String
+  cell      Cell     @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model MeetingReport {

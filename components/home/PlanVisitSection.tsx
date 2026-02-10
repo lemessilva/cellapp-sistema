@@ -24,8 +24,7 @@ export function PlanVisitSection() {
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-4">Nossos Horários</h3>
             <p className="text-slate-600">
-              Domingos às 18h<br />
-              Quartas às 20h
+              Domingos às 18h
             </p>
           </div>
 
@@ -52,7 +51,7 @@ export function PlanVisitSection() {
             <Button 
               variant="outline" 
               className="w-full border-indigo-600 text-indigo-600 hover:bg-indigo-50"
-              onClick={() => window.open('https://maps.google.com', '_blank')}
+              onClick={() => window.open('https://www.google.com/maps?q=-23.1691842,-46.4225853', '_blank')}
             >
               Ver no Mapa
             </Button>

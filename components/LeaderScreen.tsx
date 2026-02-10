@@ -14,6 +14,7 @@ import MemberGrowthModal from '@/components/growth/MemberGrowthModal'
 import { StartLiveMeetingButton } from '@/components/live/StartLiveMeetingButton'
 import dynamic from 'next/dynamic'
 import { PhoneInput } from '@/components/ui/phone-input'
+import { PhotoUpload } from '@/components/photos/PhotoUpload'
 
 const PDFDownloadLink = dynamic(() => import('@react-pdf/renderer').then(mod => mod.PDFDownloadLink), { ssr: false })
 
@@ -83,15 +84,20 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
             </h1>
             <p className="text-slate-500">Gestão de membros e crescimento.</p>
         </div>
-        {canManageStructure && (
-            <button 
-                onClick={() => setIsSettingsModalOpen(true)}
-                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
-                title="Configurações da Célula"
-            >
-                <Settings className="w-6 h-6" />
-            </button>
-        )}
+        <div className="flex items-center gap-2">
+            {cell && (
+                <PhotoUpload cellId={cell.id} cellName={cell.nome} />
+            )}
+            {canManageStructure && (
+                <button 
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"
+                    title="Configurações da Célula"
+                >
+                    <Settings className="w-6 h-6" />
+                </button>
+            )}
+        </div>
       </header>
 
       {/* Start Live Meeting Button */}
