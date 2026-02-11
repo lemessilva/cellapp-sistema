@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
-import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft, History, TrendingUp } from 'lucide-react'
+import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft, History, TrendingUp, Key, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -19,6 +19,7 @@ import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { getPrayerReportData } from '@/app/actions/report'
 import { updateMemberCell } from '@/app/actions/member'
 import { toggleUserActiveStatus } from '@/app/(protected)/admin/actions'
+import { adminResetPassword } from '@/app/actions/auth-reset'
 
 import { pdf } from '@react-pdf/renderer'
 import MemberRegistrationPDF from './MemberRegistrationPDF'
@@ -105,6 +106,9 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   const [targetCellId, setTargetCellId] = useState<string>('')
   const [isMoving, setIsMoving] = useState(false)
   const [pdfGeneratingId, setPdfGeneratingId] = useState<string | null>(null)
+  const [resettingId, setResettingId] = useState<string | null>(null)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [showResetDialog, setShowResetDialog] = useState(false)
 
   const rows = useMemo(() => members, [members])
 
@@ -163,6 +167,24 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
       toast.error('Erro ao gerar a ficha cadastral.')
     } finally {
       setPdfGeneratingId(null)
+    }
+  }
+
+  const handleResetPassword = async (userId: string) => {
+    setResettingId(userId)
+    try {
+      const res = await adminResetPassword(userId)
+      if (res.error) {
+        toast.error(res.error)
+      } else if (res.temporaryPassword) {
+        setTempPassword(res.temporaryPassword)
+        setShowResetDialog(true)
+        toast.success('Senha resetada com sucesso!')
+      }
+    } catch (error) {
+      toast.error('Erro ao resetar senha.')
+    } finally {
+      setResettingId(null)
     }
   }
 
@@ -327,6 +349,22 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                           <TrendingUp className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => handleResetPassword(member.id)}
+                          disabled={resettingId === member.id}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            resettingId === member.id 
+                              ? 'text-slate-300 cursor-not-allowed' 
+                              : 'text-slate-400 hover:text-red-600 hover:bg-red-50'
+                          }`}
+                          title="Resetar Senha"
+                        >
+                          {resettingId === member.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Key className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => setSelectedMember(member)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
                           title="Relatório de Oração"
@@ -400,6 +438,53 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
               ) : (
                 'Confirmar Troca'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Password Reset Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Senha Resetada</DialogTitle>
+            <DialogDescription>
+              A senha provisória foi gerada com sucesso. Copie e envie para o membro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 py-4">
+            <div className="grid flex-1 gap-2">
+              <label htmlFor="temp-password" className="sr-only">
+                Senha Provisória
+              </label>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                <code className="text-2xl font-bold tracking-wider text-indigo-600">
+                  {tempPassword}
+                </code>
+              </div>
+            </div>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-12 w-12 rounded-xl"
+              onClick={() => {
+                if (tempPassword) {
+                  navigator.clipboard.writeText(tempPassword)
+                  toast.success('Senha copiada!')
+                }
+              }}
+            >
+              <Copy className="h-5 w-5" />
+            </Button>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full rounded-xl"
+              onClick={() => setShowResetDialog(false)}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>

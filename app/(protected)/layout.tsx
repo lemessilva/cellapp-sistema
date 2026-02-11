@@ -6,6 +6,7 @@ import AppNavigation from '@/components/AppNavigation'
 import MainLayout from '@/components/MainLayout'
 import { SidebarProvider } from '@/components/providers/SidebarContext'
 import { Toaster } from 'sonner'
+import { MandatoryPasswordModal } from '@/components/auth/MandatoryPasswordModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,8 @@ export default async function ProtectedLayout({
         <MainLayout>
           {children}
         </MainLayout>
+        
+        <MandatoryPasswordModal isOpen={currentUser.mustChangePassword} />
       
       <Toaster position="top-center" richColors />
       </div>

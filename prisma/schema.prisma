@@ -89,6 +89,7 @@ model User {
   role            Role      @default(MEMBRO)
   categoria       MemberCategory @default(ADULTO)
   ativo           Boolean   @default(true)
+  mustChangePassword Boolean @default(false)
   
   // Relacionamentos Hierárquicos
   celulaLiderada  Cell?     @relation("LiderCelula")

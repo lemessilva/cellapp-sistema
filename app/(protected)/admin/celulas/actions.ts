@@ -333,6 +333,50 @@ export async function saveCell(formData: FormData) {
   }
 }
 
+export async function getCellMembers(cellId: string) {
+  try {
+    const members = await prisma.user.findMany({
+      where: { celulaId: cellId, ativo: true },
+      select: {
+        id: true,
+        nome: true,
+        role: true,
+        whatsapp: true,
+        telefone: true,
+      },
+      orderBy: [
+        { role: 'asc' },
+        { nome: 'asc' },
+      ],
+    })
+
+    // Custom sorting to ensure Leaders come first if the database enum/string sorting isn't ideal
+    const sortedMembers = [...members].sort((a, b) => {
+      const rolesOrder: Record<string, number> = {
+        'ADMIN': 1,
+        'SUPERVISOR': 2,
+        'LIDER': 3,
+        'LEADER': 3,
+        'LÍDER': 3,
+        'SECRETARIO': 4,
+        'MEMBER': 10,
+        'MEMBRO': 10,
+      }
+      
+      const orderA = rolesOrder[a.role.toUpperCase()] || 99
+      const orderB = rolesOrder[b.role.toUpperCase()] || 99
+      
+      if (orderA !== orderB) return orderA - orderB
+      return a.nome.localeCompare(b.nome)
+    })
+
+    return { success: true, members: sortedMembers }
+  } catch (error) {
+    console.error('Get Cell Members Error:', error)
+    return { error: 'Erro ao carregar membros.' }
+  }
+}
+
 export async function deleteCell(id: string) {
   try {
     // Verificar se tem membros ou lideres antes?

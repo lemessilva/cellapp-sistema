@@ -3,16 +3,32 @@
 import { useState } from 'react'
 import { updateProfile, addOikos, removeOikos } from '@/app/actions/profile'
 import { toast } from 'sonner'
-import { User, Save, Trash2, Plus, Phone, MapPin, Calendar, Heart, LogOut, FileText, Camera, Award } from 'lucide-react'
+import { User, Save, Trash2, Plus, Phone, MapPin, Calendar, Heart, LogOut, FileText, Camera, Award, Lock, Key, Loader2 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import PrayerReportButton from '@/components/reports/PrayerReportButton'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { GrowthTrackBar } from '@/components/growth/GrowthTrackBar'
+import { changePassword } from '@/app/actions/auth-reset'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function ProfileScreen({ user, reportData, growthSteps = [], userProgress = [] }: { user: any, reportData?: ReportData, growthSteps?: any[], userProgress?: any[] }) {
   const [loading, setLoading] = useState(false)
   const [oikosName, setOikosName] = useState('')
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
   const [estadoCivil, setEstadoCivil] = useState(
     (user.estadoCivil || user.estado_civil || '') as string
   )
@@ -93,6 +109,35 @@ export default function ProfileScreen({ user, reportData, growthSteps = [], user
     const res = await removeOikos(id)
     if (res.error) toast.error(res.error)
     else toast.success('Oikos removido.')
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter pelo menos 6 caracteres.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem.')
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const res = await changePassword(newPassword)
+      if (res.success) {
+        toast.success('Senha alterada com sucesso!')
+        setShowPasswordDialog(false)
+        setNewPassword('')
+        setConfirmPassword('')
+      } else {
+        toast.error(res.error || 'Erro ao alterar senha.')
+      }
+    } catch (error) {
+      toast.error('Erro ao processar solicitação.')
+    } finally {
+      setChangingPassword(false)
+    }
   }
 
   return (
@@ -503,6 +548,74 @@ export default function ProfileScreen({ user, reportData, growthSteps = [], user
           )}
         </div>
       </section>
+
+      {/* Segurança */}
+      <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+        <div className="flex items-center gap-2 text-indigo-600 mb-2">
+          <Lock className="w-5 h-5" />
+          <h2 className="font-bold text-lg">Segurança</h2>
+        </div>
+        <p className="text-sm text-slate-500">Mantenha sua conta segura alterando sua senha regularmente.</p>
+        
+        <Button 
+          variant="outline" 
+          onClick={() => setShowPasswordDialog(true)}
+          className="flex items-center gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+        >
+          <Key className="w-4 h-4" />
+          Alterar Senha
+        </Button>
+      </section>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para sua conta.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleChangePassword} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                disabled={changingPassword}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Repita a nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={changingPassword}
+              />
+            </div>
+            <DialogFooter className="sm:justify-start">
+              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={changingPassword}>
+                {changingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Alterando...
+                  </>
+                ) : (
+                  'Salvar Nova Senha'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

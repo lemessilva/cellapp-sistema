@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { Resend } from 'resend'
+import { getUser } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000
 
@@ -109,4 +111,58 @@ export async function resetarSenha(token: string, novaSenha: string) {
   })
 
   return { success: 'Senha redefinida com sucesso. Você já pode fazer login.' }
+}
+
+export async function adminResetPassword(userId: string) {
+  try {
+    const admin = await getUser()
+    if (!admin || admin.role !== 'ADMIN') {
+      return { error: 'Acesso negado.' }
+    }
+
+    const temporaryPassword = Math.random().toString(36).slice(-8)
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10)
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: true,
+      },
+    })
+
+    return { success: true, temporaryPassword }
+  } catch (error) {
+    console.error('Error in adminResetPassword:', error)
+    return { error: 'Erro ao resetar senha.' }
+  }
+}
+
+export async function changePassword(newPassword: string) {
+  try {
+    const user = await getUser()
+    if (!user) {
+      return { error: 'Não autorizado' }
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { error: 'A senha deve ter pelo menos 6 caracteres.' }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+      },
+    })
+
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Error in changePassword:', error)
+    return { error: 'Erro ao alterar senha.' }
+  }
 }

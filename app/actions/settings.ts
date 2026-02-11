@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { sendNotification } from './notifications'
+import { getUser } from '@/lib/auth'
 
 export async function updateCellSettings(cellId: string, data: {
   dia_reuniao: string
@@ -16,11 +17,17 @@ export async function updateCellSettings(cellId: string, data: {
   intercessaoId: string
 }) {
   try {
-    // Buscar estado atual para comparação
+    const user = await getUser()
+    if (!user) throw new Error('Não autorizado')
+
+    // Buscar estado atual para comparação e verificação de permissão
     const currentCell = await prisma.cell.findUnique({
       where: { id: cellId },
       select: {
+        id: true,
         nome: true,
+        liderId: true,
+        lider2Id: true,
         tesoureiroId: true,
         secretarioId: true,
         louvorId: true,
@@ -29,6 +36,16 @@ export async function updateCellSettings(cellId: string, data: {
         intercessorId: true
       }
     })
+
+    if (!currentCell) throw new Error('Célula não encontrada')
+
+    // Verificação de Segurança: Admin, Supervisor ou o Líder daquela célula específica
+    const isLiderDaCelula = currentCell.liderId === user.id || currentCell.lider2Id === user.id
+    const hasPermission = user.role === 'ADMIN' || user.role === 'SUPERVISOR' || isLiderDaCelula
+
+    if (!hasPermission) {
+      throw new Error('Você não tem permissão para editar as configurações desta célula.')
+    }
 
     // Mapeamento de dias para normalização
     const diaSemanaMap: Record<string, string> = {

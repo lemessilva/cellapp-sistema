@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, MapPin, Calendar, Clock, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, MapPin, Calendar, Clock, Users, Eye } from 'lucide-react'
 import CellModal from '@/components/admin/CellModal'
+import CellMembersModal from '@/components/admin/CellMembersModal'
 import { deleteCell } from './actions'
 import { toast } from 'sonner'
 
@@ -35,6 +36,8 @@ export default function CellList({ initialCells, userRole }: { initialCells: Cel
   const canManageStructure = userRole === 'ADMIN' || userRole === 'SUPERVISOR'
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedCell, setSelectedCell] = useState<Cell | null>(null)
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false)
+  const [cellForMembers, setCellForMembers] = useState<{ id: string, nome: string } | null>(null)
 
   const handleCreate = () => {
     setSelectedCell(null)
@@ -44,6 +47,11 @@ export default function CellList({ initialCells, userRole }: { initialCells: Cel
   const handleEdit = (cell: Cell) => {
     setSelectedCell(cell)
     setIsModalOpen(true)
+  }
+
+  const handleViewMembers = (cell: Cell) => {
+    setCellForMembers({ id: cell.id, nome: cell.nome })
+    setIsMembersModalOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -150,6 +158,13 @@ export default function CellList({ initialCells, userRole }: { initialCells: Cel
                     </td>
                     <td className="p-4 pr-6 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleViewMembers(cell)}
+                          className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Visualizar Membros"
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
                         {canManageStructure && (
                           <>
                             <button
@@ -182,6 +197,13 @@ export default function CellList({ initialCells, userRole }: { initialCells: Cel
         cell={selectedCell}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <CellMembersModal
+        cellId={cellForMembers?.id || null}
+        cellName={cellForMembers?.nome || null}
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
       />
     </>
   )

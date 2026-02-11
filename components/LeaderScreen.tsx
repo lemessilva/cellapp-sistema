@@ -31,7 +31,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   const cellAddress = cell ? `${cell.addressStreet || ''}, ${cell.addressNumber || ''}` : ''
 
   // 1. Permissão para mexer na ESTRUTURA (Botões: Editar Célula, Trocar Líder, Excluir)
-  const canManageStructure = user.role === 'ADMIN' || user.role === 'SUPERVISOR'
+  const canManageStructure = user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'LIDER'
 
   // 2. Permissão para mexer na OPERAÇÃO (Botões: Lançar Relatório, Editar Oferta)
   const canEditReport = user.id === cell?.leaderId || user.id === cell?.secretaryId
