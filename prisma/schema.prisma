@@ -90,6 +90,7 @@ model User {
   categoria       MemberCategory @default(ADULTO)
   ativo           Boolean   @default(true)
   mustChangePassword Boolean @default(false)
+  funcoes         String?   // Funções múltiplas (ex: "Tesoureiro, Louvor")
   
   // Relacionamentos Hierárquicos
   celulaLiderada  Cell?     @relation("LiderCelula")

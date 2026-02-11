@@ -26,6 +26,7 @@ async function getMembersWithPrayerStats() {
       whatsapp: true,
       bairro: true,
       ativo: true,
+      funcoes: true,
       celula: {
         select: {
           nome: true,

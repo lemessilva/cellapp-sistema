@@ -68,6 +68,13 @@ export default function CellModal({ cell, isOpen, onClose }: CellModalProps) {
 
   const [users, setUsers] = useState<UserOption[]>([])
   
+  // Memoized available users for specific roles (Tesoureiro, Secretario, etc.)
+  // We can show all users, or filter by the cell? 
+  // Usually, specific roles like Tesoureiro are chosen from the cell's members.
+  // However, the admin might want to assign someone who isn't in the cell yet.
+  // The user reported Lucas Lemes (MEMBRO) not appearing. 
+  // Let's ensure the dropdowns are implemented first.
+  
   // Supervisor Confirmation State
   const [showSupervisorConfirm, setShowSupervisorConfirm] = useState(false)
   const [pendingSupervisorId, setPendingSupervisorId] = useState('')
@@ -270,6 +277,82 @@ export default function CellModal({ cell, isOpen, onClose }: CellModalProps) {
                     placeholder="Buscar supervisor..."
                     onSelect={handleSupervisorSelect}
                 />
+             </div>
+
+             <div className="pt-4 border-t space-y-4">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Cargos Internos</h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Secretário</label>
+                        <select 
+                            value={secretarioId} 
+                            onChange={(e) => setSecretarioId(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">Selecione um secretário...</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.nome}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tesoureiro</label>
+                        <select 
+                            value={tesoureiroId} 
+                            onChange={(e) => setTesoureiroId(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">Selecione um tesoureiro...</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.nome}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Líder de Louvor</label>
+                        <select 
+                            value={louvorId} 
+                            onChange={(e) => setLouvorId(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">Selecione um líder de louvor...</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.nome}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Líder de Eventos</label>
+                        <select 
+                            value={eventosId} 
+                            onChange={(e) => setEventosId(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">Selecione um líder de eventos...</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.nome}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Intercessor</label>
+                        <select 
+                            value={intercessorId} 
+                            onChange={(e) => setIntercessorId(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white"
+                        >
+                            <option value="">Selecione um intercessor...</option>
+                            {users.map(u => (
+                                <option key={u.id} value={u.id}>{u.nome}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
              </div>
           </div>
 

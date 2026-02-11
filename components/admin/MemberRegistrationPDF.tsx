@@ -145,6 +145,7 @@ interface MemberData {
   
   // Church
   role?: string | null
+  funcoes?: string | null
   data_batismo?: string | Date | null
   dataConversao?: string | Date | null
   celula?: { nome: string } | null
@@ -335,6 +336,13 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
               <View style={[styles.col, styles.colThird]}>
                  <Text style={styles.label}>Data Batismo</Text>
                  <Text style={styles.value}>{formatDate(member.data_batismo)}</Text>
+              </View>
+           </View>
+
+           <View style={styles.row}>
+              <View style={styles.col}>
+                 <Text style={styles.label}>Funções / Ministérios</Text>
+                 <Text style={styles.value}>{member.funcoes || '-'}</Text>
               </View>
            </View>
         </View>

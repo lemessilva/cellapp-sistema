@@ -22,6 +22,7 @@ type UserType = {
   celula: { nome: string } | null
   celulaLiderada: { id: string } | null
   celulasSupervisionadas: { id: string }[]
+  funcoes: string | null
   createdAt: Date
 }
 
@@ -85,6 +86,15 @@ export default function UserManagementTable({ users, cells }: UserManagementTabl
                     <td className="p-4">
                       <div className="font-medium text-slate-900">{user.nome}</div>
                       <div className="text-slate-400 text-xs">{user.email}</div>
+                      {user.funcoes && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {user.funcoes.split(', ').map((f) => (
+                            <span key={f} className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100">
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${roleConfig[user.role].color}`}>

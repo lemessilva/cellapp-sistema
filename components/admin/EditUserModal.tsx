@@ -5,6 +5,19 @@ import { X, Check } from 'lucide-react'
 import { updateUserRoleAndCells } from '@/app/(protected)/admin/actions'
 import { toast } from 'sonner'
 import { Role, User as PrismaUser } from '@prisma/client'
+import { MultiSelect } from '@/components/ui/multi-select-strings'
+
+const MEMBER_FUNCTIONS = [
+  { label: 'Tesoureiro', value: 'Tesoureiro' },
+  { label: 'Secretário', value: 'Secretário' },
+  { label: 'Louvor', value: 'Louvor' },
+  { label: 'Mídia / Tech', value: 'Mídia' },
+  { label: 'Intercessão', value: 'Intercessão' },
+  { label: 'Kids', value: 'Kids' },
+  { label: 'Acolhimento', value: 'Acolhimento' },
+  { label: 'Evangelismo', value: 'Evangelismo' },
+  { label: 'Social', value: 'Social' },
+]
 
 type Cell = {
   id: string
@@ -13,7 +26,7 @@ type Cell = {
   supervisorId: string | null
 }
 
-type User = Pick<PrismaUser, 'id' | 'nome' | 'email' | 'role' | 'celulaId'> & {
+type User = Pick<PrismaUser, 'id' | 'nome' | 'email' | 'role' | 'celulaId' | 'funcoes'> & {
   celulaLiderada: { id: string } | null
   celulasSupervisionadas: { id: string }[]
 }
@@ -32,6 +45,9 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
   const [supervisaoCellIds, setSupervisaoCellIds] = useState<string[]>(
     user.celulasSupervisionadas.map(c => c.id)
   )
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>(
+    user.funcoes ? user.funcoes.split(', ') : []
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Reset state when user changes or modal opens
@@ -41,6 +57,7 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
       setCelulaId(user.celulaId || '')
       setLiderancaCellId(user.celulaLiderada?.id || '')
       setSupervisaoCellIds(user.celulasSupervisionadas.map(c => c.id))
+      setSelectedFunctions(user.funcoes ? user.funcoes.split(', ') : [])
     }
   }, [user, isOpen])
 
@@ -60,6 +77,7 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
         userId: user.id,
         role,
         celulaId,
+        funcoes: selectedFunctions.join(', '),
         liderancaCellId: role === 'LIDER' ? liderancaCellId : undefined,
         supervisaoCellIds: role === 'SUPERVISOR' ? supervisaoCellIds : undefined
       })
@@ -118,6 +136,16 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
               <option value="ADMIN">Admin</option>
               <option value="MIDIA">Mídia / Tech</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Funções / Ministérios</label>
+            <MultiSelect 
+              options={MEMBER_FUNCTIONS}
+              selected={selectedFunctions}
+              onChange={setSelectedFunctions}
+              placeholder="Selecione as funções..."
+            />
           </div>
 
           {/* Lógica para LÍDER */}

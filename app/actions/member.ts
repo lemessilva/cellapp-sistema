@@ -34,6 +34,7 @@ export async function createMember(formData: FormData) {
   const responsavelId = formData.get('responsavelId') as string || undefined
   const email = formData.get('email') as string
   const telefone = formData.get('telefone') as string
+  const funcoes = formData.get('funcoes') as string
 
   if (!nome) return { error: 'Nome é obrigatório.' }
 
@@ -49,6 +50,7 @@ export async function createMember(formData: FormData) {
         categoria: isChild ? 'CRIANCA' : 'ADULTO',
         celulaId: cellId,
         role: 'MEMBRO',
+        funcoes: funcoes || null,
         
         // Parsing dates ensuring they are valid objects or null
         data_nascimento: dataNascimentoStr ? new Date(dataNascimentoStr) : null,

@@ -7,6 +7,20 @@ import InviteGenerator from '@/components/InviteGenerator'
 import Link from 'next/link'
 import { approveReport } from '@/app/actions/meeting'
 import { createMember } from '@/app/actions/member'
+import { MultiSelect } from '@/components/ui/multi-select-strings'
+import { Badge } from '@/components/ui/badge'
+
+const MEMBER_FUNCTIONS = [
+  { label: 'Tesoureiro', value: 'Tesoureiro' },
+  { label: 'Secretário', value: 'Secretário' },
+  { label: 'Louvor', value: 'Louvor' },
+  { label: 'Mídia / Tech', value: 'Mídia' },
+  { label: 'Intercessão', value: 'Intercessão' },
+  { label: 'Kids', value: 'Kids' },
+  { label: 'Acolhimento', value: 'Acolhimento' },
+  { label: 'Evangelismo', value: 'Evangelismo' },
+  { label: 'Social', value: 'Social' },
+]
 import { CellSettingsModal } from '@/components/settings/CellSettingsModal'
 import RosterManager from '@/components/roster/RosterManager'
 import { PrayerCalendarPDF } from '@/components/reports/PrayerCalendarPDF'
@@ -26,6 +40,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   const [isRosterModalOpen, setIsRosterModalOpen] = useState(false)
   const [isChild, setIsChild] = useState(false)
   const [loadingRegister, setLoadingRegister] = useState(false)
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([])
 
   const cell = user.celulaLiderada
   const cellAddress = cell ? `${cell.addressStreet || ''}, ${cell.addressNumber || ''}` : ''
@@ -41,6 +56,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   async function handleRegister(formData: FormData) {
     setLoadingRegister(true)
     formData.append('isChild', isChild.toString())
+    formData.append('funcoes', selectedFunctions.join(', '))
     
     const res = await createMember(formData)
     
@@ -51,6 +67,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
         toast.success('Membro cadastrado com sucesso!')
         setIsRegisterModalOpen(false)
         setIsChild(false)
+        setSelectedFunctions([])
     }
   }
 
@@ -265,7 +282,10 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
            <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-900">Novo Cadastro</h3>
-                  <button onClick={() => setIsRegisterModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                  <button onClick={() => {
+                    setIsRegisterModalOpen(false)
+                    setSelectedFunctions([])
+                  }} className="text-slate-400 hover:text-slate-600">✕</button>
               </div>
 
               {/* Toggle Criança */}
@@ -350,6 +370,16 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                       </>
                   )}
 
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Funções / Ministérios</label>
+                      <MultiSelect 
+                        options={MEMBER_FUNCTIONS}
+                        selected={selectedFunctions}
+                        onChange={setSelectedFunctions}
+                        placeholder="Selecione as funções..."
+                      />
+                  </div>
+
                   <button 
                     type="submit" 
                     disabled={loadingRegister}
@@ -379,6 +409,16 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                             </span>
                         )}
                       </div>
+                      
+                      {selectedMember.funcoes && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {selectedMember.funcoes.split(', ').map((f: string) => (
+                            <Badge key={f} variant="emerald" className="text-[10px] py-0 px-1.5">
+                              {f}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                   </div>
                   <button 
                     onClick={() => setSelectedMember(null)}

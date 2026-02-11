@@ -34,6 +34,7 @@ type Member = {
   whatsapp: string | null
   bairro: string | null
   ativo: boolean
+  funcoes?: string | null
   celula: { nome: string } | null
   prayerTotalDays: number
   lastPrayerDate: string | Date | null
@@ -242,6 +243,15 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                           <div className="font-semibold text-slate-900">
                             {member.nome}
                           </div>
+                          {member.funcoes && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {member.funcoes.split(', ').map((f) => (
+                                <span key={f} className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">
+                                  {f}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

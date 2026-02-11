@@ -48,15 +48,6 @@ export function CellSettingsModal({ isOpen, onClose, initialData, members }: Pro
   const roleFields = ['tesoureiroId', 'secretarioId', 'louvorId', 'eventosId', 'mcpId', 'intercessaoId']
 
   const renderMemberSelect = (label: string, field: keyof typeof formData) => {
-    // Calcular IDs já usados em outros campos
-    const usedIds = roleFields
-        .filter(f => f !== field) // Ignora o campo atual
-        .map(f => (formData as any)[f]) // Pega o valor
-        .filter(Boolean) // Remove vazios
-
-    // Filtra membros: Mantém se não estiver usado OU se for o valor atual deste campo
-    const availableMembers = members.filter(m => !usedIds.includes(m.id))
-
     return (
         <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
@@ -66,7 +57,7 @@ export function CellSettingsModal({ isOpen, onClose, initialData, members }: Pro
             className="w-full rounded-lg border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
         >
             <option value="">Selecione...</option>
-            {availableMembers.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+            {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
         </select>
         </div>
     )

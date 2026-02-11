@@ -46,6 +46,7 @@ type UpdateUserRoleParams = {
   userId: string
   role: Role
   celulaId: string // Célula onde ele é membro (base)
+  funcoes?: string | null // Funções extras (comma separated)
   liderancaCellId?: string // Se for LIDER, qual célula lidera
   supervisaoCellIds?: string[] // Se for SUPERVISOR, quais supervisiona
 }
@@ -54,6 +55,7 @@ export async function updateUserRoleAndCells({
   userId,
   role,
   celulaId,
+  funcoes,
   liderancaCellId,
   supervisaoCellIds
 }: UpdateUserRoleParams) {
@@ -80,7 +82,8 @@ export async function updateUserRoleAndCells({
         where: { id: userId },
         data: {
           role: role,
-          celulaId: celulaId
+          celulaId: celulaId,
+          funcoes: funcoes
         }
       })
 
