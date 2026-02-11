@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink, CreditCard } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink, CreditCard, Baby } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
 
-export default function AppNavigation({ role, isSecretary }: { role: string; isSecretary?: boolean }) {
+export default function AppNavigation({ role, isSecretary, hasChildren }: { role: string; isSecretary?: boolean; hasChildren?: boolean }) {
   const pathname = usePathname()
   const { isOpen, close } = useSidebar()
 
@@ -34,6 +34,10 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
       { href: '/app/meus-ingressos', label: 'Meus Ingressos', icon: Ticket },
       { href: '/app/feedback', label: 'Feedback / Bugs', icon: Bug },
     ]
+
+    if (hasChildren) {
+      links.push({ href: '/app', label: 'Meus Filhos', icon: Baby })
+    }
 
     // 2. Defina quem pode ver o menu de Célula (ADMIN, SUPERVISOR, LIDER, LEADER, SECRETARIO)
     const canManageCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER'].includes(userRole) || isSecretary
@@ -89,7 +93,7 @@ export default function AppNavigation({ role, isSecretary }: { role: string; isS
             const Icon = link.icon
             const isActive = pathname === link.href
             return (
-              <div key={link.href}>
+              <div key={`${link.label}-${link.href}`}>
                 {link.header && (
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider ml-4 mt-4 mb-2">
                     {link.header}

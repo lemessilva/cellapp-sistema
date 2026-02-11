@@ -31,11 +31,26 @@ export default async function ProtectedLayout({
 
   const isSecretary = currentUser.celula?.secretarioId === currentUser.id
 
+  // Buscar se o usuário tem filhos para o menu
+  const childrenCount = await prisma.user.count({
+    where: {
+      OR: [
+        { parentId: currentUser.id },
+        { responsavelId: currentUser.id }
+      ],
+      categoria: 'CRIANCA'
+    }
+  })
+
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-slate-50">
         <Header userId={currentUser.id} />
-        <AppNavigation role={currentUser.role} isSecretary={isSecretary} />
+        <AppNavigation 
+          role={currentUser.role} 
+          isSecretary={isSecretary} 
+          hasChildren={childrenCount > 0} 
+        />
         
         <MainLayout>
           {children}

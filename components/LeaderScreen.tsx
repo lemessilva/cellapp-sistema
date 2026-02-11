@@ -328,6 +328,15 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                       // Campos Adulto
                       <>
                           <div>
+                              <label className="block text-sm font-medium text-slate-700 mb-1">Responsável (Líder/Mentor)</label>
+                              <select name="responsavelId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                                  <option value="">Selecione um responsável (Opcional)</option>
+                                  {potentialParents.map(p => (
+                                      <option key={p.id} value={p.id}>{p.nome}</option>
+                                  ))}
+                              </select>
+                          </div>
+                          <div>
                               <label className="block text-sm font-medium text-slate-700 mb-1">Email (Login)</label>
                               <input name="email" type="email" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@exemplo.com" />
                           </div>

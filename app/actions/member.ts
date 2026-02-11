@@ -55,6 +55,7 @@ export async function createMember(formData: FormData) {
         genero: genero || null,
         data_batismo: dataBatismoStr ? new Date(dataBatismoStr) : null,
         
+        parentId: isChild ? responsavelId : null,
         responsavelId: isChild ? responsavelId : null,
         
         // Email must be unique. If empty string (from form), treat as null to avoid uniqueness violation?

@@ -31,6 +31,7 @@ import { ThemeWrapper } from '@/components/website/ThemeWrapper';
 import { getUser } from '@/lib/auth';
 import { LiveMeetingWatcher } from '@/components/live/LiveMeetingWatcher';
 import { AlertBar } from '@/components/home/AlertBar';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 export default async function RootLayout({
   children,
@@ -73,6 +74,7 @@ export default async function RootLayout({
             alertLink: siteConfig?.alertLink || null
           }} />
           <LiveMeetingWatcher cellId={user?.celula?.id} />
+          <InstallPrompt />
           {children}
         </SidebarProvider>
       </body>

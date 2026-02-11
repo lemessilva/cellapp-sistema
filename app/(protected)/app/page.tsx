@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { getActivePastoralMessage } from '@/app/actions/pastoral-messages'
 import { NextEventCard } from '@/components/NextEventCard'
 import { PhotoFeedCard } from '@/components/photos/PhotoFeedCard'
+import { KidsWidget } from '@/components/kids/KidsWidget'
+import { getMyChildren } from '@/app/actions/kids'
 
 export default async function DashboardPage() {
   const sessionUser = await getUser()
@@ -19,13 +21,15 @@ export default async function DashboardPage() {
     include: {
       celulaLiderada: true,
       celulaLiderada2: true,
-      celulasSupervisionadas: true
+      celulasSupervisionadas: true,
     }
   })
 
   if (!user) {
     redirect('/login')
   }
+
+  const { data: myChildren } = await getMyChildren()
 
   if (user?.role === 'MIDIA') {
     redirect('/admin/website')
@@ -164,6 +168,10 @@ export default async function DashboardPage() {
 
       {/* Mural das Células (Community Feed) */}
       <section className="space-y-4">
+        {myChildren && myChildren.length > 0 && (
+            <KidsWidget children={myChildren} />
+        )}
+
         <div className="flex items-center gap-2">
           <div className="p-2 bg-pink-50 rounded-lg text-pink-600">
             <Camera className="w-5 h-5" />
