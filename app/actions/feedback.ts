@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { uploadFile } from '@/lib/supabase'
 
 export async function submitFeedback(formData: FormData) {
   try {
@@ -14,6 +15,7 @@ export async function submitFeedback(formData: FormData) {
     const typeRaw = (formData.get('type') as string) || (formData.get('tipo') as string) || 'BUG'
     const messageRaw = (formData.get('message') as string) || (formData.get('descricao') as string) || ''
     const titleRaw = (formData.get('title') as string) || (formData.get('titulo') as string) || ''
+    const imageFile = formData.get('image') as File | null
     
     // Combine title and message if title exists (since schema only has message)
     const message = titleRaw ? `${titleRaw}\n\n${messageRaw}`.trim() : messageRaw.trim()
@@ -29,10 +31,21 @@ export async function submitFeedback(formData: FormData) {
       return { error: 'Preencha a mensagem do feedback.' }
     }
 
+    let imageUrl: string | undefined = undefined
+    if (imageFile && imageFile.size > 0) {
+      try {
+        imageUrl = await uploadFile(imageFile, 'feedbacks')
+      } catch (uploadError) {
+        console.error('Erro ao fazer upload da imagem de feedback:', uploadError)
+        // We continue even if upload fails, but maybe alert user?
+      }
+    }
+
     await prisma.systemFeedback.create({
       data: {
         type,
         message,
+        imageUrl,
         status: 'PENDING',
         userId: user.id,
       },

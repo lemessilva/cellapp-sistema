@@ -705,6 +705,7 @@ model SystemFeedback {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 	type String @default("GERAL")
   message String @default("Sem mensagem")
+  imageUrl    String?  // Link da imagem de feedback
   rating      Int?     // 1-5
   status      String   @default("PENDING") // 'PENDING', 'REVIEWED', 'RESOLVED'
   createdAt   DateTime @default(now())
@@ -726,7 +727,8 @@ model PaymentTransaction {
 model CalendarEvent {
   id        String   @id @default(cuid())
   title     String   // Ex: "Santa Ceia", "Dia da Bíblia"
-  date      DateTime // Data do evento
+  date      DateTime // Data de início do evento
+  endDate   DateTime? // Data de fim do evento (opcional para período)
   createdAt DateTime @default(now())
 }
 

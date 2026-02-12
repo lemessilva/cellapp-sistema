@@ -57,6 +57,34 @@ export default async function FeedbackDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna Principal - Conteúdo */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Imagem do Feedback se houver */}
+          {feedback.imageUrl && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                Imagem Anexada
+              </h3>
+              <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                <Image
+                  src={feedback.imageUrl}
+                  alt="Anexo do feedback"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="mt-4 flex justify-end">
+                <a 
+                  href={feedback.imageUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
+                >
+                  Abrir imagem original
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-4">
               <span

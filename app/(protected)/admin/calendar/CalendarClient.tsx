@@ -13,6 +13,7 @@ interface CalendarEvent {
   id: string
   title: string
   date: Date
+  endDate?: Date | null
   createdAt: Date
 }
 
@@ -24,23 +25,34 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents)
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [isPeriod, setIsPeriod] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !date) return
+    if (isPeriod && !endDate) {
+      alert('Por favor, selecione a data final para o período.')
+      return
+    }
 
     startTransition(async () => {
-      // Append T12:00:00 to ensure date stays correct regardless of timezone shifts
-      const result = await createCalendarEvent(title, new Date(`${date}T12:00:00`))
+      const startDateObj = new Date(`${date}T12:00:00`)
+      const endDateObj = isPeriod && endDate ? new Date(`${endDate}T12:00:00`) : null
+
+      if (endDateObj && endDateObj < startDateObj) {
+        alert('A data final não pode ser anterior à data inicial.')
+        return
+      }
+
+      const result = await createCalendarEvent(title, startDateObj, endDateObj)
       if (result.success) {
         setTitle('')
         setDate('')
-        // Ideally we would re-fetch or optimistic update. 
-        // Since we used revalidatePath in the action, the server component will refresh if this was a server component.
-        // But since we are passing initialEvents, we might not see the update immediately unless we reload or router.refresh().
-        // For now, let's just reload the page or assume the parent passes new data if we use router.refresh().
-        window.location.reload() 
+        setEndDate('')
+        setIsPeriod(false)
+        window.location.reload()
       } else {
         alert('Erro ao criar evento')
       }
@@ -83,7 +95,7 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
               />
             </div>
             <div>
-              <Label htmlFor="date">Data</Label>
+              <Label htmlFor="date">{isPeriod ? 'Data Inicial' : 'Data'}</Label>
               <Input
                 id="date"
                 type="date"
@@ -93,6 +105,35 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                 disabled={isPending}
               />
             </div>
+
+            <div className="flex items-center space-x-2 py-2">
+              <input
+                type="checkbox"
+                id="isPeriod"
+                checked={isPeriod}
+                onChange={(e) => setIsPeriod(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isPending}
+              />
+              <Label htmlFor="isPeriod" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Evento de vários dias (Período)
+              </Label>
+            </div>
+
+            {isPeriod && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                <Label htmlFor="endDate">Data Final</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  required={isPeriod}
+                  disabled={isPending}
+                  className="mt-1"
+                />
+              </div>
+            )}
             <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={isPending}>
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar Data'}
             </Button>
@@ -124,7 +165,13 @@ export default function CalendarClient({ initialEvents }: CalendarClientProps) {
                     <div>
                       <h3 className="font-semibold text-slate-900">{event.title}</h3>
                       <p className="text-sm text-slate-500 capitalize">
-                        {format(new Date(event.date), "EEEE", { locale: ptBR })}
+                        {event.endDate ? (
+                          <>
+                            do dia {format(new Date(event.date), 'dd/MM')} ao dia {format(new Date(event.endDate), 'dd/MM/yyyy')}
+                          </>
+                        ) : (
+                          format(new Date(event.date), "EEEE", { locale: ptBR })
+                        )}
                       </p>
                     </div>
                   </div>

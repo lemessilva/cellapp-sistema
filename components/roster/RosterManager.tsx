@@ -25,7 +25,7 @@ const WEEKDAYS: Record<string, number> = {
   'Sábado': 6
 }
 
-export default function RosterManager({ cellId, defaultMeetingDay, defaultAddress, members, onOpenSettings }: Props) {
+export default function RosterManager({ cellId, defaultMeetingDay, defaultAddress, members, onOpenSettings, isReadOnly }: Props & { isReadOnly?: boolean }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [rosters, setRosters] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -204,14 +204,16 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                     {format(date, 'EEEE', { locale: ptBR })}
                   </span>
                 </div>
-                <button 
-                  onClick={() => handleSave(date)}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 text-xs font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                  Salvar
-                </button>
+                {!isReadOnly && (
+                  <button 
+                    onClick={() => handleSave(date)}
+                    disabled={isSaving}
+                    className="flex items-center gap-2 text-xs font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    Salvar
+                  </button>
+                )}
               </div>
               
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,14 +222,20 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                   <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
                     <User className="w-3 h-3" /> Direção
                   </label>
-                  <select 
-                    value={form.directionMemberId || ''} 
-                    onChange={e => handleInputChange(dateKey, 'directionMemberId', e.target.value)}
-                    className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                  >
-                    <option value="">Selecione...</option>
-                    {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
+                  {isReadOnly ? (
+                    <p className="text-sm font-medium text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[38px] flex items-center">
+                      {members.find(m => m.id === form.directionMemberId)?.nome || 'Não definido'}
+                    </p>
+                  ) : (
+                    <select 
+                      value={form.directionMemberId || ''} 
+                      onChange={e => handleInputChange(dateKey, 'directionMemberId', e.target.value)}
+                      className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                    >
+                      <option value="">Selecione...</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 {/* Worship */}
@@ -235,14 +243,20 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                   <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
                     <User className="w-3 h-3" /> Louvor
                   </label>
-                  <select 
-                    value={form.worshipMemberId || ''} 
-                    onChange={e => handleInputChange(dateKey, 'worshipMemberId', e.target.value)}
-                    className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                  >
-                    <option value="">Selecione...</option>
-                    {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
+                  {isReadOnly ? (
+                    <p className="text-sm font-medium text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[38px] flex items-center">
+                      {members.find(m => m.id === form.worshipMemberId)?.nome || 'Não definido'}
+                    </p>
+                  ) : (
+                    <select 
+                      value={form.worshipMemberId || ''} 
+                      onChange={e => handleInputChange(dateKey, 'worshipMemberId', e.target.value)}
+                      className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                    >
+                      <option value="">Selecione...</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 {/* Evangelism */}
@@ -250,14 +264,20 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                   <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
                     <User className="w-3 h-3" /> Palavra/Oferta
                   </label>
-                  <select 
-                    value={form.evangelismMemberId || ''} 
-                    onChange={e => handleInputChange(dateKey, 'evangelismMemberId', e.target.value)}
-                    className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                  >
-                    <option value="">Selecione...</option>
-                    {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
+                  {isReadOnly ? (
+                    <p className="text-sm font-medium text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[38px] flex items-center">
+                      {members.find(m => m.id === form.evangelismMemberId)?.nome || 'Não definido'}
+                    </p>
+                  ) : (
+                    <select 
+                      value={form.evangelismMemberId || ''} 
+                      onChange={e => handleInputChange(dateKey, 'evangelismMemberId', e.target.value)}
+                      className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                    >
+                      <option value="">Selecione...</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 {/* Host */}
@@ -265,14 +285,20 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                   <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">
                     <User className="w-3 h-3" /> Anfitrião
                   </label>
-                  <select 
-                    value={form.hostMemberId || ''} 
-                    onChange={e => handleInputChange(dateKey, 'hostMemberId', e.target.value)}
-                    className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                  >
-                    <option value="">Padrão da Célula</option>
-                    {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                  </select>
+                  {isReadOnly ? (
+                    <p className="text-sm font-medium text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[38px] flex items-center">
+                      {members.find(m => m.id === form.hostMemberId)?.nome || 'Padrão da Célula'}
+                    </p>
+                  ) : (
+                    <select 
+                      value={form.hostMemberId || ''} 
+                      onChange={e => handleInputChange(dateKey, 'hostMemberId', e.target.value)}
+                      className="w-full text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                    >
+                      <option value="">Padrão da Célula</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 {/* Address */}
@@ -281,13 +307,19 @@ export default function RosterManager({ cellId, defaultMeetingDay, defaultAddres
                     <MapPin className="w-3 h-3" /> Local da Reunião
                   </label>
                   <div className="flex gap-2">
-                    <input 
-                        type="text" 
-                        value={form.customAddress || ''}
-                        onChange={e => handleInputChange(dateKey, 'customAddress', e.target.value)}
-                        placeholder={defaultAddress ? `Padrão: ${defaultAddress}` : 'Digite o endereço...'}
-                        className="flex-1 text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
-                    />
+                    {isReadOnly ? (
+                      <p className="w-full text-sm font-medium text-slate-800 p-2 bg-slate-50 rounded-lg border border-slate-100 min-h-[38px] flex items-center">
+                        {form.customAddress || defaultAddress || 'Não definido'}
+                      </p>
+                    ) : (
+                      <input 
+                          type="text" 
+                          value={form.customAddress || ''}
+                          onChange={e => handleInputChange(dateKey, 'customAddress', e.target.value)}
+                          placeholder={defaultAddress ? `Padrão: ${defaultAddress}` : 'Digite o endereço...'}
+                          className="flex-1 text-sm p-2 rounded-lg border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

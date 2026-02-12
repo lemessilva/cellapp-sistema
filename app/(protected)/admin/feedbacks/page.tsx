@@ -39,6 +39,9 @@ export default async function AdminFeedbacksPage() {
                 Tipo
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Anexo
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Resumo
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -53,7 +56,7 @@ export default async function AdminFeedbacksPage() {
             {feedbacks.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-8 text-center text-sm text-slate-500"
                 >
                   Nenhum feedback enviado até o momento.

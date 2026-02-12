@@ -11,7 +11,8 @@ export default async function LeaderPage() {
     redirect('/admin/website')
   }
 
-  if (!['LIDER', 'SUPERVISOR', 'ADMIN'].includes(user.role)) {
+  // Permite acesso para LIDER, SUPERVISOR, ADMIN e agora MEMBRO
+  if (!['LIDER', 'SUPERVISOR', 'ADMIN', 'MEMBRO'].includes(user.role)) {
     redirect('/app/oracao')
   }
 

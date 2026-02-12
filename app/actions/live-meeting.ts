@@ -223,7 +223,12 @@ export async function finishLiveMeeting(
     const memberCategoryMap = new Map(members.map(m => [m.id, m.categoria]))
 
     await prisma.$transaction(async (tx) => {
-        // 3. Salva os Membros (Iteração)
+        // 3. Salva os Membros (Iteração Otimizada)
+        
+        // Separa os dados por categoria para usar createMany
+        const attendanceToCreate: any[] = []
+        const kidsToCreate: any[] = []
+
         for (const [userId, data] of Object.entries(attendanceData)) {
             const category = memberCategoryMap.get(userId) || 'ADULTO'
             const isPresent = data.status === 'P'
@@ -242,42 +247,35 @@ export async function finishLiveMeeting(
             }
 
             if (category === 'CRIANCA') {
-                 await tx.meetingKidsPillars.upsert({
-                    where: { reportId_userId: { reportId: finalId, userId } },
-                    create: {
-                        reportId: finalId,
-                        userId,
-                        cell: isPresent,
-                        church: data.church || false,
-                        homeWorship: data.homeWorship || false,
-                        devotional: data.devotional || false,
-                        challenge: data.challenge || false,
-                        offerValue, titheValue, missionsValue, otherValue
-                    },
-                    update: {
-                        cell: isPresent,
-                        church: data.church || false,
-                        homeWorship: data.homeWorship || false,
-                        devotional: data.devotional || false,
-                        challenge: data.challenge || false,
-                        offerValue, titheValue, missionsValue, otherValue
-                    }
+                kidsToCreate.push({
+                    reportId: finalId,
+                    userId,
+                    cell: isPresent,
+                    church: data.church || false,
+                    homeWorship: data.homeWorship || false,
+                    devotional: data.devotional || false,
+                    challenge: data.challenge || false,
+                    offerValue, titheValue, missionsValue, otherValue
                 })
             } else {
-                await tx.meetingAttendance.upsert({
-                    where: { reportId_userId: { reportId: finalId, userId } },
-                    create: {
-                        reportId: finalId,
-                        userId,
-                        status: data.status || 'F',
-                        offerValue, titheValue, missionsValue, otherValue
-                    },
-                    update: {
-                        status: data.status || 'F',
-                        offerValue, titheValue, missionsValue, otherValue
-                    }
+                attendanceToCreate.push({
+                    reportId: finalId,
+                    userId,
+                    status: data.status || 'F',
+                    offerValue, titheValue, missionsValue, otherValue
                 })
             }
+        }
+
+        // Limpa registros existentes antes de criar novos (Efeito de Upsert em massa)
+        await tx.meetingAttendance.deleteMany({ where: { reportId: finalId } })
+        await tx.meetingKidsPillars.deleteMany({ where: { reportId: finalId } })
+
+        if (attendanceToCreate.length > 0) {
+            await tx.meetingAttendance.createMany({ data: attendanceToCreate })
+        }
+        if (kidsToCreate.length > 0) {
+            await tx.meetingKidsPillars.createMany({ data: kidsToCreate })
         }
 
         // Atualiza totais no relatório pai
@@ -298,6 +296,8 @@ export async function finishLiveMeeting(
                  await tx.meetingReport.delete({ where: { id: reportId } })
              }
         }
+    }, {
+        timeout: 15000 // Timeout de 15s para evitar P2028
     })
 
     revalidatePath('/app')

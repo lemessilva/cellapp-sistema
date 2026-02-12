@@ -3,12 +3,13 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-export async function createCalendarEvent(title: string, date: Date) {
+export async function createCalendarEvent(title: string, date: Date, endDate?: Date | null) {
   try {
     await prisma.calendarEvent.create({
       data: {
         title,
         date,
+        endDate: endDate || null,
       },
     })
     revalidatePath('/admin/calendar')

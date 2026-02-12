@@ -4,7 +4,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 // Create styles
 const styles = StyleSheet.create({
   page: {
-    padding: 20,
+    padding: 15, // Reduzido de 20 para ganhar mais espaço útil
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
     fontFamily: 'Helvetica'
@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#000',
-    marginBottom: 10
+    marginBottom: 5
   },
   headerColLeft: {
     width: '60%',
@@ -34,33 +34,57 @@ const styles = StyleSheet.create({
   // Table Container
   tableContainer: {
     width: '100%',
-    borderTopWidth: 1,
     borderLeftWidth: 1,
+    borderRightWidth: 0,
     borderColor: '#000'
   },
   row: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 0,
     borderColor: '#000',
-    minHeight: 15
+    minHeight: 18 // Reduzido de 25 para compactação máxima
   },
   
   // Cell Styles - Widths will be dynamic
   cellLabel: {
-    padding: 2,
+    padding: 1, // Reduzido para o mínimo
     borderRightWidth: 1,
     borderColor: '#000',
     justifyContent: 'center'
   },
   cellData: {
-    padding: 2,
+    padding: 0, // Zerado
     borderRightWidth: 1,
     borderColor: '#000',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'stretch'
+  },
+  innerGridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 0.5, // Linha ainda mais fina
+    borderColor: '#ccc',
+    marginTop: -1, // Sobe um pouco para encostar no P/F
+    paddingTop: 0
+  },
+  innerGridCol: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 0 // Zerado
+  },
+  innerLabel: {
+    fontSize: 4.5, // Reduzido ligeiramente
+    color: '#666',
+    lineHeight: 1.0
+  },
+  innerValue: {
+    fontSize: 5.5, // Reduzido ligeiramente
+    fontWeight: 'bold',
+    lineHeight: 1.0
   },
   cellTotal: {
-    padding: 2,
+    padding: 1,
     borderRightWidth: 1,
     borderColor: '#000',
     justifyContent: 'center',
@@ -70,31 +94,41 @@ const styles = StyleSheet.create({
   
   // Text Styles
   labelBold: {
-    fontSize: 8,
-    fontWeight: 'bold'
+    fontSize: 7,
+    fontWeight: 'bold',
+    lineHeight: 1.0
   },
   dataText: {
-    fontSize: 8,
-    textAlign: 'center'
+    fontSize: 7,
+    textAlign: 'center',
+    lineHeight: 1.0
   },
   dataTextBold: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'bold',
-    textAlign: 'center'
+    textAlign: 'center',
+    lineHeight: 1.0
   },
   valueText: {
-    fontSize: 7,
-    textAlign: 'center'
+    fontSize: 6,
+    textAlign: 'center',
+    lineHeight: 1.0
   },
   statusP: {
-    fontSize: 9,
+    fontSize: 8, // Reduzido para caber melhor
     fontWeight: 'bold',
-    textAlign: 'center'
+    textAlign: 'center',
+    color: '#000',
+    lineHeight: 1.0,
+    marginTop: 1 // Pequeno respiro no topo
   },
   statusF: {
-    fontSize: 9,
-    color: 'red',
-    textAlign: 'center'
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+    textAlign: 'center',
+    lineHeight: 1.0,
+    marginTop: 1
   },
   
   // Section Headers
@@ -186,11 +220,21 @@ interface ReportData {
     id: string
     name: string
     attendance: Record<string, string>
-    financials: Record<string, number>
+    financials: Record<string, {
+        tithe: number
+        offer: number
+        missions: number
+        other: number
+    }>
     stats: {
         present: number
-        financial: number
+        absent: number
+        justified: number
         eligible: number
+        totalTithe: number
+        totalOffer: number
+        totalMissions: number
+        totalOther: number
     }
   }[]
   kids: {
@@ -203,6 +247,20 @@ interface ReportData {
       devotional: boolean
       challenge: boolean
     }>
+    financials: Record<string, {
+        tithe: number
+        offer: number
+        missions: number
+        other: number
+    }>
+    stats: {
+        present: number
+        eligible: number
+        totalTithe: number
+        totalOffer: number
+        totalMissions: number
+        totalOther: number
+    }
   }[]
   closure?: {
     dataAssinaturaLider?: Date | string | null;
@@ -226,10 +284,16 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
   
   const numWeeks = summaries.length > 0 ? summaries.length : 1
   
-  // Dynamic Widths
-  const LABEL_WIDTH = '25%'
-  const DATA_WIDTH = `${65 / numWeeks}%`
-  const TOTAL_WIDTH = '10%'
+  // Column Widths for Landscape
+  const LABEL_WIDTH = '22%' // Reduzido de 25%
+  const DATA_WIDTH = `${56 / numWeeks}%` // Ajustado de 60% para 56%
+  const TOTAL_WIDTH = '22%' // Aumentado de 15% para acomodar mais colunas
+  const TOTAL_FIN_INDIVIDUAL_WIDTH = '4.5%' // Dízimo
+  const TOTAL_OFF_INDIVIDUAL_WIDTH = '4.5%' // Oferta
+  const TOTAL_MIS_INDIVIDUAL_WIDTH = '4.5%' // Missões
+  const TOTAL_OUT_INDIVIDUAL_WIDTH = '4.5%' // Outros
+  const TOTAL_FREQ_INDIVIDUAL_WIDTH = '4%' // Freqüência (um pouco menor)
+  // 22% (Label) + 56% (Datas) + 22% (Totais) = 100%
 
   return (
   <Document>
@@ -261,10 +325,8 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
         </View>
       </View>
 
-      {/* 2. Table Container */}
+      {/* 2. Summary Table */}
       <View style={styles.tableContainer}>
-        
-        {/* === SUMMARY GRID === */}
         {/* Date Header Row */}
         <View style={[styles.row, { backgroundColor: '#f0f0f0' }]}>
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
@@ -272,10 +334,9 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             </View>
             {summaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                    <Text style={styles.dataTextBold}>{s.date}</Text>
+                    <Text style={styles.dataTextBold}>{s.date.split('/').slice(0, 2).join('/')}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.labelBold}>TOTAL</Text>
             </View>
@@ -293,7 +354,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     </Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
         </View>
 
@@ -307,39 +367,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={[styles.valueText, { fontSize: 6 }]}>{s.theme.substring(0, 20)}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
-            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
-        </View>
-
-        {/* Observations Row */}
-        <View style={styles.row}>
-            <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
-                <Text style={styles.labelBold}>Observações</Text>
-            </View>
-            {summaries.map((s, i) => (
-                <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                    <Text style={[styles.valueText, { fontSize: 6 }]}>
-                      {s.observations ? s.observations.substring(0, 30) : '-'}
-                    </Text>
-                </View>
-            ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
-            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
-        </View>
-
-        {/* Offer Details Row */}
-        <View style={styles.row}>
-            <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
-                <Text style={styles.labelBold}>Detalhamento Oferta</Text>
-            </View>
-            {summaries.map((s, i) => (
-                <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                    <Text style={[styles.valueText, { fontSize: 6 }]}>
-                      {s.offerDetails ? s.offerDetails.substring(0, 30) : '-'}
-                    </Text>
-                </View>
-            ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
         </View>
 
@@ -353,7 +380,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.dataText}>{s.present}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>{summaries.reduce((acc, curr) => acc + curr.present, 0)}</Text>
             </View>
@@ -368,7 +394,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.dataText}>{s.visitors}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>{summaries.reduce((acc, curr) => acc + curr.visitors, 0)}</Text>
             </View>
@@ -384,7 +409,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.valueText}>R$ {s.financials.tithe.toFixed(2)}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.tithe, 0).toFixed(2)}</Text>
             </View>
@@ -399,7 +423,6 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.valueText}>R$ {s.financials.offer.toFixed(2)}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.offer, 0).toFixed(2)}</Text>
             </View>
@@ -414,13 +437,12 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.valueText}>R$ {s.financials.missions.toFixed(2)}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.missions, 0).toFixed(2)}</Text>
             </View>
         </View>
 
-        <View style={[styles.row, { backgroundColor: '#e0e0e0' }]}>
+        <View style={[styles.row, { backgroundColor: '#e0e0e0', borderBottomWidth: 1 }]}>
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>TOTAL GERAL</Text>
             </View>
@@ -429,52 +451,90 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     <Text style={styles.dataTextBold}>R$ {s.financials.total.toFixed(2)}</Text>
                 </View>
             ))}
-            {summaries.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
                 <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.total, 0).toFixed(2)}</Text>
             </View>
         </View>
+      </View>
 
-        {/* Separator */}
-        <View style={[styles.row, { backgroundColor: '#000', height: 2, minHeight: 2 }]} />
-
-        {/* === MEMBERS GRID === */}
+      {/* 3. Members Table */}
+      <View wrap={true} style={[styles.tableContainer, { marginTop: 5 }]}>
         {/* Header for Members */}
-        <View style={[styles.row, { backgroundColor: '#f0f0f0' }]}>
+        <View wrap={false} style={[styles.row, { backgroundColor: '#f0f0f0' }]}>
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>MEMBROS</Text>
             </View>
             {dates.map((d, i) => (
                  <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                    <Text style={styles.dataTextBold}>{d.split('/')[0]}</Text>
+                    <Text style={styles.dataTextBold}>{d.split('/').slice(0, 2).join('/')}</Text>
                 </View>
             ))}
-            {dates.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
-            <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.labelBold}>FREQ.</Text>
+            <View style={[styles.cellTotal, { width: TOTAL_FIN_INDIVIDUAL_WIDTH }]}>
+                <Text style={styles.labelBold}>DÍZ</Text>
+            </View>
+            <View style={[styles.cellTotal, { width: TOTAL_OFF_INDIVIDUAL_WIDTH }]}>
+                <Text style={styles.labelBold}>OF</Text>
+            </View>
+            <View style={[styles.cellTotal, { width: TOTAL_MIS_INDIVIDUAL_WIDTH }]}>
+                <Text style={styles.labelBold}>MIS</Text>
+            </View>
+            <View style={[styles.cellTotal, { width: TOTAL_OUT_INDIVIDUAL_WIDTH }]}>
+                <Text style={styles.labelBold}>OUT</Text>
+            </View>
+            <View style={[styles.cellTotal, { width: TOTAL_FREQ_INDIVIDUAL_WIDTH, borderRightWidth: 0 }]}>
+                <Text style={styles.labelBold}>FRQ</Text>
             </View>
         </View>
 
         {adults.map((adult, idx) => (
-            <View key={adult.id} style={[styles.row, { backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }]}>
+            <View key={adult.id} style={[styles.row, { backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9', borderBottomWidth: idx === adults.length - 1 ? 1 : 0 }]}>
                 <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                     <Text style={[styles.dataText, { textAlign: 'left', paddingLeft: 4 }]}>{adult.name}</Text>
                 </View>
                 
                 {dates.map((date, i) => {
                     const status = adult.attendance?.[date] || '-'
-                    const val = adult.financials?.[date] || 0
+                    const fin = adult.financials?.[date] || { tithe: 0, offer: 0, missions: 0, other: 0 }
                     
                     return (
                         <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                              <Text style={status === 'P' ? styles.statusP : styles.statusF}>{status}</Text>
-                             {val > 0 && <Text style={styles.valueText}>{val.toFixed(2)}</Text>}
+                             
+                             <View style={styles.innerGridRow}>
+                                <View style={styles.innerGridCol}>
+                                    <Text style={styles.innerLabel}>DIZ</Text>
+                                    <Text style={styles.innerValue}>{fin.tithe > 0 ? fin.tithe.toFixed(2) : '0,00'}</Text>
+                                </View>
+                                <View style={styles.innerGridCol}>
+                                    <Text style={styles.innerLabel}>OF</Text>
+                                    <Text style={styles.innerValue}>{fin.offer > 0 ? fin.offer.toFixed(2) : '0,00'}</Text>
+                                </View>
+                                <View style={styles.innerGridCol}>
+                                    <Text style={styles.innerLabel}>MIS</Text>
+                                    <Text style={styles.innerValue}>{fin.missions > 0 ? fin.missions.toFixed(2) : '0,00'}</Text>
+                                </View>
+                                <View style={styles.innerGridCol}>
+                                    <Text style={styles.innerLabel}>OUT</Text>
+                                    <Text style={styles.innerValue}>{fin.other > 0 ? fin.other.toFixed(2) : '0,00'}</Text>
+                                </View>
+                             </View>
                         </View>
                     )
                 })}
-                {dates.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
 
-                <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
+                <View style={[styles.cellTotal, { width: TOTAL_FIN_INDIVIDUAL_WIDTH }]}>
+                    <Text style={styles.dataTextBold}>{`R$ ${adult.stats.totalTithe.toFixed(2)}`}</Text>
+                </View>
+                <View style={[styles.cellTotal, { width: TOTAL_OFF_INDIVIDUAL_WIDTH }]}>
+                    <Text style={styles.dataTextBold}>{`R$ ${adult.stats.totalOffer.toFixed(2)}`}</Text>
+                </View>
+                <View style={[styles.cellTotal, { width: TOTAL_MIS_INDIVIDUAL_WIDTH }]}>
+                    <Text style={styles.dataTextBold}>{`R$ ${adult.stats.totalMissions.toFixed(2)}`}</Text>
+                </View>
+                <View style={[styles.cellTotal, { width: TOTAL_OUT_INDIVIDUAL_WIDTH }]}>
+                    <Text style={styles.dataTextBold}>{`R$ ${adult.stats.totalOther.toFixed(2)}`}</Text>
+                </View>
+                <View style={[styles.cellTotal, { width: TOTAL_FREQ_INDIVIDUAL_WIDTH, borderRightWidth: 0 }]}>
                     <Text style={styles.dataTextBold}>
                       {adult.stats.eligible > 0 
                         ? `${Math.round((adult.stats.present / adult.stats.eligible) * 100)}%` 
@@ -486,9 +546,16 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
 
       </View>
 
-      {/* 3. Kids Grid */}
+      {/* 4. Observations Section */}
+      <View wrap={true} style={{ marginTop: 10, paddingHorizontal: 5 }}>
+        <Text style={styles.labelBold}>OBSERVAÇÕES:</Text>
+        <View style={{ borderBottomWidth: 1, borderColor: '#ccc', marginTop: 12, width: '100%' }} />
+        <View style={{ borderBottomWidth: 1, borderColor: '#ccc', marginTop: 12, width: '100%' }} />
+      </View>
+
+      {/* 5. Kids Section (Page 2) */}
       {kids.length > 0 && (
-          <View break={false} style={{ marginTop: 20 }}>
+          <View break style={{ marginTop: 20 }}>
             <Text style={[styles.sectionTitle, { marginBottom: 5 }]}>Crianças (Gamificação)</Text>
             <View style={styles.tableContainer}>
                 <View style={[styles.row, { backgroundColor: '#f0f0f0' }]}>
@@ -497,20 +564,28 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                     </View>
                     {dates.map((d, i) => (
                         <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                            <Text style={styles.dataTextBold}>{d.split('/')[0]}</Text>
+                            <Text style={styles.dataTextBold}>{d.split('/').slice(0, 2).join('/')}</Text>
                         </View>
                     ))}
-                    {dates.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
-                    <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
+                    <View style={[styles.cellTotal, { width: TOTAL_FIN_INDIVIDUAL_WIDTH }]}>
+                        <Text style={styles.labelBold}>DÍZIMO</Text>
+                    </View>
+                    <View style={[styles.cellTotal, { width: TOTAL_OFF_INDIVIDUAL_WIDTH }]}>
+                        <Text style={styles.labelBold}>OFERTA</Text>
+                    </View>
+                    <View style={[styles.cellTotal, { width: TOTAL_FREQ_INDIVIDUAL_WIDTH }]}>
+                        <Text style={styles.labelBold}>PRES.</Text>
+                    </View>
                 </View>
 
                 {kids.map((kid, idx) => (
-                    <View key={kid.id} style={[styles.row, { backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9' }]}>
+                    <View key={kid.id} style={[styles.row, { backgroundColor: idx % 2 === 0 ? '#fff' : '#f9f9f9', borderBottomWidth: idx === kids.length - 1 ? 1 : 0 }]}>
                         <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                              <Text style={[styles.dataText, { textAlign: 'left', paddingLeft: 4 }]}>{kid.name}</Text>
                         </View>
                         {dates.map((date, i) => {
                              const pillars = kid.pillars?.[date]
+                             const fin = kid.financials?.[date] || { tithe: 0, offer: 0, missions: 0, other: 0 }
                              let pList: string[] = []
                              if (pillars) {
                                  if (pillars.church) pList.push('I')
@@ -521,12 +596,22 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
                              }
                              return (
                                  <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
-                                     <Text style={[styles.valueText, { fontSize: 6 }]}>{pList.join(' ')}</Text>
+                                     <Text style={[styles.valueText, { fontSize: 6, fontWeight: 'bold' }]}>{pList.length > 0 ? pList.join(' ') : 'F'}</Text>
+                                     <Text style={[styles.valueText, { fontSize: 5 }]}>Diz: {fin.tithe.toFixed(2)}</Text>
+                                     <Text style={[styles.valueText, { fontSize: 5 }]}>Of: {fin.offer.toFixed(2)}</Text>
                                  </View>
                              )
                         })}
-                        {dates.length === 0 && <View style={[styles.cellData, { width: DATA_WIDTH }]}><Text>-</Text></View>}
-                        <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]} />
+                        
+                        <View style={[styles.cellTotal, { width: TOTAL_FIN_INDIVIDUAL_WIDTH }]}>
+                            <Text style={styles.dataTextBold}>{`R$ ${kid.stats.totalTithe.toFixed(2)}`}</Text>
+                        </View>
+                        <View style={[styles.cellTotal, { width: TOTAL_OFF_INDIVIDUAL_WIDTH }]}>
+                            <Text style={styles.dataTextBold}>{`R$ ${kid.stats.totalOffer.toFixed(2)}`}</Text>
+                        </View>
+                        <View style={[styles.cellTotal, { width: TOTAL_FREQ_INDIVIDUAL_WIDTH }]}>
+                            <Text style={styles.dataTextBold}>{kid.stats.present}</Text>
+                        </View>
                     </View>
                 ))}
             </View>

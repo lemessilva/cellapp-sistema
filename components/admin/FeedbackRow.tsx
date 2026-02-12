@@ -11,7 +11,7 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog'
 import { updateFeedbackStatus } from '@/app/actions/feedback'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Image as ImageIcon } from 'lucide-react'
 
 interface FeedbackRowProps {
   feedback: any // Using any for simplicity as per previous code context, ideally should be typed
@@ -79,6 +79,23 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
           {isBug ? 'Bug' : feedback.type === 'PRAISE' ? 'Elogio' : 'Sugestão'}
         </span>
       </td>
+      <td className="px-4 py-3">
+        {feedback.imageUrl ? (
+          <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 group-hover:border-indigo-300 transition-colors">
+            <Image
+              src={feedback.imageUrl}
+              alt="Anexo"
+              fill
+              className="object-cover cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-slate-300">
+            <ImageIcon className="w-4 h-4" />
+          </div>
+        )}
+      </td>
       <td className="px-4 py-3 text-sm text-slate-800 max-w-[200px] truncate" title={feedback.message}>
         {displayTitle}
       </td>
@@ -133,6 +150,17 @@ export default function FeedbackRow({ feedback }: FeedbackRowProps) {
             </DialogHeader>
 
             <div className="space-y-6 py-4">
+              {feedback.imageUrl && (
+                <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                  <Image
+                    src={feedback.imageUrl}
+                    alt="Anexo do feedback"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              )}
+
               <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-slate-700 whitespace-pre-wrap">
                 {feedback.message}
               </div>

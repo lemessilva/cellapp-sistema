@@ -38,7 +38,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isRosterModalOpen, setIsRosterModalOpen] = useState(false)
-  const [isChild, setIsChild] = useState(false)
+  const [isChild, setIsChild] = useState(true)
   const [loadingRegister, setLoadingRegister] = useState(false)
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([])
 
@@ -48,10 +48,12 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   // 1. Permissão para mexer na ESTRUTURA (Botões: Editar Célula, Trocar Líder, Excluir)
   const canManageStructure = user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'LIDER'
 
-  // 2. Permissão para mexer na OPERAÇÃO (Botões: Lançar Relatório, Editar Oferta)
-  const canEditReport = user.id === cell?.leaderId || user.id === cell?.secretaryId
+  // 2. Permissão para mexer na OPERAÇÃO (Botões: Lançar Relatório, Editar Oferta, Cadastrar Membro)
+  const isLeaderOrSecretary = user.id === cell?.leaderId || user.id === cell?.secretaryId || user.role === 'LIDER' || user.role === 'ADMIN' || user.role === 'SUPERVISOR'
+  const isMemberOnly = user.role === 'MEMBRO'
 
-  const potentialParents = members.filter(m => m.categoria !== 'CRIANCA')
+  const canEditReport = isLeaderOrSecretary
+  const canRegisterMember = isLeaderOrSecretary && !isMemberOnly
 
   async function handleRegister(formData: FormData) {
     setLoadingRegister(true)
@@ -66,7 +68,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
     } else {
         toast.success('Membro cadastrado com sucesso!')
         setIsRegisterModalOpen(false)
-        setIsChild(false)
+        setIsChild(true)
         setSelectedFunctions([])
     }
   }
@@ -92,8 +94,10 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
       return logs.some(log => isSameDay(new Date(log.createdAt), today))
   }
 
+  const potentialParents = members.filter(m => m.categoria !== 'CRIANCA')
+
   return (
-    <div className="space-y-8 pb-20">
+    <div className={`space-y-8 pb-20 ${isMemberOnly ? 'select-none' : ''}`}>
       <header className="flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-bold text-slate-900">
@@ -102,7 +106,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
             <p className="text-slate-500">Gestão de membros e crescimento.</p>
         </div>
         <div className="flex items-center gap-2">
-            {cell && (
+            {cell && !isMemberOnly && (
                 <PhotoUpload cellId={cell.id} cellName={cell.nome} />
             )}
             {canManageStructure && (
@@ -118,7 +122,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
       </header>
 
       {/* Start Live Meeting Button */}
-      {cell && (
+      {cell && !isMemberOnly && (
         <StartLiveMeetingButton cellId={cell.id} />
       )}
 
@@ -146,58 +150,62 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
       </div>
 
       {/* Atalho para Relatórios */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href="/app/celula/reuniao" className="block group">
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between group-hover:border-indigo-200 transition-colors">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <FileText className="w-6 h-6" />
+      {!isMemberOnly && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/app/celula/reuniao" className="block group">
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between group-hover:border-indigo-200 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-800">Relatórios</h3>
+                  <p className="text-slate-500 text-xs">Lançar frequência e ofertas</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">Relatórios</h3>
-                <p className="text-slate-500 text-xs">Lançar frequência e ofertas</p>
+              <div className="text-indigo-600 font-bold text-sm">
+                Acessar
               </div>
             </div>
-            <div className="text-indigo-600 font-bold text-sm">
-              Acessar
-            </div>
-          </div>
-        </Link>
+          </Link>
 
-        <Link href="/app/celula/relatorios/mensal" className="block group">
-          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between group-hover:border-indigo-200 transition-colors">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                <FileCheck className="w-6 h-6" />
+          <Link href="/app/celula/relatorios/mensal" className="block group">
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-between group-hover:border-indigo-200 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
+                  <FileCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-800">Relatório Mensal</h3>
+                  <p className="text-slate-500 text-xs">Gerar PDF consolidado</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">Relatório Mensal</h3>
-                <p className="text-slate-500 text-xs">Gerar PDF consolidado</p>
+              <div className="text-green-600 font-bold text-sm">
+                Gerar
               </div>
             </div>
-            <div className="text-green-600 font-bold text-sm">
-              Gerar
-            </div>
-          </div>
-        </Link>
-      </div>
+          </Link>
+        </div>
+      )}
 
       {/* Convite e Cadastro Manual */}
-      <div className="grid md:grid-cols-2 gap-4">
-          <InviteGenerator />
-          
-          {/* Botão Cadastro Manual */}
-          <button 
-            onClick={() => setIsRegisterModalOpen(true)}
-            className="bg-white border-2 border-dashed border-indigo-200 rounded-2xl p-6 text-indigo-600 hover:bg-indigo-50 transition-colors flex flex-col items-center justify-center gap-2"
-          >
-            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                <UserPlus className="w-6 h-6" />
-            </div>
-            <span className="font-bold">Cadastro Manual</span>
-            <span className="text-xs text-indigo-400">Adicionar Criança ou Membro sem convite</span>
-          </button>
-      </div>
+      {!isMemberOnly && (
+        <div className="grid md:grid-cols-2 gap-4">
+            <InviteGenerator />
+            
+            {/* Botão Cadastro Manual */}
+            <button 
+              onClick={() => setIsRegisterModalOpen(true)}
+              className="bg-white border-2 border-dashed border-indigo-200 rounded-2xl p-6 text-indigo-600 hover:bg-indigo-50 transition-colors flex flex-col items-center justify-center gap-2"
+            >
+              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <UserPlus className="w-6 h-6" />
+              </div>
+              <span className="font-bold">Cadastro Manual</span>
+              <span className="text-xs text-indigo-400">Adicionar Criança (KIDS)</span>
+            </button>
+        </div>
+      )}
 
       {/* Lista de Membros */}
       <section className="space-y-4">
@@ -267,6 +275,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                 defaultMeetingDay={cell.dia_reuniao}
                 defaultAddress={cellAddress}
                 members={members}
+                isReadOnly={isMemberOnly}
                 onOpenSettings={() => {
                     setIsRosterModalOpen(false)
                     setIsSettingsModalOpen(true)
@@ -281,29 +290,11 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Novo Cadastro</h3>
+                  <h3 className="text-xl font-bold text-slate-900">Cadastrar Criança</h3>
                   <button onClick={() => {
                     setIsRegisterModalOpen(false)
                     setSelectedFunctions([])
                   }} className="text-slate-400 hover:text-slate-600">✕</button>
-              </div>
-
-              {/* Toggle Criança */}
-              <div className="mb-6 bg-slate-50 p-1 rounded-xl flex">
-                  <button 
-                    type="button"
-                    onClick={() => setIsChild(false)}
-                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!isChild ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Adulto
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setIsChild(true)}
-                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${isChild ? 'bg-pink-100 text-pink-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    Criança
-                  </button>
               </div>
 
               <form action={handleRegister} className="space-y-4">
@@ -315,7 +306,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                   <div className="grid grid-cols-2 gap-4">
                       <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Data de Nascimento</label>
-                          <input name="dataNascimento" type="date" required={isChild} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
+                          <input name="dataNascimento" type="date" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
                       </div>
                       <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Gênero</label>
@@ -327,48 +318,19 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                       </div>
                   </div>
 
-                  {isChild ? (
-                      // Campos Criança
-                      <>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Data de Batismo (Opcional)</label>
-                            <input name="dataBatismo" type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Responsável (Pai/Mãe na Célula)</label>
-                            <select name="responsavelId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Selecione um responsável...</option>
-                                {potentialParents.map(p => (
-                                    <option key={p.id} value={p.id}>{p.nome}</option>
-                                ))}
-                            </select>
-                          </div>
-                      </>
-                  ) : (
-                      // Campos Adulto
-                      <>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">Responsável (Líder/Mentor)</label>
-                              <select name="responsavelId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
-                                  <option value="">Selecione um responsável (Opcional)</option>
-                                  {potentialParents.map(p => (
-                                      <option key={p.id} value={p.id}>{p.nome}</option>
-                                  ))}
-                              </select>
-                          </div>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">Email (Login)</label>
-                              <input name="email" type="email" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="email@exemplo.com" />
-                          </div>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">Telefone (WhatsApp)</label>
-                              <PhoneInput name="telefone" required className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="(00) 00000-0000" />
-                          </div>
-                          <div className="p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-100">
-                              O membro receberá instruções para definir sua senha no primeiro acesso (Feature futura). Por enquanto, cadastre e oriente.
-                          </div>
-                      </>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Data de Batismo (Opcional)</label>
+                    <input name="dataBatismo" type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Responsável (Pai/Mãe na Célula)</label>
+                    <select name="responsavelId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Selecione um responsável...</option>
+                        {potentialParents.map(p => (
+                            <option key={p.id} value={p.id}>{p.nome}</option>
+                        ))}
+                    </select>
+                  </div>
 
                   <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Funções / Ministérios</label>

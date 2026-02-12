@@ -39,8 +39,8 @@ export default function AppNavigation({ role, isSecretary, hasChildren }: { role
       links.push({ href: '/app', label: 'Meus Filhos', icon: Baby })
     }
 
-    // 2. Defina quem pode ver o menu de Célula (ADMIN, SUPERVISOR, LIDER, LEADER, SECRETARIO)
-    const canManageCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER'].includes(userRole) || isSecretary
+    // 2. Defina quem pode ver o menu de Célula (ADMIN, SUPERVISOR, LIDER, LEADER, SECRETARIO, MEMBRO)
+    const canManageCell = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER', 'MEMBRO'].includes(userRole) || isSecretary
 
     // 3. Defina quem pode ver Relatórios (Geralmente os mesmos acima)
     const canViewReports = ['ADMIN', 'SUPERVISOR', 'LIDER', 'LEADER', 'SECRETARIO', 'SECRETARY', 'LÍDER'].includes(userRole) || isSecretary
@@ -53,7 +53,7 @@ export default function AppNavigation({ role, isSecretary, hasChildren }: { role
     if (canViewReports) {
       // Se já adicionou o header em Minha Célula, não adiciona de novo
       const header = canManageCell ? undefined : 'Gestão'
-      links.push({ href: '/reports/list', label: 'Relatórios', icon: FileText, header })
+      links.push({ href: '/app/celula/reuniao', label: 'Relatórios', icon: FileText, header })
     }
 
     // Perfil sempre por último na lista do usuário comum

@@ -117,65 +117,39 @@ export async function submitMeetingReport(data: SubmitReportParams) {
         if (!reportId) throw new Error("Failed to get report ID")
 
         // 2. Handle Attendance (Adults)
-        // Upsert each attendance record
-        for (const att of data.attendance) {
-            // Regra de Integridade: Se não for 'P' (Presente), zera valores monetários
-            const isPresent = att.status === 'P'
-            const sanitizedOffer = isPresent ? att.offerValue : 0
-            const sanitizedTithe = isPresent ? att.titheValue : 0
-            const sanitizedMissions = isPresent ? att.missionsValue : 0
-            const sanitizedOther = isPresent ? att.otherValue : 0
+        // Optimization: Delete existing and create many instead of serial upserts
+        await tx.meetingAttendance.deleteMany({
+            where: { reportId }
+        })
 
-            await tx.meetingAttendance.upsert({
-                where: {
-                    reportId_userId: {
-                        reportId: reportId,
-                        userId: att.userId
+        if (data.attendance.length > 0) {
+            await tx.meetingAttendance.createMany({
+                data: data.attendance.map(att => {
+                    const isPresent = att.status === 'P'
+                    return {
+                        reportId: reportId!,
+                        userId: att.userId,
+                        status: att.status,
+                        absenceReason: att.absenceReason,
+                        offerValue: isPresent ? att.offerValue : 0,
+                        titheValue: isPresent ? att.titheValue : 0,
+                        missionsValue: isPresent ? att.missionsValue : 0,
+                        otherValue: isPresent ? att.otherValue : 0
                     }
-                },
-                update: {
-                    status: att.status,
-                    absenceReason: att.absenceReason,
-                    offerValue: sanitizedOffer,
-                    titheValue: sanitizedTithe,
-                    missionsValue: sanitizedMissions,
-                    otherValue: sanitizedOther
-                },
-                create: {
-                    reportId: reportId,
-                    userId: att.userId,
-                    status: att.status,
-                    absenceReason: att.absenceReason,
-                    offerValue: sanitizedOffer,
-                    titheValue: sanitizedTithe,
-                    missionsValue: sanitizedMissions,
-                    otherValue: sanitizedOther
-                }
+                })
             })
         }
 
         // 3. Handle Kids
-        for (const kid of data.kidsPillars) {
-            await tx.meetingKidsPillars.upsert({
-                where: {
-                    reportId_userId: {
-                        reportId: reportId,
-                        userId: kid.userId
-                    }
-                },
-                update: {
-                    church: kid.church,
-                    cell: kid.cell,
-                    homeWorship: kid.homeWorship,
-                    devotional: kid.devotional,
-                    challenge: kid.challenge,
-                    offerValue: kid.offerValue,
-                    titheValue: kid.titheValue,
-                    missionsValue: kid.missionsValue,
-                    otherValue: kid.otherValue
-                },
-                create: {
-                    reportId: reportId,
+        // Optimization: Delete existing and create many instead of serial upserts
+        await tx.meetingKidsPillars.deleteMany({
+            where: { reportId }
+        })
+
+        if (data.kidsPillars.length > 0) {
+            await tx.meetingKidsPillars.createMany({
+                data: data.kidsPillars.map(kid => ({
+                    reportId: reportId!,
                     userId: kid.userId,
                     church: kid.church,
                     cell: kid.cell,
@@ -186,7 +160,7 @@ export async function submitMeetingReport(data: SubmitReportParams) {
                     titheValue: kid.titheValue,
                     missionsValue: kid.missionsValue,
                     otherValue: kid.otherValue
-                }
+                }))
             })
         }
 
@@ -208,6 +182,8 @@ export async function submitMeetingReport(data: SubmitReportParams) {
         }
 
         return reportId
+    }, {
+        timeout: 15000 // Aumentar timeout para 15s para evitar erros de transação em conexões lentas
     })
 
     revalidatePath(`/app/celula/reuniao`)
@@ -360,6 +336,37 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
             }
         })
 
+        // Determine meeting day index (0-6)
+        let meetingDayIndex = 3 // Default to Wednesday
+        const weekDayMap: Record<string, number> = {
+            'DOMINGO': 0, 'SEGUNDA': 1, 'SEGUNDA-FEIRA': 1,
+            'TERCA': 2, 'TERÇA': 2, 'TERÇA-FEIRA': 2,
+            'QUARTA': 3, 'QUARTA-FEIRA': 3,
+            'QUINTA': 4, 'QUINTA-FEIRA': 4,
+            'SEXTA': 5, 'SEXTA-FEIRA': 5,
+            'SABADO': 6, 'SÁBADO': 6
+        }
+        if (cell?.diaSemana) {
+            const day = weekDayMap[cell.diaSemana.toUpperCase()]
+            if (day !== undefined) meetingDayIndex = day
+        } else if (cell?.dia_reuniao) {
+            const day = weekDayMap[cell.dia_reuniao.toUpperCase()]
+            if (day !== undefined) meetingDayIndex = day
+        }
+
+        // Generate all meeting dates for the month
+        const meetingDates: Date[] = []
+        let currentDate = new Date(startDate)
+        while (getDay(currentDate) !== meetingDayIndex) {
+            currentDate = addDays(currentDate, 1)
+        }
+        while (isSameMonth(currentDate, startDate)) {
+            meetingDates.push(new Date(currentDate))
+            currentDate = addDays(currentDate, 7)
+        }
+
+        const dates = meetingDates.map(d => format(d, 'dd/MM'))
+
         // Fetch Reports
         const reports = await prisma.meetingReport.findMany({
             where: {
@@ -378,23 +385,17 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
             orderBy: { date: 'asc' }
         })
 
-        // Fetch Members (Adults and Kids)
+        // Fetch Members
         const members = await prisma.user.findMany({
-            where: {
-                celulaId: cellId,
-                ativo: true
-            },
+            where: { celulaId: cellId, ativo: true },
             orderBy: { nome: 'asc' }
         })
-
         const adults = members.filter(m => m.categoria === 'ADULTO')
         const kids = members.filter(m => m.categoria === 'CRIANCA')
 
         // Fetch Closure
         const closure = await prisma.monthlyClosure.findUnique({
-            where: {
-                cellId_month_year: { cellId, month, year }
-            },
+            where: { cellId_month_year: { cellId, month, year } },
             include: {
                 lider: { select: { nome: true } },
                 supervisor: { select: { nome: true } },
@@ -402,27 +403,31 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
             }
         })
 
-        // --- Build Summaries ---
-        const reportSummaries = reports.map(r => {
-            const dateStr = format(r.date, 'dd/MM')
-            
-            // Format Real Times
-            const realStart = r.realStartTime ? format(r.realStartTime, 'HH:mm') : null
-            const realEnd = r.realEndTime ? format(r.realEndTime, 'HH:mm') : null
-            
-            // Financials
+        // --- Build Summaries mapped to meetingDates ---
+        const reportSummaries = meetingDates.map(mDate => {
+            const dateStr = format(mDate, 'dd/MM')
+            const r = reports.find(report => format(report.date, 'dd/MM') === dateStr)
+
+            if (!r) {
+                return {
+                    date: dateStr,
+                    realStart: null, realEnd: null,
+                    corrections: [], theme: '-', observations: '-', offerDetails: '-',
+                    present: 0, visitors: 0,
+                    financials: { tithe: 0, offer: 0, missions: 0, other: 0, total: 0 },
+                    host: '', direction: '', worship: '', evangelism: ''
+                }
+            }
+
             const tithe = r.attendance.reduce((acc, a) => acc + a.titheValue, 0) + 
                           r.kidsPillars.reduce((acc, k) => acc + k.titheValue, 0)
-            
-            const offer = r.offerValue // Use total cached/saved in report
-            const missions = r.missionsValue // Use total cached/saved in report
             const other = r.attendance.reduce((acc, a) => acc + a.otherValue, 0) +
                           r.kidsPillars.reduce((acc, k) => acc + k.otherValue, 0)
 
             return {
                 date: dateStr,
-                realStart,
-                realEnd,
+                realStart: r.realStartTime ? format(r.realStartTime, 'HH:mm') : null,
+                realEnd: r.realEndTime ? format(r.realEndTime, 'HH:mm') : null,
                 corrections: r.corrections || [],
                 theme: r.studyTheme || '',
                 observations: r.observations || '',
@@ -431,12 +436,11 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
                 visitors: r.visitorsCount,
                 financials: {
                     tithe,
-                    offer,
-                    missions,
+                    offer: r.offerValue,
+                    missions: r.missionsValue,
                     other,
-                    total: tithe + offer + missions + other
+                    total: tithe + r.offerValue + r.missionsValue + other
                 },
-                // Add role data for signature preview
                 host: r.hostId ? adults.find(a => a.id === r.hostId)?.nome || '' : '',
                 direction: r.directionId ? adults.find(a => a.id === r.directionId)?.nome || '' : '',
                 worship: r.worshipId ? adults.find(a => a.id === r.worshipId)?.nome || '' : '',
@@ -444,123 +448,112 @@ export async function getMonthlyReportData(cellId: string, month: number, year: 
             }
         })
 
-        // --- Build Members Stats (Pro Rata Logic) ---
+        // --- Build Members Stats ---
         const adultsData = adults.map(a => {
-            // Filter reports relevant to this member based on joinedAt
-            // A member is eligible if the meeting date >= joinedAt
-            // joinedAt is nullable in schema, if null assume always member? Or use createdAt? 
-            // Assuming joinedAt is reliable if present. If not present, assume eligible for all (old members).
-            
-            const memberJoinDate = a.joinedAt ? new Date(a.joinedAt) : new Date(0) // Epoch if no join date
-            
-            const eligibleReports = reports.filter(r => r.date >= memberJoinDate)
-            
+            const memberJoinDate = a.joinedAt ? new Date(a.joinedAt) : new Date(0)
             const stats = {
-                present: 0,
-                absent: 0,
-                justified: 0,
-                eligible: eligibleReports.length // Total meetings they COULD attend
+                present: 0, absent: 0, justified: 0,
+                eligible: meetingDates.filter(d => d >= memberJoinDate).length,
+                totalTithe: 0, totalOffer: 0, totalMissions: 0, totalOther: 0
             }
 
             const attendanceMap: Record<string, string> = {}
+            const financialsMap: Record<string, any> = {}
 
-            // Calculate attendance only from eligible reports
-            reports.forEach(r => {
-                const dateStr = format(r.date, 'dd/MM')
-                const att = r.attendance.find(at => at.userId === a.id)
-                
-                // If report is before join date, mark as N/A
-                if (r.date < memberJoinDate) {
+            meetingDates.forEach(mDate => {
+                const dateStr = format(mDate, 'dd/MM')
+                const r = reports.find(report => format(report.date, 'dd/MM') === dateStr)
+                const att = r?.attendance.find(at => at.userId === a.id)
+
+                if (mDate < memberJoinDate) {
                     attendanceMap[dateStr] = 'N/A'
+                    financialsMap[dateStr] = { tithe: 0, offer: 0, missions: 0, other: 0 }
                 } else {
                     if (att) {
                         attendanceMap[dateStr] = att.status
+                        financialsMap[dateStr] = {
+                            tithe: att.titheValue,
+                            offer: att.offerValue,
+                            missions: att.missionsValue,
+                            other: att.otherValue
+                        }
+                        stats.totalTithe += att.titheValue
+                        stats.totalOffer += att.offerValue
+                        stats.totalMissions += att.missionsValue
+                        stats.totalOther += att.otherValue
                         if (att.status === 'P') stats.present++
                         else if (att.status === 'F') stats.absent++
                         else if (att.status === 'FJ') stats.justified++
                     } else {
-                        attendanceMap[dateStr] = 'F' // Absent if eligible but no record
+                        attendanceMap[dateStr] = 'F'
+                        financialsMap[dateStr] = { tithe: 0, offer: 0, missions: 0, other: 0 }
                         stats.absent++
                     }
                 }
             })
 
             return {
-                id: a.id,
-                name: a.nome,
+                id: a.id, name: a.nome,
                 attendance: attendanceMap,
+                financials: financialsMap,
                 stats
             }
         })
 
         const kidsData = kids.map(k => {
-            // Kids usually don't have joinedAt strict logic yet, but same principle applies if needed.
-            // For now simplified.
-            const stats = {
-                present: 0,
-                eligible: reports.length
-            }
-            
+            const stats = { present: 0, eligible: meetingDates.length, totalTithe: 0, totalOffer: 0, totalMissions: 0, totalOther: 0 }
             const pillarsMap: Record<string, any> = {}
+            const financialsMap: Record<string, any> = {}
 
-            reports.forEach(r => {
-                const dateStr = format(r.date, 'dd/MM')
-                const att = r.kidsPillars.find(kp => kp.userId === k.id)
-                // If kid has any pillar checked, consider present? Or specific logic?
-                // Usually check 'cell' or 'church' or just existence of record
+            meetingDates.forEach(mDate => {
+                const dateStr = format(mDate, 'dd/MM')
+                const r = reports.find(report => format(report.date, 'dd/MM') === dateStr)
+                const att = r?.kidsPillars.find(kp => kp.userId === k.id)
+
                 if (att) {
                     pillarsMap[dateStr] = {
-                        church: att.church,
-                        cell: att.cell,
-                        homeWorship: att.homeWorship,
-                        devotional: att.devotional,
-                        challenge: att.challenge
+                        church: att.church, cell: att.cell, homeWorship: att.homeWorship,
+                        devotional: att.devotional, challenge: att.challenge
                     }
-
+                    financialsMap[dateStr] = {
+                        tithe: att.titheValue,
+                        offer: att.offerValue,
+                        missions: att.missionsValue,
+                        other: att.otherValue
+                    }
+                    stats.totalTithe += att.titheValue
+                    stats.totalOffer += att.offerValue
+                    stats.totalMissions += att.missionsValue
+                    stats.totalOther += att.otherValue
                     if (att.cell || att.church || att.homeWorship || att.devotional || att.challenge) {
                         stats.present++
                     }
                 } else {
                     pillarsMap[dateStr] = null
+                    financialsMap[dateStr] = { tithe: 0, offer: 0, missions: 0, other: 0 }
                 }
             })
 
-            return {
-                id: k.id,
-                name: k.nome,
-                pillars: pillarsMap,
-                stats
-            }
+            return { id: k.id, name: k.nome, pillars: pillarsMap, financials: financialsMap, stats }
         })
 
         const monthStr = format(startDate, 'MMMM', { locale: ptBR })
         const capitalizedMonth = monthStr.charAt(0).toUpperCase() + monthStr.slice(1)
 
         return {
-            cell,
-            cellName: cell?.nome || 'Célula sem nome',
+            cell, cellName: cell?.nome || 'Célula sem nome',
             leadership: {
-                leader: cell?.lider?.nome || '',
-                leader2: cell?.lider2?.nome || '',
-                supervisor: cell?.supervisor?.nome || '',
-                supervisor2: cell?.supervisor2?.nome || ''
+                leader: cell?.lider?.nome || '', leader2: cell?.lider2?.nome || '',
+                supervisor: cell?.supervisor?.nome || '', supervisor2: cell?.supervisor2?.nome || ''
             },
-            month: capitalizedMonth,
-            monthStr: capitalizedMonth,
-            year,
-            reportSummaries,
-            adults: adultsData,
-            kids: kidsData,
+            month: capitalizedMonth, monthStr: capitalizedMonth, year,
+            dates, reportSummaries, adults: adultsData, kids: kidsData,
             closure: closure ? {
-                dataAssinaturaLider: closure.liderSignedAt,
-                lider: closure.lider,
-                dataAssinaturaSupervisor: closure.supervisorSignedAt,
-                supervisor: closure.supervisor,
-                dataAssinaturaCoord: closure.coordSignedAt,
-                coord: closure.coord
+                dataAssinaturaLider: closure.liderSignedAt, lider: closure.lider,
+                dataAssinaturaSupervisor: closure.supervisorSignedAt, supervisor: closure.supervisor,
+                dataAssinaturaCoord: closure.coordSignedAt, coord: closure.coord
             } : null
         }
-
     } catch (error) {
         console.error('Error getting monthly report data:', error)
         return null

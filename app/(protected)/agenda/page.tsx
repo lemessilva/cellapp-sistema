@@ -87,6 +87,11 @@ export default async function AgendaPage() {
                           <h3 className={`font-bold ${isEventFuture ? 'text-slate-900' : 'text-slate-600'}`}>
                             {event.title}
                           </h3>
+                          {event.endDate && (
+                            <p className="text-sm text-indigo-600 font-medium mt-1">
+                              Até {format(new Date(event.endDate), "dd 'de' MMMM", { locale: ptBR })}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )
