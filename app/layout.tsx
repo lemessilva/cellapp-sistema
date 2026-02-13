@@ -32,6 +32,7 @@ import { getUser } from '@/lib/auth';
 import { LiveMeetingWatcher } from '@/components/live/LiveMeetingWatcher';
 import { AlertBar } from '@/components/home/AlertBar';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { PWAProvider } from '@/components/providers/PWAProvider';
 
 export default async function RootLayout({
   children,
@@ -65,18 +66,20 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
       >
         <ThemeWrapper themeColor={churchInfo?.themeColor || 'blue'} />
-        <SidebarProvider>
-          <AlertBar config={{
-            alertActive: siteConfig?.alertActive || false,
-            alertTitle: siteConfig?.alertTitle || null,
-            alertText: siteConfig?.alertText || null,
-            alertColor: siteConfig?.alertColor || 'bg-indigo-600',
-            alertLink: siteConfig?.alertLink || null
-          }} />
-          <LiveMeetingWatcher cellId={user?.celula?.id} />
-          <InstallPrompt />
-          {children}
-        </SidebarProvider>
+        <PWAProvider>
+          <SidebarProvider>
+            <AlertBar config={{
+              alertActive: siteConfig?.alertActive || false,
+              alertTitle: siteConfig?.alertTitle || null,
+              alertText: siteConfig?.alertText || null,
+              alertColor: siteConfig?.alertColor || 'bg-indigo-600',
+              alertLink: siteConfig?.alertLink || null
+            }} />
+            <LiveMeetingWatcher cellId={user?.celula?.id} />
+            <InstallPrompt />
+            {children}
+          </SidebarProvider>
+        </PWAProvider>
       </body>
     </html>
   );

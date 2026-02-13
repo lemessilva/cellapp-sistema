@@ -2,8 +2,60 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getUser } from '@/lib/auth'
 
 export type NotificationType = 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT' | 'REPORT' | 'ROLE' | 'CELL' | 'EVENT' | 'ROSTER' | 'BIRTHDAY'
+
+export async function subscribeUser(subscription: any) {
+  try {
+    const user = await getUser()
+    if (!user) return { error: 'Usuário não autenticado' }
+
+    // Verifica se já existe uma subscrição com esse endpoint para o usuário
+    const existing = await prisma.pushSubscription.findUnique({
+      where: { endpoint: subscription.endpoint }
+    })
+
+    if (existing) {
+      if (existing.userId === user.id) {
+        return { success: true, message: 'Já inscrito' }
+      } else {
+        // Se pertencer a outro usuário (raro), atualiza
+        await prisma.pushSubscription.update({
+          where: { endpoint: subscription.endpoint },
+          data: { userId: user.id }
+        })
+        return { success: true, message: 'Inscrição transferida' }
+      }
+    }
+
+    const newSub = await prisma.pushSubscription.create({
+      data: {
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        userId: user.id
+      }
+    })
+
+    return { success: true, subscription: newSub }
+  } catch (error) {
+    console.error('Error saving push subscription:', error)
+    return { error: 'Falha ao salvar inscrição' }
+  }
+}
+
+export async function unsubscribeUser(endpoint: string) {
+  try {
+    await prisma.pushSubscription.delete({
+      where: { endpoint }
+    })
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting push subscription:', error)
+    return { error: 'Falha ao remover inscrição' }
+  }
+}
 
 interface SendNotificationParams {
   userId: string

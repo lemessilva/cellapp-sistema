@@ -7,6 +7,7 @@ import MainLayout from '@/components/MainLayout'
 import { SidebarProvider } from '@/components/providers/SidebarContext'
 import { Toaster } from 'sonner'
 import { MandatoryPasswordModal } from '@/components/auth/MandatoryPasswordModal'
+import { PushNotificationManager } from '@/components/notifications/PushNotificationManager'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,6 +59,7 @@ export default async function ProtectedLayout({
         </MainLayout>
         
         <MandatoryPasswordModal isOpen={currentUser.mustChangePassword} />
+        <PushNotificationManager />
       
       <Toaster position="top-center" richColors />
       </div>
