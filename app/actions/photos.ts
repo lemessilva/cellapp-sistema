@@ -59,7 +59,7 @@ export async function uploadCellPhoto(formData: FormData) {
       where: {
         ativo: true,
         OR: [
-          { cellId: cellId },
+          { celulaId: cellId },
           { id: { in: supervisorIds } }
         ],
         NOT: { id: user.id } // Não notificar quem postou
