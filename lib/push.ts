@@ -20,12 +20,19 @@ export async function sendPushToUser(
   url: string = '/app'
 ) {
   try {
+    console.log(`[PUSH] Tentando enviar para: ${userId} | Título: ${title}`);
+    
     // Buscar todas as inscrições do usuário
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId }
     })
 
-    if (subscriptions.length === 0) return { success: true, sent: 0 }
+    if (subscriptions.length === 0) {
+      console.log(`[PUSH] Nenhuma inscrição encontrada para o usuário: ${userId}`);
+      return { success: true, sent: 0 };
+    }
+
+    console.log(`[PUSH] Enviando para ${subscriptions.length} dispositivos do usuário: ${userId}`);
 
     const notificationPayload = JSON.stringify({
       title,

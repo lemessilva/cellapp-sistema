@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/supabase'
 import { getUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { sendPushToUser } from '@/lib/push'
 
 export async function uploadCellPhoto(formData: FormData) {
   const user = await getUser()
@@ -16,17 +17,22 @@ export async function uploadCellPhoto(formData: FormData) {
   if (!cellId || !file) return { error: 'Dados incompletos' }
 
   // Check Permissions
+  const cell = await prisma.cell.findUnique({
+    where: { id: cellId },
+    select: { 
+      nome: true,
+      liderId: true, 
+      lider2Id: true,
+      redeId: true
+    }
+  })
+  
+  if (!cell) return { error: 'Célula não encontrada' }
+
   const isGlobalAdmin = ['ADMIN', 'MIDIA', 'SUPERVISOR'].includes(user.role)
   
   if (!isGlobalAdmin) {
     // Check if user leads THIS cell
-    const cell = await prisma.cell.findUnique({
-      where: { id: cellId },
-      select: { liderId: true, lider2Id: true }
-    })
-    
-    if (!cell) return { error: 'Célula não encontrada' }
-    
     const isLeader = cell.liderId === user.id || cell.lider2Id === user.id
     if (!isLeader) return { error: 'Apenas líderes podem postar fotos desta célula' }
   }
@@ -44,6 +50,29 @@ export async function uploadCellPhoto(formData: FormData) {
 
     revalidatePath('/app')
     revalidatePath('/app/celula')
+
+    // Notificar membros da rede/célula sobre a nova foto no mural
+    prisma.user.findMany({
+      where: {
+        ativo: true,
+        OR: [
+          { cellId: cellId },
+          { redeId: cell.redeId }
+        ],
+        NOT: { id: user.id } // Não notificar quem postou
+      },
+      select: { id: true }
+    }).then(users => {
+      users.forEach(u => {
+        sendPushToUser(
+          u.id,
+          "📢 Novo Recado no Mural",
+          `A célula ${cell.nome} postou uma novidade na comunidade!`,
+          "/app"
+        ).catch(err => console.error('[PUSH] Erro ao notificar mural:', err))
+      })
+    }).catch(err => console.error('[PUSH] Erro ao buscar usuários para notificação mural:', err))
+
     return { success: true }
   } catch (error) {
     console.error('Error uploading cell photo:', error)

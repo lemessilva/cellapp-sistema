@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/lib/auth'
+import { sendPushToUser } from '@/lib/push'
 
 export type NotificationType = 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT' | 'REPORT' | 'ROLE' | 'CELL' | 'EVENT' | 'ROSTER' | 'BIRTHDAY'
 
@@ -89,6 +90,12 @@ export async function sendNotification({
     // We might want to revalidate paths, but notifications are usually global.
     // Revalidating the layout might be expensive or unnecessary if we use client-side polling or just refresh on navigation.
     // For now, no specific revalidate needed unless we display them in a static page.
+
+    // Enviar Push Notification (Sem bloquear a resposta principal)
+    sendPushToUser(userId, title, message, link || '/app').catch(err => {
+      console.error('[PUSH] Erro ao enviar notificação em background:', err);
+    });
+
     return { success: true, notification }
   } catch (error) {
     console.error('Error sending notification:', error)

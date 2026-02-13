@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { startOfMonth, endOfMonth, format, parseISO, startOfDay, endOfDay, getDay, addDays, isSameMonth, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+import { sendPushToUser } from '@/lib/push'
+
 // --- Interfaces ---
 
 interface SubmitReportParams {
@@ -188,6 +190,31 @@ export async function submitMeetingReport(data: SubmitReportParams) {
 
     revalidatePath(`/app/celula/reuniao`)
     revalidatePath(`/app/lideranca`)
+
+    // Notificar Supervisor (não bloqueante) se o status for ENVIADO_LIDER
+    if (data.status === 'ENVIADO_LIDER') {
+      prisma.cell.findUnique({
+        where: { id: data.cellId },
+        select: { 
+          nome: true,
+          supervisorId: true,
+          supervisor2Id: true
+        }
+      }).then(cell => {
+        if (cell) {
+          const supervisorIds = [cell.supervisorId, cell.supervisor2Id].filter(Boolean) as string[]
+          supervisorIds.forEach(supId => {
+            sendPushToUser(
+              supId,
+              "📄 Novo Relatório",
+              `A Célula ${cell.nome} acabou de enviar o relatório da semana.`,
+              `/app/lideranca`
+            ).catch(err => console.error('[PUSH] Erro ao notificar supervisor:', err))
+          })
+        }
+      }).catch(err => console.error('[PUSH] Erro ao buscar supervisor para notificação:', err))
+    }
+
     return { success: true, reportId: result }
 
   } catch (error) {
@@ -666,13 +693,41 @@ export async function approveReport(reportId: string) {
     // This action is likely deprecated in favor of Monthly Closure,
     // but kept for backward compatibility or individual approvals if needed.
     try {
-        await prisma.meetingReport.update({
+        const report = await prisma.meetingReport.update({
             where: { id: reportId },
-            data: { status: 'APROVADO' } 
+            data: { status: 'APROVADO' },
+            include: {
+                cell: {
+                    select: {
+                        liderId: true,
+                        lider2Id: true,
+                        secretarioId: true,
+                        nome: true
+                    }
+                }
+            }
         })
+
+        // Notificar líderes e secretário (não bloqueante)
+        const targetUserIds = [
+            report.cell.liderId,
+            report.cell.lider2Id,
+            report.cell.secretarioId
+        ].filter(Boolean) as string[]
+
+        targetUserIds.forEach(userId => {
+            sendPushToUser(
+                userId,
+                "✅ Relatório Aprovado!",
+                `Seu relatório da célula ${report.cell.nome} foi conferido e aprovado.`,
+                `/app/celula/relatorios/${report.id}`
+            ).catch(err => console.error('[PUSH] Erro ao notificar aprovação:', err))
+        })
+
         revalidatePath('/app/lideranca')
         return { success: true }
     } catch (error) {
+        console.error('Error approving report:', error)
         return { error: 'Failed to approve report' }
     }
 }

@@ -2,10 +2,11 @@
 
 import { prisma } from '@/lib/prisma'
 import { getUser } from '@/lib/auth'
-import { ReportStatus } from '@prisma/client'
+import { ReportStatus, Role } from '@prisma/client'
 import { sendNotification } from './notifications'
 import { revalidatePath } from 'next/cache'
 import { uploadToMidiaBucket } from '@/lib/supabase'
+import { sendPushToUser } from '@/lib/push'
 
 // --- Correction Flow Actions ---
 
@@ -63,11 +64,19 @@ export async function returnReport(reportId: string, reason: string, imageUrl?: 
         if (targetUserId) {
             await sendNotification({
                 userId: targetUserId,
-                title: 'Relatório Devolvido',
-                message: `O relatório de ${report.date.toLocaleDateString('pt-BR')} foi devolvido para correção. Motivo: ${reason}`,
+                title: '🔴 Relatório Devolvido',
+                message: `Seu supervisor devolveu o relatório de ${report.date.toLocaleDateString('pt-BR')}. Motivo: ${reason}`,
                 type: 'ALERT',
                 link: `/app/celula/relatorios/${report.id}/editar` // Adjust link as needed
             })
+
+            // Push Notification (Não bloqueante)
+            sendPushToUser(
+                targetUserId,
+                "🔴 Relatório Devolvido",
+                "Seu supervisor devolveu o relatório. Verifique as observações.",
+                `/app/celula/relatorios/${report.id}/editar`
+            ).catch(err => console.error('[PUSH] Erro ao notificar devolução:', err));
         }
 
         revalidatePath('/app/celula/relatorios')
