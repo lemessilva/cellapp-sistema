@@ -23,7 +23,8 @@ export async function uploadCellPhoto(formData: FormData) {
       nome: true,
       liderId: true, 
       lider2Id: true,
-      redeId: true
+      supervisorId: true,
+      supervisor2Id: true
     }
   })
   
@@ -51,13 +52,15 @@ export async function uploadCellPhoto(formData: FormData) {
     revalidatePath('/app')
     revalidatePath('/app/celula')
 
-    // Notificar membros da rede/célula sobre a nova foto no mural
+    // Notificar membros da célula e supervisores sobre a nova foto no mural
+    const supervisorIds = [cell.supervisorId, cell.supervisor2Id].filter(Boolean) as string[]
+
     prisma.user.findMany({
       where: {
         ativo: true,
         OR: [
           { cellId: cellId },
-          { redeId: cell.redeId }
+          { id: { in: supervisorIds } }
         ],
         NOT: { id: user.id } // Não notificar quem postou
       },
