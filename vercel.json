@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/prayer",
-      "schedule": "0 8 * * *"
+      "schedule": "0 11 * * *"
     },
     {
       "path": "/api/cron/reports",
-      "schedule": "0 18 * * 0"
+      "schedule": "0 21 * * 0"
     }
   ]
 }

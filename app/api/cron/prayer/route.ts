@@ -1,44 +1,43 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendPushToUser } from '@/lib/push'
+import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-  try {
-    // Verificar autorização do Cron da Vercel (opcional mas recomendado)
-    const authHeader = request.headers.get('authorization')
-    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new Response('Unauthorized', { status: 401 })
-    }
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
+  }
 
-    // Buscar usuários ativos
-    const users = await prisma.user.findMany({
-      where: { ativo: true },
+  try {
+    // Buscar todos os usuários que possuem ao menos uma PushSubscription ativa
+    const usersWithSub = await prisma.user.findMany({
+      where: {
+        ativo: true,
+        pushSubscriptions: {
+          some: {}
+        }
+      },
       select: { id: true }
     })
 
-    console.log(`Enviando push de oração para ${users.length} usuários.`)
+    console.log(`[CRON-PRAYER] Iniciando envio para ${usersWithSub.length} usuários.`)
 
-    // Enviar notificações push
-    const results = await Promise.allSettled(
-      users.map(u => 
-        sendPushToUser(
-          u.id,
-          "🙏 Momento de Oração",
-          "Já tirou um tempo para orar hoje? Veja os motivos da semana!",
-          "/app/oracao"
-        )
-      )
-    )
-
-    const sentCount = results.filter(r => r.status === 'fulfilled').length
+    // Disparo não bloqueante
+    usersWithSub.forEach(user => {
+      sendPushToUser(
+        user.id,
+        "🙏 Já orou hoje?",
+        "Tire 5 minutinhos para orar pelo seu Oikós e pelos motivos da nossa rede!",
+        "/app/oracao"
+      ).catch(err => console.error(`[CRON-PRAYER] Erro ao enviar para ${user.id}:`, err))
+    })
 
     return NextResponse.json({ 
       success: true, 
-      sent: sentCount,
-      total: users.length 
+      notifiedCount: usersWithSub.length 
     })
   } catch (error) {
-    console.error('Erro no Cron de Oração:', error)
-    return NextResponse.json({ error: 'Falha ao processar cron de oração' }, { status: 500 })
+    console.error('[CRON-PRAYER] Erro na rota de cron:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

@@ -1,88 +1,69 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendPushToUser } from '@/lib/push'
+import { NextResponse } from 'next/server'
 import { startOfWeek, endOfWeek } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   try {
-    const authHeader = request.headers.get('authorization')
-    if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return new Response('Unauthorized', { status: 401 })
-    }
-
-    const now = new Date()
-    const start = startOfWeek(now)
-    const end = endOfWeek(now)
-
-    // Buscar líderes cujas células não enviaram o relatório da semana
-    // Ou o relatório está em RASCUNHO/ABERTO
-    const cellsWithPendingReports = await prisma.cell.findMany({
+    // 1. Buscar todos os líderes ativos
+    const leaders = await prisma.user.findMany({
       where: {
-        ativo: true,
-        OR: [
-          // Não tem relatório para esta semana
-          {
-            reports: {
-              none: {
-                createdAt: {
-                  gte: start,
-                  lte: end
-                }
-              }
-            }
-          },
-          // Tem relatório mas está em rascunho
-          {
-            reports: {
-              some: {
-                createdAt: {
-                  gte: start,
-                  lte: end
-                },
-                status: 'RASCUNHO'
-              }
-            }
-          }
-        ]
+        role: 'LIDER',
+        ativo: true
       },
-      select: {
+      select: { 
         id: true,
-        nome: true,
-        liderId: true,
-        lider2Id: true
+        celulaLiderada: {
+          select: { id: true }
+        }
       }
     })
 
-    const leadersToNotify = new Set<string>()
-    cellsWithPendingReports.forEach(cell => {
-      if (cell.liderId) leadersToNotify.add(cell.liderId)
-      if (cell.lider2Id) leadersToNotify.add(cell.lider2Id)
-    })
+    const now = new Date()
+    const start = startOfWeek(now, { locale: ptBR })
+    const end = endOfWeek(now, { locale: ptBR })
 
-    const leadersArray = Array.from(leadersToNotify)
-    console.log(`Enviando push de relatório pendente para ${leadersArray.length} líderes.`)
+    console.log(`[CRON-REPORTS] Verificando relatórios para ${leaders.length} líderes.`)
 
-    // Enviar notificações push
-    const results = await Promise.allSettled(
-      leadersArray.map(leaderId => 
+    let notifiedCount = 0
+
+    // 2. Verificar quem ainda não enviou relatório na semana atual
+    for (const leader of leaders) {
+      const cellIds = leader.celulaLiderada.map(c => c.id)
+      
+      if (cellIds.length === 0) continue
+
+      const reportSent = await prisma.meetingReport.findFirst({
+        where: {
+          cellId: { in: cellIds },
+          date: { gte: start, lte: end },
+          status: { in: ['ENVIADO_LIDER', 'APROVADO'] }
+        }
+      })
+
+      if (!reportSent) {
         sendPushToUser(
-          leaderId,
-          "⏳ Relatório Pendente",
-          "Não deixe para a última hora! Feche o relatório da célula desta semana.",
-          "/app/celula"
-        )
-      )
-    )
-
-    const sentCount = results.filter(r => r.status === 'fulfilled').length
+          leader.id,
+          "⏳ Lembrete de Relatório",
+          "Domingou! Não esqueça de preencher e enviar o relatório da sua célula de hoje.",
+          "/app/celula/relatorios"
+        ).catch(err => console.error(`[CRON-REPORTS] Erro ao enviar para ${leader.id}:`, err))
+        notifiedCount++
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
-      sent: sentCount,
-      total: leadersArray.length 
+      notifiedCount 
     })
   } catch (error) {
-    console.error('Erro no Cron de Relatórios:', error)
-    return NextResponse.json({ error: 'Falha ao processar cron de relatórios' }, { status: 500 })
+    console.error('[CRON-REPORTS] Erro na rota de cron:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
