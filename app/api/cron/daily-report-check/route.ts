@@ -24,12 +24,16 @@ export async function GET(request: Request) {
     const cells = await prisma.cell.findMany({
       where: {
         diaSemana: yesterdayString,
-        liderId: { not: null }
+        OR: [
+          { liderId: { not: null } },
+          { lider2Id: { not: null } }
+        ]
       },
       select: {
         id: true,
         nome: true,
-        liderId: true
+        liderId: true,
+        lider2Id: true
       }
     })
 
@@ -38,22 +42,19 @@ export async function GET(request: Request) {
     let notificationsSent = 0
 
     for (const cell of cells) {
-      if (!cell.liderId) continue
+      const leadersToNotify = [cell.liderId, cell.lider2Id].filter(Boolean) as string[]
 
-      // Check if report already exists for that date (optional, but good to avoid spam if already filled)
-      // Assuming we want to remind them regardless, or only if missing.
-      // User request: "Verifique se hoje é o dia seguinte a uma reunião de célula. Msg: O relatório ... já está liberado"
-      // It implies just notifying availability.
-
-      await sendNotification({
-        userId: cell.liderId,
-        title: "Hora do Relatório! 📝",
-        message: "O relatório da célula de ontem já está liberado para preenchimento.",
-        type: 'REPORT',
-        link: `/relatorios/novo?date=${yesterday.toISOString().split('T')[0]}`,
-        metaData: { cellId: cell.id, date: yesterday }
-      })
-      notificationsSent++
+      for (const leaderId of leadersToNotify) {
+        await sendNotification({
+          userId: leaderId,
+          title: "Hora do Relatório! 📝",
+          message: "O relatório da célula de ontem já está liberado para preenchimento.",
+          type: 'REPORT',
+          link: `/relatorios/novo?date=${yesterday.toISOString().split('T')[0]}`,
+          metaData: { cellId: cell.id, date: yesterday }
+        })
+        notificationsSent++
+      }
     }
 
     return NextResponse.json({ success: true, notificationsSent })

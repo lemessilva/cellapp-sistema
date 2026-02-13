@@ -31,6 +31,14 @@ export default async function PrayerPage() {
             include: { oikos: true }
           }
         }
+      },
+      celulaLiderada2: {
+        include: {
+          membros: {
+            where: { ativo: true },
+            include: { oikos: true }
+          }
+        }
       }
     }
   })
@@ -38,7 +46,7 @@ export default async function PrayerPage() {
   if (!dbUser) redirect('/login')
 
   // Determinar membros da célula (seja como membro ou líder)
-  const cell = dbUser.celula || dbUser.celulaLiderada
+  const cell = dbUser.celula || dbUser.celulaLiderada?.[0] || dbUser.celulaLiderada2?.[0]
   const members = cell?.membros || []
   const oikos = dbUser.oikos || []
 

@@ -18,7 +18,7 @@ export default async function MemberCellPage() {
     redirect('/admin/website')
   }
 
-  // Lógica Robusta de Busca de Célula (Líder, Co-Líder, Membro ou Admin)
+  // Lógica Robusta de Busca de Célula (Líder, Líder 2, Membro ou Admin)
   let targetCell = await prisma.cell.findFirst({
     where: {
         OR: [
@@ -51,7 +51,7 @@ export default async function MemberCellPage() {
   }
 
   const celula = targetCell
-  const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN', 'LIDER_EM_TREINAMENTO'].includes(user.role)
+  const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN'].includes(user.role)
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

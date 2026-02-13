@@ -104,13 +104,13 @@ export async function closeMonthlyReport(cellId: string, month: number, year: nu
 
 export async function signMonthlyReportLider(cellId: string, month: number, year: number, userId: string) {
   try {
-    // Verificar se tem supervisor
+    // Verificar se tem algum supervisor (1 ou 2)
     const cell = await prisma.cell.findUnique({
       where: { id: cellId },
-      select: { supervisorId: true }
+      select: { supervisorId: true, supervisor2Id: true }
     });
 
-    const nextStatus = cell?.supervisorId 
+    const nextStatus = (cell?.supervisorId || cell?.supervisor2Id) 
       ? MonthlyClosureStatus.AGUARDANDO_SUPERVISOR 
       : MonthlyClosureStatus.CONCLUIDO;
 

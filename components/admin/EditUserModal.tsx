@@ -23,11 +23,13 @@ type Cell = {
   id: string
   nome: string
   liderId: string | null
+  lider2Id: string | null
   supervisorId: string | null
 }
 
 type User = Pick<PrismaUser, 'id' | 'nome' | 'email' | 'role' | 'celulaId' | 'funcoes'> & {
-  celulaLiderada: { id: string } | null
+  celulaLiderada: { id: string }[]
+  celulaLiderada2: { id: string }[]
   celulasSupervisionadas: { id: string }[]
 }
 
@@ -41,7 +43,8 @@ interface EditUserModalProps {
 export default function EditUserModal({ user, cells, isOpen, onClose }: EditUserModalProps) {
   const [role, setRole] = useState<Role>(user.role)
   const [celulaId, setCelulaId] = useState(user.celulaId || '')
-  const [liderancaCellId, setLiderancaCellId] = useState(user.celulaLiderada?.id || '')
+  const [liderancaCellId, setLiderancaCellId] = useState(user.celulaLiderada?.[0]?.id || '')
+  const [lideranca2CellId, setLideranca2CellId] = useState(user.celulaLiderada2?.[0]?.id || '')
   const [supervisaoCellIds, setSupervisaoCellIds] = useState<string[]>(
     user.celulasSupervisionadas.map(c => c.id)
   )
@@ -55,7 +58,8 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
     if (isOpen) {
       setRole(user.role)
       setCelulaId(user.celulaId || '')
-      setLiderancaCellId(user.celulaLiderada?.id || '')
+      setLiderancaCellId(user.celulaLiderada?.[0]?.id || '')
+      setLideranca2CellId(user.celulaLiderada2?.[0]?.id || '')
       setSupervisaoCellIds(user.celulasSupervisionadas.map(c => c.id))
       setSelectedFunctions(user.funcoes ? user.funcoes.split(', ') : [])
     }
@@ -79,6 +83,7 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
         celulaId,
         funcoes: selectedFunctions.join(', '),
         liderancaCellId: role === 'LIDER' ? liderancaCellId : undefined,
+        lideranca2CellId: role === 'LIDER' ? lideranca2CellId : undefined,
         supervisaoCellIds: role === 'SUPERVISOR' ? supervisaoCellIds : undefined
       })
 
@@ -154,13 +159,12 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
               <h3 className="text-sm font-bold text-indigo-800 uppercase tracking-wide">Configuração de Líder</h3>
               <div>
                 <label className="block text-sm font-medium text-indigo-900 mb-1">
-                  Qual Célula ele lidera?
+                  Primeira Célula que lidera?
                 </label>
                 <select
                   value={liderancaCellId}
                   onChange={(e) => setLiderancaCellId(e.target.value)}
-                  required
-                  className="w-full p-2 border border-indigo-200 rounded bg-white focus:ring-2 focus:ring-indigo-500"
+                  className="w-full p-2 border border-indigo-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 mb-3"
                 >
                   <option value="">Selecione uma célula...</option>
                   {cells.map(cell => (
@@ -169,8 +173,24 @@ export default function EditUserModal({ user, cells, isOpen, onClose }: EditUser
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-indigo-600 mt-1">
-                  * Ao selecionar, ele será automaticamente membro desta célula.
+
+                <label className="block text-sm font-medium text-indigo-900 mb-1">
+                  Segunda Célula que lidera? (Opcional)
+                </label>
+                <select
+                  value={lideranca2CellId}
+                  onChange={(e) => setLideranca2CellId(e.target.value)}
+                  className="w-full p-2 border border-indigo-200 rounded bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Selecione uma célula...</option>
+                  {cells.map(cell => (
+                    <option key={cell.id} value={cell.id}>
+                      {cell.nome} {cell.lider2Id && cell.lider2Id !== user.id ? '(Já tem líder 2)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-indigo-600 mt-2">
+                  * Ao selecionar, ele será automaticamente membro da primeira célula selecionada.
                 </p>
               </div>
             </div>

@@ -12,6 +12,7 @@ export async function getCells() {
       id: true,
       nome: true,
       liderId: true,
+      lider2Id: true,
       supervisorId: true
     },
     orderBy: {
@@ -34,6 +35,9 @@ export async function getUserDetails(userId: string) {
       celulaLiderada: {
         select: { id: true }
       },
+      celulaLiderada2: {
+        select: { id: true }
+      },
       celulasSupervisionadas: {
         select: { id: true }
       }
@@ -48,6 +52,7 @@ type UpdateUserRoleParams = {
   celulaId: string // Célula onde ele é membro (base)
   funcoes?: string | null // Funções extras (comma separated)
   liderancaCellId?: string // Se for LIDER, qual célula lidera
+  lideranca2CellId?: string // Se for LIDER, qual a segunda opção de liderança
   supervisaoCellIds?: string[] // Se for SUPERVISOR, quais supervisiona
 }
 
@@ -57,6 +62,7 @@ export async function updateUserRoleAndCells({
   celulaId,
   funcoes,
   liderancaCellId,
+  lideranca2CellId,
   supervisaoCellIds
 }: UpdateUserRoleParams) {
   try {
@@ -67,6 +73,11 @@ export async function updateUserRoleAndCells({
       await tx.cell.updateMany({
         where: { liderId: userId },
         data: { liderId: null }
+      })
+
+      await tx.cell.updateMany({
+        where: { lider2Id: userId },
+        data: { lider2Id: null }
       })
 
       // Se ele era supervisor de células, remover a supervisão
@@ -88,13 +99,19 @@ export async function updateUserRoleAndCells({
       })
 
       // Lógica específica por cargo
-      if (role === 'LIDER' && liderancaCellId) {
-        // Verificar se a célula já tem outro líder (opcional: forçar substituição)
-        // Aqui vamos apenas sobrescrever
-        await tx.cell.update({
-          where: { id: liderancaCellId },
-          data: { liderId: userId }
-        })
+      if (role === 'LIDER') {
+        if (liderancaCellId) {
+          await tx.cell.update({
+            where: { id: liderancaCellId },
+            data: { liderId: userId }
+          })
+        }
+        if (lideranca2CellId) {
+          await tx.cell.update({
+            where: { id: lideranca2CellId },
+            data: { lider2Id: userId }
+          })
+        }
       } else if (role === 'SUPERVISOR' && supervisaoCellIds && supervisaoCellIds.length > 0) {
         // Atualizar todas as células selecionadas para terem este usuário como supervisor
         await tx.cell.updateMany({
@@ -106,9 +123,16 @@ export async function updateUserRoleAndCells({
 
     // Send Notification
     let message = `Seu nível de acesso foi atualizado para ${role}.`
-    if (role === 'LIDER' && liderancaCellId) {
-       const cell = await prisma.cell.findUnique({ where: { id: liderancaCellId }, select: { nome: true } })
-       if (cell) message = `Você agora é LIDER da célula ${cell.nome}.`
+    if (role === 'LIDER') {
+      if (liderancaCellId || lideranca2CellId) {
+        const cells = await prisma.cell.findMany({
+          where: { id: { in: [liderancaCellId, lideranca2CellId].filter(Boolean) as string[] } },
+          select: { nome: true }
+        })
+        if (cells.length > 0) {
+          message = `Você agora é LIDER ${cells.length > 1 ? 'das células' : 'da célula'} ${cells.map(c => c.nome).join(' e ')}.`
+        }
+      }
     } else if (role === 'SUPERVISOR') {
        message = `Você agora é SUPERVISOR.`
     }

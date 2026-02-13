@@ -91,7 +91,8 @@ export default async function LeaderPage() {
 
   const fullUser = {
       ...dbUser,
-      celulaLiderada: targetCell
+      celulaLiderada: targetCell ? [targetCell] : [],
+      celulaLiderada2: [] // Evitar undefined se o componente checar
   }
 
   return <LeaderScreen user={fullUser} members={members} />

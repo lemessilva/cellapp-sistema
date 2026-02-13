@@ -8,7 +8,7 @@ export default async function LiveMeetingPage() {
   const user = await getUser()
   if (!user) redirect('/login')
   
-  // Lógica Robusta de Busca de Célula (Líder, Co-Líder, Membro ou Admin)
+  // Lógica Robusta de Busca de Célula (Líder, Líder 2, Membro ou Admin)
   let targetCell = await prisma.cell.findFirst({
     where: {
         OR: [

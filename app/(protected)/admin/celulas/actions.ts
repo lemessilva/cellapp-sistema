@@ -199,7 +199,7 @@ export async function saveCell(formData: FormData) {
         }
       }
 
-      // Verifica o Co-Líder antigo
+      // Verifica o Líder 2 antigo
       if (oldLeader2Id && oldLeader2Id !== lider2Id) {
         const remainingCellsCount = await prisma.cell.count({
           where: {
@@ -223,20 +223,20 @@ export async function saveCell(formData: FormData) {
 
       // Verificar mudanças e notificar
       if (currentCell) {
-        const rolesToCheck = [
-          { key: 'tesoureiroId', label: 'Tesoureiro', newVal: tesoureiroId },
-          { key: 'secretarioId', label: 'Secretário', newVal: secretarioId },
-          { key: 'louvorId', label: 'Líder de Louvor', newVal: louvorId },
-          { key: 'eventosId', label: 'Líder de Eventos', newVal: eventosId },
-          { key: 'intercessorId', label: 'Intercessor', newVal: intercessorId },
-          { key: 'liderId', label: 'Líder', newVal: liderId },
-          { key: 'lider2Id', label: 'Co-Líder', newVal: lider2Id },
-          { key: 'supervisorId', label: 'Supervisor', newVal: supervisorId },
-          { key: 'supervisor2Id', label: 'Co-Supervisor', newVal: supervisor2Id }
-        ]
+        const rolesToCheck = {
+          tesoureiroId: { label: 'Tesoureiro', newVal: tesoureiroId },
+          secretarioId: { label: 'Secretário', newVal: secretarioId },
+          louvorId: { label: 'Líder de Louvor', newVal: louvorId },
+          eventosId: { label: 'Líder de Eventos', newVal: eventosId },
+          intercessorId: { label: 'Intercessor', newVal: intercessorId },
+          liderId: { label: 'Líder', newVal: liderId },
+          lider2Id: { label: 'Líder', newVal: lider2Id },
+          supervisorId: { label: 'Supervisor', newVal: supervisorId },
+          supervisor2Id: { label: 'Supervisor', newVal: supervisor2Id }
+        }
 
-        for (const role of rolesToCheck) {
-            const oldVal = currentCell[role.key as keyof typeof currentCell]
+        for (const [key, role] of Object.entries(rolesToCheck)) {
+            const oldVal = currentCell[key as keyof typeof currentCell]
             const newVal = role.newVal || null
 
             if (newVal && newVal !== oldVal) {
@@ -307,9 +307,9 @@ export async function saveCell(formData: FormData) {
           { id: eventosId, label: 'Líder de Eventos' },
           { id: intercessorId, label: 'Intercessor' },
           { id: liderId, label: 'Líder' },
-          { id: lider2Id, label: 'Co-Líder' },
+          { id: lider2Id, label: 'Líder' },
           { id: supervisorId, label: 'Supervisor' },
-          { id: supervisor2Id, label: 'Co-Supervisor' }
+          { id: supervisor2Id, label: 'Supervisor' }
       ]
 
       for (const role of rolesToNotify) {

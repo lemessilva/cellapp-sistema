@@ -24,6 +24,11 @@ export async function getUser() {
                         membros: { where: { ativo: true } } 
                     } 
                 },
+                celulaLiderada2: { 
+                    include: { 
+                        membros: { where: { ativo: true } } 
+                    } 
+                },
                 celula: { 
                     include: { 
                         membros: { where: { ativo: true } },

@@ -42,14 +42,24 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
   const [loadingRegister, setLoadingRegister] = useState(false)
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([])
 
-  const cell = user.celulaLiderada
+  const cell = (user.celulaLiderada && user.celulaLiderada.length > 0) 
+    ? user.celulaLiderada[0] 
+    : (user.celulaLiderada2 && user.celulaLiderada2.length > 0)
+      ? user.celulaLiderada2[0]
+      : null
   const cellAddress = cell ? `${cell.addressStreet || ''}, ${cell.addressNumber || ''}` : ''
 
   // 1. Permissão para mexer na ESTRUTURA (Botões: Editar Célula, Trocar Líder, Excluir)
   const canManageStructure = user.role === 'ADMIN' || user.role === 'SUPERVISOR' || user.role === 'LIDER'
 
   // 2. Permissão para mexer na OPERAÇÃO (Botões: Lançar Relatório, Editar Oferta, Cadastrar Membro)
-  const isLeaderOrSecretary = user.id === cell?.leaderId || user.id === cell?.secretaryId || user.role === 'LIDER' || user.role === 'ADMIN' || user.role === 'SUPERVISOR'
+  const isLeaderOrSecretary = 
+    user.id === cell?.liderId || 
+    user.id === cell?.lider2Id || 
+    user.id === cell?.secretarioId || 
+    user.role === 'LIDER' || 
+    user.role === 'ADMIN' || 
+    user.role === 'SUPERVISOR'
   const isMemberOnly = user.role === 'MEMBRO'
 
   const canEditReport = isLeaderOrSecretary
@@ -101,7 +111,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
       <header className="flex justify-between items-start">
         <div>
             <h1 className="text-2xl font-bold text-slate-900">
-                {user.celulaLiderada?.nome || 'Minha Célula'}
+                {cell?.nome || 'Minha Célula'}
             </h1>
             <p className="text-slate-500">Gestão de membros e crescimento.</p>
         </div>

@@ -11,15 +11,19 @@ export default async function MonthlyReportPage() {
   }
 
   // Determine cell (leader or member)
-  let cellId = user.celulaLiderada?.id || user.celula?.id
+  let cellId: string | null = user.celulaLiderada?.[0]?.id || user.celulaLiderada2?.[0]?.id || user.celula?.id || user.celulaId || null
   
   if (!cellId) {
     // Fallback search if not in session includes
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { celulaLiderada: true, celula: true }
+      include: { 
+        celulaLiderada: true, 
+        celulaLiderada2: true,
+        celula: true 
+      }
     })
-    cellId = dbUser?.celulaLiderada?.id || dbUser?.celula?.id
+    cellId = dbUser?.celulaLiderada?.[0]?.id || dbUser?.celulaLiderada2?.[0]?.id || dbUser?.celula?.id || dbUser?.celulaId || null
   }
 
   if (!cellId) {

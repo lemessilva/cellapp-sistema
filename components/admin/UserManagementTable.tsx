@@ -10,6 +10,7 @@ type Cell = {
   id: string
   nome: string
   liderId: string | null
+  lider2Id: string | null
   supervisorId: string | null
 }
 
@@ -20,7 +21,8 @@ type UserType = {
   role: Role
   celulaId: string | null
   celula: { nome: string } | null
-  celulaLiderada: { id: string } | null
+  celulaLiderada: { id: string }[]
+  celulaLiderada2: { id: string }[]
   celulasSupervisionadas: { id: string }[]
   funcoes: string | null
   createdAt: Date

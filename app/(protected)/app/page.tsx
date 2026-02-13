@@ -22,12 +22,19 @@ export default async function DashboardPage() {
       celulaLiderada: true,
       celulaLiderada2: true,
       celulasSupervisionadas: true,
+      celulasSupervisionadas2: true,
     }
   })
 
   if (!user) {
     redirect('/login')
   }
+
+  // Ensure arrays are not null (defensive programming)
+  const celulaLiderada = user.celulaLiderada || []
+  const celulaLiderada2 = user.celulaLiderada2 || []
+  const celulasSupervisionadas = user.celulasSupervisionadas || []
+  const celulasSupervisionadas2 = user.celulasSupervisionadas2 || []
 
   const { data: myChildren } = await getMyChildren()
 
@@ -117,16 +124,28 @@ export default async function DashboardPage() {
           Bem-vindo, {user.nome?.split(' ')[0] || 'Irmão'}
         </h1>
         <div className="text-slate-600 mt-1 space-y-1 text-sm">
-            {user.celulaLiderada && (
+            {celulaLiderada.length > 0 && (
                 <p className="flex items-center gap-2">
                     <span className="text-indigo-600">🛡️</span> 
-                    Você é Líder da célula <span className="font-semibold text-slate-800">{user.celulaLiderada.nome}</span>.
+                    Você é Líder {celulaLiderada.length > 1 ? 'das células' : 'da célula'} <span className="font-semibold text-slate-800">{celulaLiderada.map(c => c.nome).join(', ')}</span>.
                 </p>
             )}
-            {user.celulasSupervisionadas.length > 0 && (
+            {celulaLiderada2.length > 0 && (
+                <p className="flex items-center gap-2">
+                    <span className="text-blue-600">🛡️</span> 
+                    Você é Líder {celulaLiderada2.length > 1 ? 'das células' : 'da célula'} <span className="font-semibold text-slate-800">{celulaLiderada2.map(c => c.nome).join(', ')}</span>.
+                </p>
+            )}
+            {celulasSupervisionadas.length > 0 && (
                 <p className="flex items-center gap-2">
                     <span className="text-purple-600">🦅</span>
-                    Você supervisiona: <span className="font-semibold text-slate-800">{user.celulasSupervisionadas.map(c => c.nome).join(', ')}</span>.
+                    Você supervisiona: <span className="font-semibold text-slate-800">{celulasSupervisionadas.map(c => c.nome).join(', ')}</span>.
+                </p>
+            )}
+            {celulasSupervisionadas2.length > 0 && (
+                <p className="flex items-center gap-2">
+                    <span className="text-pink-600">🦅</span>
+                    Você supervisiona: <span className="font-semibold text-slate-800">{celulasSupervisionadas2.map(c => c.nome).join(', ')}</span>.
                 </p>
             )}
         </div>
@@ -183,8 +202,8 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {latestPhotos.map((photo) => {
               const canEdit = ['ADMIN', 'SUPERVISOR'].includes(user.role) || 
-                              user.celulaLiderada?.id === photo.cellId || 
-                              user.celulaLiderada2?.id === photo.cellId
+                              celulaLiderada.some(c => c.id === photo.cellId) || 
+                              celulaLiderada2.some(c => c.id === photo.cellId)
               
               return (
                 <PhotoFeedCard 

@@ -282,7 +282,22 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
   const kids = data?.kids || []
   const dates = data?.dates || []
   
-  const numWeeks = summaries.length > 0 ? summaries.length : 1
+  // Fallback para financials e outros campos que podem vir undefined
+  const safeSummaries = summaries.map(s => ({
+    ...s,
+    financials: {
+      tithe: s.financials?.tithe || 0,
+      offer: s.financials?.offer || 0,
+      missions: s.financials?.missions || 0,
+      other: s.financials?.other || 0,
+      total: s.financials?.total || 0
+    },
+    theme: s.theme || '-',
+    present: s.present || 0,
+    visitors: s.visitors || 0
+  }))
+
+  const numWeeks = safeSummaries.length > 0 ? safeSummaries.length : 1
   
   // Column Widths for Landscape
   const LABEL_WIDTH = '22%' // Reduzido de 25%
@@ -312,10 +327,18 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
       {/* 1. Header Block */}
       <View style={styles.headerBlock}>
         <View style={styles.headerColLeft}>
-            <Text style={styles.headerText}>Líder: {data?.leadership?.leader}</Text>
-            {data?.leadership?.leader2 && <Text style={styles.headerText}>Líder em Treinamento: {data?.leadership?.leader2}</Text>}
-            <Text style={styles.headerText}>Supervisor: {data?.leadership?.supervisor}</Text>
-            {data?.leadership?.supervisor2 && <Text style={styles.headerText}>Supervisor em Treinamento: {data?.leadership?.supervisor2}</Text>}
+            {data?.leadership?.leader && data?.leadership?.leader2 ? (
+                <Text style={styles.headerText}>Líderes: {data.leadership.leader} e {data.leadership.leader2}</Text>
+            ) : (
+                <Text style={styles.headerText}>Líder: {data?.leadership?.leader || '-'}</Text>
+            )}
+            
+            {data?.leadership?.supervisor && data?.leadership?.supervisor2 ? (
+                <Text style={styles.headerText}>Supervisores: {data.leadership.supervisor} e {data.leadership.supervisor2}</Text>
+            ) : (
+                <Text style={styles.headerText}>Supervisor: {data?.leadership?.supervisor || '-'}</Text>
+            )}
+            
             <Text style={[styles.headerText, { marginTop: 4, fontWeight: 'bold' }]}>Célula: {data?.cellName}</Text>
         </View>
         <View style={styles.headerColRight}>
@@ -332,7 +355,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>RESUMO / DATAS</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.dataTextBold}>{s.date.split('/').slice(0, 2).join('/')}</Text>
                 </View>
@@ -347,7 +370,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Horário Real</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={[styles.valueText, { fontSize: 6 }]}>
                        {s.realStart && s.realEnd ? `${s.realStart}-${s.realEnd}` : '-'}
@@ -362,7 +385,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Tema do Estudo</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={[styles.valueText, { fontSize: 6 }]}>{s.theme.substring(0, 20)}</Text>
                 </View>
@@ -375,13 +398,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Membros Presentes</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.dataText}>{s.present}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>{summaries.reduce((acc, curr) => acc + curr.present, 0)}</Text>
+                <Text style={styles.dataTextBold}>{safeSummaries.reduce((acc, curr) => acc + curr.present, 0)}</Text>
             </View>
         </View>
 
@@ -389,13 +412,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Visitantes</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.dataText}>{s.visitors}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>{summaries.reduce((acc, curr) => acc + curr.visitors, 0)}</Text>
+                <Text style={styles.dataTextBold}>{safeSummaries.reduce((acc, curr) => acc + curr.visitors, 0)}</Text>
             </View>
         </View>
 
@@ -404,13 +427,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Dízimos</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.valueText}>R$ {s.financials.tithe.toFixed(2)}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.tithe, 0).toFixed(2)}</Text>
+                <Text style={styles.dataTextBold}>R$ {safeSummaries.reduce((acc, curr) => acc + curr.financials.tithe, 0).toFixed(2)}</Text>
             </View>
         </View>
 
@@ -418,13 +441,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Ofertas</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.valueText}>R$ {s.financials.offer.toFixed(2)}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.offer, 0).toFixed(2)}</Text>
+                <Text style={styles.dataTextBold}>R$ {safeSummaries.reduce((acc, curr) => acc + curr.financials.offer, 0).toFixed(2)}</Text>
             </View>
         </View>
 
@@ -432,13 +455,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>Missões</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.valueText}>R$ {s.financials.missions.toFixed(2)}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.missions, 0).toFixed(2)}</Text>
+                <Text style={styles.dataTextBold}>R$ {safeSummaries.reduce((acc, curr) => acc + curr.financials.missions, 0).toFixed(2)}</Text>
             </View>
         </View>
 
@@ -446,13 +469,13 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
             <View style={[styles.cellLabel, { width: LABEL_WIDTH }]}>
                 <Text style={styles.labelBold}>TOTAL GERAL</Text>
             </View>
-            {summaries.map((s, i) => (
+            {safeSummaries.map((s, i) => (
                 <View key={i} style={[styles.cellData, { width: DATA_WIDTH }]}>
                     <Text style={styles.dataTextBold}>R$ {s.financials.total.toFixed(2)}</Text>
                 </View>
             ))}
             <View style={[styles.cellTotal, { width: TOTAL_WIDTH }]}>
-                <Text style={styles.dataTextBold}>R$ {summaries.reduce((acc, curr) => acc + curr.financials.total, 0).toFixed(2)}</Text>
+                <Text style={styles.dataTextBold}>R$ {safeSummaries.reduce((acc, curr) => acc + curr.financials.total, 0).toFixed(2)}</Text>
             </View>
         </View>
       </View>
@@ -622,7 +645,9 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
       {/* 4. Footer */}
       <View style={styles.footer}>
           <View style={styles.signatureBox}>
-              <Text style={styles.footerText}>Líder</Text>
+              <Text style={styles.footerText}>
+                {data.leadership.leader && data.leadership.leader2 ? 'Líderes' : 'Líder'}
+              </Text>
               {data.closure?.dataAssinaturaLider && (
                   <>
                     <Text style={{ fontSize: 6, marginTop: 4 }}>Assinado digitalmente por:</Text>
@@ -632,7 +657,9 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
               )}
           </View>
           <View style={styles.signatureBox}>
-              <Text style={styles.footerText}>Supervisor</Text>
+              <Text style={styles.footerText}>
+                {data.leadership.supervisor && data.leadership.supervisor2 ? 'Supervisores' : 'Supervisor'}
+              </Text>
               {data.closure?.dataAssinaturaSupervisor && (
                   <>
                     <Text style={{ fontSize: 6, marginTop: 4 }}>Assinado digitalmente por:</Text>

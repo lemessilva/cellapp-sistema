@@ -12,13 +12,22 @@ export async function createMember(formData: FormData) {
   }
 
   // Determine cell ID
-  let cellId = user.celulaLiderada?.id
+  let cellId = (user.celulaLiderada && user.celulaLiderada.length > 0) 
+    ? user.celulaLiderada[0].id 
+    : (user.celulaLiderada2 && user.celulaLiderada2.length > 0)
+      ? user.celulaLiderada2[0].id
+      : undefined
+
   if (!cellId) {
      const dbUser = await prisma.user.findUnique({
          where: { id: user.id },
-         include: { celulaLiderada: true }
+         include: { celulaLiderada: true, celulaLiderada2: true }
      })
-     cellId = dbUser?.celulaLiderada?.id
+     cellId = (dbUser?.celulaLiderada && dbUser.celulaLiderada.length > 0)
+        ? dbUser.celulaLiderada[0].id
+        : (dbUser?.celulaLiderada2 && dbUser.celulaLiderada2.length > 0)
+            ? dbUser.celulaLiderada2[0].id
+            : undefined
   }
 
   if (!cellId) {

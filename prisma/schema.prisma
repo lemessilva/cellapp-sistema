@@ -93,8 +93,8 @@ model User {
   funcoes         String?   // Funções múltiplas (ex: "Tesoureiro, Louvor")
   
   // Relacionamentos Hierárquicos
-  celulaLiderada  Cell?     @relation("LiderCelula")
-  celulaLiderada2 Cell?     @relation("Lider2Celula")
+  celulaLiderada  Cell[]    @relation("LiderCelula")
+  celulaLiderada2 Cell[]    @relation("Lider2Celula")
   celulasSupervisionadas Cell[] @relation("SupervisorCelula")
   celulasSupervisionadas2 Cell[] @relation("Supervisor2Celula")
 
@@ -346,10 +346,10 @@ model Cell {
   addressZip       String?
   
   // Liderança
-  liderId     String?  @unique
+  liderId     String?
   lider       User?    @relation("LiderCelula", fields: [liderId], references: [id])
   
-  lider2Id    String?  @unique
+  lider2Id    String?
   lider2      User?    @relation("Lider2Celula", fields: [lider2Id], references: [id])
 
   supervisorId String?
