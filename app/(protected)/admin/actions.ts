@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { Role } from '@prisma/client'
 import { sendNotification } from '@/app/actions/notifications'
+import { sendPushToUser } from '@/lib/push'
 
 // Buscar todas as células para os selects
 export async function getCells() {
@@ -145,6 +146,14 @@ export async function updateUserRoleAndCells({
       link: "/perfil",
       metaData: { role }
     })
+
+    // Enviar Push Notification
+    await sendPushToUser(
+      userId,
+      "👑 Nova Responsabilidade!",
+      `Você foi atualizado para ${role} na célula.`,
+      "/perfil"
+    )
 
     revalidatePath('/admin')
     return { success: true }

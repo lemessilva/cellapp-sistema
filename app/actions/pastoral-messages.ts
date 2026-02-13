@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getUser } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
+import { sendPushToUser } from '@/lib/push'
 
 async function uploadToSupabase(file: File): Promise<string | null> {
   try {
@@ -113,6 +114,25 @@ export async function createPastoralMessage(formData: FormData) {
     revalidatePath('/admin/pastoral')
     revalidatePath('/')
     revalidatePath('/app')
+
+    // Notificar todos os usuários sobre a nova mensagem pastoral
+    const users = await prisma.user.findMany({
+      where: { ativo: true },
+      select: { id: true }
+    })
+
+    // Enviar notificações push para todos os usuários ativos
+    await Promise.allSettled(
+      users.map(u => 
+        sendPushToUser(
+          u.id,
+          "📢 Recado da Liderança",
+          `Nova mensagem: ${title}`,
+          "/app"
+        )
+      )
+    )
+
     return { success: true }
   } catch (error) {
     console.error('Erro ao criar mensagem pastoral:', error)
