@@ -67,8 +67,8 @@ export function PushNotificationManager() {
       console.log("Status da Chave VAPID:", vapidKey ? "Injetada com sucesso" : "FALHA - undefined");
 
       if (!vapidKey) {
-        console.error("Abortando inscrição: NEXT_PUBLIC_VAPID_PUBLIC_KEY está vazia.");
-        toast.error('Erro de configuração no servidor. Tente novamente mais tarde.');
+        console.error("Abortando inscrição: NEXT_PUBLIC_VAPID_PUBLIC_KEY está vazia ou não foi injetada no build.");
+        toast.error('Erro de configuração: Chave não encontrada. Tente novamente mais tarde.');
         return;
       }
 
