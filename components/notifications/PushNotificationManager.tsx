@@ -63,6 +63,15 @@ export function PushNotificationManager() {
 
   async function handleSubscribe() {
     try {
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      console.log("Status da Chave VAPID:", vapidKey ? "Injetada com sucesso" : "FALHA - undefined");
+
+      if (!vapidKey) {
+        console.error("Abortando inscrição: NEXT_PUBLIC_VAPID_PUBLIC_KEY está vazia.");
+        toast.error('Erro de configuração no servidor. Tente novamente mais tarde.');
+        return;
+      }
+
       const registration = await navigator.serviceWorker.ready
       
       // Solicitar permissão explicitamente se necessário
@@ -74,7 +83,7 @@ export function PushNotificationManager() {
 
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!)
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
       })
 
       // Converter sub para o formato que o server action espera
