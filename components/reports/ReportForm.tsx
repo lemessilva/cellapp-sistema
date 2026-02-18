@@ -808,42 +808,6 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
             {adults?.map(adult => {
               const state = adultAttendance[adult.id] || { status: 'P', absenceReason: '', offerValue: '', titheValue: '', missionsValue: '', otherValue: '' }
               
-              // Pro-rata Check: Is the meeting date before the member joined?
-              let isBeforeJoin = false
-              if (adult.joinedAt) {
-                  // Compare YYYY-MM-DD
-                  const meetingDate = date // already YYYY-MM-DD string
-                  const joinDate = new Date(adult.joinedAt).toISOString().split('T')[0]
-                  if (meetingDate < joinDate) {
-                      isBeforeJoin = true
-                  }
-              }
-
-              if (isBeforeJoin) {
-                  return (
-                    <div key={adult.id} className="p-4 rounded-lg border border-gray-100 bg-gray-50 opacity-60">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 font-bold text-sm">
-                                    {adult.nome.substring(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-gray-500">{adult.nome}</p>
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <span className="px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">
-                                            Não era membro
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-xs text-gray-400 italic">
-                                Entrada: {new Date(adult.joinedAt!).toLocaleDateString('pt-BR')}
-                            </div>
-                        </div>
-                    </div>
-                  )
-              }
-
               const isAbsent = state.status === 'F' || state.status === 'FJ'
 
               return (
