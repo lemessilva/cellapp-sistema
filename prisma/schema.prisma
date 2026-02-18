@@ -782,3 +782,14 @@ model Oikos {
   createdAt DateTime @default(now())
 }
 
+model DecisionCard {
+  id            String   @id @default(uuid())
+  name          String
+  phone         String
+  email         String?
+  decisionType  String   // 'Aceitou Jesus', 'Reconciliação', 'Visita', 'Batismo'
+  prayerRequest String?  @db.Text
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+}
+
