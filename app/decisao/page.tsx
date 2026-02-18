@@ -139,7 +139,7 @@ export default function DecisionPage() {
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   required
-                  className="bg-slate-900/60 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:ring-indigo-400 w-full px-3 py-2 rounded-md"
+                  className="bg-slate-900/60 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:ring-indigo-400 w-full px-3 py-2 rounded-md"
                 />
               </motion.div>
 
