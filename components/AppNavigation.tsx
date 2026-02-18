@@ -62,6 +62,7 @@ export default function AppNavigation({ role, isSecretary, hasChildren }: { role
     if (userRole === 'ADMIN') {
       links.push({ href: '/admin', label: 'Admin', icon: Shield, header: 'Administração' })
       links.push({ href: '/admin/membros', label: 'Gerenciar Membros', icon: Users })
+      links.push({ href: '/admin/decisoes', label: 'Relações', icon: Heart })
       links.push({ href: '/admin/website', label: 'Website', icon: Globe })
       links.push({ href: '/admin/pastoral', label: 'Mensagem Pastoral', icon: FileText })
       links.push({ href: '/admin/trilho', label: 'Trilho', icon: BarChart3 })
