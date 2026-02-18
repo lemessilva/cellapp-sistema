@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
+import DecisionQRCode from '@/components/admin/DecisionQRCode'
 
 function formatPhoneToWa(value: string) {
   const digits = (value || '').replace(/\D/g, '')
@@ -22,50 +23,12 @@ function WhatsAppButton({ phone, name }: { phone: string; name: string }) {
 }
 
 function QRCodePanel() {
-  // Client-only small island
-  // eslint-disable-next-line @next/next/no-sync-scripts
   return (
     <div className="mt-6 p-4 border rounded-lg bg-gray-50">
-      <QRCodeClient />
+      <DecisionQRCode />
     </div>
   )
 }
-
-const QRCodeClient = (() => {
-  'use client'
-  // inline client component to access location
-  const { useEffect, useState } = require('react') as typeof import('react')
-  const QRCode = require('react-qr-code').default as typeof import('react-qr-code').default
-  const [origin, setOrigin] = useState<string>('https://seu-site.com') // fallback
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location?.origin) {
-      setOrigin(window.location.origin)
-    }
-  }, [])
-  const targetUrl = `${origin}/decisao`
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm text-gray-600">Link público</div>
-          <div className="font-mono text-sm">{targetUrl}</div>
-        </div>
-        <Button onClick={() => setShow(s => !s)}>{show ? 'Ocultar QR Code' : 'Gerar QR Code'}</Button>
-      </div>
-      {show && (
-        <div className="mt-4 flex items-center gap-6">
-          <div className="border bg-white p-2">
-            <QRCode value={targetUrl} size={220} />
-          </div>
-          <div className="text-sm text-gray-500">
-            Imprima e fixe este QR Code nas cadeiras para facilitar o preenchimento.
-          </div>
-        </div>
-      )}
-    </div>
-  )
-})()
 
 export default async function AdminDecisionsPage() {
   const items = await prisma.decisionCard.findMany({
