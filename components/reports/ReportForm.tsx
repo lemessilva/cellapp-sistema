@@ -27,6 +27,8 @@ interface Participant {
   role?: string
   foto_url?: string | null
   joinedAt?: Date | string | null
+  createdAt?: Date | string | null
+  memberSince?: Date | string | null
 }
 
 interface ReportFormProps {
@@ -66,6 +68,50 @@ interface Visitor {
   name: string
   phone: string
   type: string
+}
+
+type NullableDateInput = Date | string | null | undefined
+
+const parseDateInput = (value: NullableDateInput): Date | null => {
+  if (!value) return null
+  if (value instanceof Date) {
+    const d = new Date(value.getTime())
+    return isNaN(d.getTime()) ? null : d
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const [y, m, d] = trimmed.split('-').map(Number)
+      const parsed = new Date(y, m - 1, d)
+      return isNaN(parsed.getTime()) ? null : parsed
+    }
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+      const [day, month, year] = trimmed.split('/').map(Number)
+      const parsed = new Date(year, month - 1, day)
+      return isNaN(parsed.getTime()) ? null : parsed
+    }
+    const parsed = new Date(trimmed)
+    return isNaN(parsed.getTime()) ? null : parsed
+  }
+  return null
+}
+
+const getNormalizedDateValue = (value: NullableDateInput): number | null => {
+  const parsed = parseDateInput(value)
+  if (!parsed) return null
+  parsed.setHours(0, 0, 0, 0)
+  return parsed.getTime()
+}
+
+const isMemberEligibleForReport = (member: Participant, reportDate: string): boolean => {
+  if (!reportDate) return true
+  const reportValue = getNormalizedDateValue(reportDate)
+  if (reportValue == null) return true
+  const baseDate = member.joinedAt ?? member.memberSince ?? member.createdAt ?? null
+  const memberValue = getNormalizedDateValue(baseDate)
+  if (memberValue == null) return true
+  return memberValue <= reportValue
 }
 
 // Helper para limpar valores monetários
@@ -806,40 +852,93 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
           
           <div className="space-y-4">
             {adults?.map(adult => {
-              const state = adultAttendance[adult.id] || { status: 'P', absenceReason: '', offerValue: '', titheValue: '', missionsValue: '', otherValue: '' }
-              
+              const state =
+                adultAttendance[adult.id] ||
+                {
+                  status: 'P',
+                  absenceReason: '',
+                  offerValue: '',
+                  titheValue: '',
+                  missionsValue: '',
+                  otherValue: '',
+                }
+
+              const isEligible = isMemberEligibleForReport(adult, date)
+
+              if (!isEligible) {
+                const baseDate = adult.joinedAt ?? adult.memberSince ?? adult.createdAt ?? null
+                const entryDate = parseDateInput(baseDate)
+
+                return (
+                  <div key={adult.id} className="p-4 rounded-lg border border-gray-100 bg-gray-50 opacity-60">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 font-bold text-sm">
+                          {adult.nome.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-500">{adult.nome}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="px-2 py-0.5 text-xs rounded bg-gray-200 text-gray-600 font-medium">
+                              Não era membro
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400 italic">
+                        {entryDate ? `Entrada: ${entryDate.toLocaleDateString('pt-BR')}` : null}
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
               const isAbsent = state.status === 'F' || state.status === 'FJ'
 
               return (
                 <div key={adult.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50 hover:bg-white transition-colors">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    
-                    {/* Nome e Presença */}
                     <div className="flex items-center gap-3 min-w-[200px]">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${state.status === 'P' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                          state.status === 'P' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}
+                      >
                         {adult.nome.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{adult.nome}</p>
                         <div className="flex gap-1 mt-1">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => updateAdultStatus(adult.id, 'P')}
-                            className={`px-2 py-0.5 text-xs rounded border ${state.status === 'P' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-500 border-gray-300'}`}
+                            className={`px-2 py-0.5 text-xs rounded border ${
+                              state.status === 'P'
+                                ? 'bg-green-600 text-white border-green-600'
+                                : 'bg-white text-gray-500 border-gray-300'
+                            }`}
                           >
                             P
                           </button>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => updateAdultStatus(adult.id, 'F')}
-                            className={`px-2 py-0.5 text-xs rounded border ${state.status === 'F' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-500 border-gray-300'}`}
+                            className={`px-2 py-0.5 text-xs rounded border ${
+                              state.status === 'F'
+                                ? 'bg-red-600 text-white border-red-600'
+                                : 'bg-white text-gray-500 border-gray-300'
+                            }`}
                           >
                             F
                           </button>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => updateAdultStatus(adult.id, 'FJ')}
-                            className={`px-2 py-0.5 text-xs rounded border ${state.status === 'FJ' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-500 border-gray-300'}`}
+                            className={`px-2 py-0.5 text-xs rounded border ${
+                              state.status === 'FJ'
+                                ? 'bg-orange-500 text-white border-orange-500'
+                                : 'bg-white text-gray-500 border-gray-300'
+                            }`}
                             title="Falta Justificada"
                           >
                             FJ
@@ -848,13 +947,12 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                       </div>
                     </div>
 
-                    {/* Motivo da Falta */}
                     {isAbsent && (
                       <div className="flex-1 animate-in fade-in zoom-in-95 duration-200">
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={state.absenceReason}
-                          onChange={(e) => updateAdultReason(adult.id, e.target.value)}
+                          onChange={e => updateAdultReason(adult.id, e.target.value)}
                           placeholder={state.status === 'F' ? 'Sem justificativa necessária' : 'Motivo da falta (Obrigatório)'}
                           disabled={readonly || state.status === 'F'}
                           className="w-full p-2 text-sm border border-red-200 rounded-lg bg-red-50 focus:ring-2 focus:ring-red-200 outline-none placeholder:text-red-300 disabled:opacity-50"
@@ -862,17 +960,18 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                       </div>
                     )}
 
-                    {/* Financeiro */}
                     {!isAbsent && (
                       <div className="flex gap-2 flex-wrap md:flex-nowrap animate-in fade-in zoom-in-95 duration-200">
                         <div className="relative w-28">
                           <span className="absolute left-2 top-6 text-xs text-gray-500 font-semibold z-10">R$</span>
                           <span className="absolute left-0 top-0 text-xs text-gray-400">Oferta</span>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             inputMode="numeric"
                             value={formatCurrency(state.offerValue)}
-                            onChange={(e) => handleCurrencyChange(e, (val) => updateAdultFinance(adult.id, 'offerValue', val))}
+                            onChange={e =>
+                              handleCurrencyChange(e, val => updateAdultFinance(adult.id, 'offerValue', val))
+                            }
                             className="w-full pl-7 pt-4 pb-1 text-sm border rounded bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
                             placeholder="0,00"
                           />
@@ -880,11 +979,13 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                         <div className="relative w-28">
                           <span className="absolute left-2 top-6 text-xs text-gray-500 font-semibold z-10">R$</span>
                           <span className="absolute left-0 top-0 text-xs text-gray-400">Dízimo</span>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             inputMode="numeric"
                             value={formatCurrency(state.titheValue)}
-                            onChange={(e) => handleCurrencyChange(e, (val) => updateAdultFinance(adult.id, 'titheValue', val))}
+                            onChange={e =>
+                              handleCurrencyChange(e, val => updateAdultFinance(adult.id, 'titheValue', val))
+                            }
                             className="w-full pl-7 pt-4 pb-1 text-sm border rounded bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
                             placeholder="0,00"
                           />
@@ -892,11 +993,13 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                         <div className="relative w-28">
                           <span className="absolute left-2 top-6 text-xs text-gray-500 font-semibold z-10">R$</span>
                           <span className="absolute left-0 top-0 text-xs text-gray-400">Missões</span>
-                          <input 
-                            type="text" 
+                          <input
+                            type="text"
                             inputMode="numeric"
                             value={formatCurrency(state.missionsValue)}
-                            onChange={(e) => handleCurrencyChange(e, (val) => updateAdultFinance(adult.id, 'missionsValue', val))}
+                            onChange={e =>
+                              handleCurrencyChange(e, val => updateAdultFinance(adult.id, 'missionsValue', val))
+                            }
                             className="w-full pl-7 pt-4 pb-1 text-sm border rounded bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
                             placeholder="0,00"
                           />
