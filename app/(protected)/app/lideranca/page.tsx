@@ -39,7 +39,9 @@ export default async function LeaderPage() {
       targetCell = await prisma.cell.findFirst({
           orderBy: { nome: 'asc' },
           include: {
-              lider: { select: { nome: true } },
+              lider: { select: { id: true, nome: true } },
+              lider2: { select: { id: true, nome: true } },
+              secretario: { select: { id: true, nome: true } },
               supervisor: { select: { nome: true } }
           }
       })
