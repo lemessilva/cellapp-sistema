@@ -796,7 +796,7 @@ export default function WebsiteEditor({
                          <p className="text-sm text-slate-600">{notif.message}</p>
                          <div className="flex gap-2 mt-1">
                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-500">{notif.target}</span>
-                           <span className="text-xs text-slate-400">{new Date(notif.sentAt).toLocaleDateString()}</span>
+                           <span className="text-xs text-slate-400">{new Date(notif.sentAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                          </div>
                        </div>
                        <div className="text-right">

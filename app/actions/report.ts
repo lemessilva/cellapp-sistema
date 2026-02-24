@@ -65,7 +65,7 @@ export async function returnReport(reportId: string, reason: string, imageUrl?: 
             await sendNotification({
                 userId: targetUserId,
                 title: '🔴 Relatório Devolvido',
-                message: `Seu supervisor devolveu o relatório de ${report.date.toLocaleDateString('pt-BR')}. Motivo: ${reason}`,
+                message: `Seu supervisor devolveu o relatório de ${report.date.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}. Motivo: ${reason}`,
                 type: 'ALERT',
                 link: `/app/celula/relatorios/${report.id}/editar` // Adjust link as needed
             })

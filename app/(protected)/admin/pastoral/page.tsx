@@ -67,7 +67,7 @@ export default async function PastoralMessagesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-slate-500 text-sm">
                         <Calendar className="w-4 h-4" />
-                        {new Date(msg.createdAt).toLocaleDateString('pt-BR')}
+                        {new Date(msg.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">

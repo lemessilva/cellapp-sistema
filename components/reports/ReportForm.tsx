@@ -886,7 +886,7 @@ export function ReportForm({ cellId, adults, kids, initialDate, initialReport, r
                         </div>
                       </div>
                       <div className="text-xs text-gray-400 italic">
-                        {entryDate ? `Entrada: ${entryDate.toLocaleDateString('pt-BR')}` : null}
+                        {entryDate ? `Entrada: ${entryDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}` : null}
                       </div>
                     </div>
                   </div>

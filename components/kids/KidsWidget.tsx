@@ -200,7 +200,7 @@ export function KidsWidget({ children }: { children: any[] }) {
                           <div>
                             <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Nascimento</p>
                             <p className="font-bold text-slate-700">
-                              {selectedKid.data_nascimento ? new Date(selectedKid.data_nascimento).toLocaleDateString() : 'Não informada'}
+                              {selectedKid.data_nascimento ? new Date(selectedKid.data_nascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Não informada'}
                             </p>
                           </div>
                         </div>

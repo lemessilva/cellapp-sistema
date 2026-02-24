@@ -43,7 +43,7 @@ export default async function EditReportPage({ params }: { params: Promise<{ id:
         <div className="container mx-auto py-6 px-4">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-slate-800">
-                    Relatório de {new Date(report.date).toLocaleDateString('pt-BR')}
+                    Relatório de {new Date(report.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                 </h1>
                 <p className="text-slate-500">
                     Status: <span className="font-medium text-slate-700">{report.status}</span>

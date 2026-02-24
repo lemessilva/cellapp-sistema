@@ -319,7 +319,7 @@ export const MonthlyReportPDF = ({ data }: { data: ReportData }) => {
         <View style={styles.stampContainer}>
             <Text style={styles.stampText}>ENTREGUE COM ATRASO</Text>
             <Text style={[styles.stampText, { fontSize: 10, marginTop: 5 }]}>
-                {data.closure.submittedAt ? new Date(data.closure.submittedAt).toLocaleDateString('pt-BR') : ''}
+                {data.closure.submittedAt ? new Date(data.closure.submittedAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : ''}
             </Text>
         </View>
       )}

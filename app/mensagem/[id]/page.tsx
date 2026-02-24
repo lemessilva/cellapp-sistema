@@ -61,7 +61,8 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
                     {new Date(message.createdAt).toLocaleDateString('pt-BR', { 
                       day: 'numeric', 
                       month: 'long', 
-                      year: 'numeric' 
+                      year: 'numeric',
+                      timeZone: 'UTC'
                     })}
                  </div>
               </div>
@@ -82,7 +83,8 @@ export default async function PastoralMessageDetailPage({ params }: { params: Pr
                   {new Date(message.createdAt).toLocaleDateString('pt-BR', { 
                     day: 'numeric', 
                     month: 'long', 
-                    year: 'numeric' 
+                    year: 'numeric',
+                    timeZone: 'UTC'
                   })}
                </div>
             </div>

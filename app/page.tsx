@@ -201,7 +201,7 @@ export default async function LandingPage() {
                      {/* Badge Data */}
                      <div className="absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 text-center shadow-lg">
                         <div className="text-xs font-bold text-indigo-400 uppercase">
-                          {new Date(event.date).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                          {new Date(event.date).toLocaleDateString('pt-BR', { month: 'short', timeZone: 'UTC' }).replace('.', '')}
                         </div>
                         <div className="text-xl font-bold text-white leading-none">
                           {new Date(event.date).getDate()}

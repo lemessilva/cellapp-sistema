@@ -142,7 +142,7 @@ export const PrayerCalendarPDF = ({ data }: { data: ReportData }) => {
     // Better approach: Pre-process dates in component or parent?
     // Let's do it here on the fly.
     const targetDate = new Date(data.year, monthIndex, day)
-    const targetStr = targetDate.toLocaleDateString('pt-BR') // DD/MM/YYYY or YYYY-MM-DD depending on locale... 
+    const targetStr = targetDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) // DD/MM/YYYY or YYYY-MM-DD depending on locale... 
     // Wait, ISO strings are YYYY-MM-DD...
     // Let's stick to YYYY-MM-DD comparison.
     
@@ -210,7 +210,7 @@ export const PrayerCalendarPDF = ({ data }: { data: ReportData }) => {
         </View>
 
         <Text style={styles.footer}>
-            "Orai sem cessar." (1 Tessalonicenses 5:17) • Gerado pelo CellApp em {new Date().toLocaleDateString('pt-BR')}
+            "Orai sem cessar." (1 Tessalonicenses 5:17) • Gerado pelo CellApp em {new Date().toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
         </Text>
       </Page>
     </Document>

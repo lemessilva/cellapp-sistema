@@ -108,7 +108,7 @@ export default function UserManagementTable({ users, cells }: UserManagementTabl
                       {user.celula?.nome || '-'}
                     </td>
                     <td className="p-4 text-slate-500">
-                      {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                      {new Date(user.createdAt).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">

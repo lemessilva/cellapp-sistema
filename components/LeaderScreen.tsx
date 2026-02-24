@@ -428,7 +428,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                       {selectedMember.data_nascimento && (
                           <div className="flex items-center gap-3 text-slate-600 text-sm">
                               <Calendar className="w-4 h-4 text-slate-400" />
-                              <span>{new Date(selectedMember.data_nascimento).toLocaleDateString()}</span>
+                              <span>{new Date(selectedMember.data_nascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                           </div>
                       )}
                   </div>
@@ -473,7 +473,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                                   
                                   <div className="flex items-center gap-2 text-xs text-slate-500 bg-white p-2 rounded-lg border border-slate-100">
                                       <Clock className="w-3 h-3 text-orange-400" />
-                                      Última: {lastPrayer ? lastPrayer.toLocaleDateString('pt-BR') : 'Nunca registrou'}
+                                      Última: {lastPrayer ? lastPrayer.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Nunca registrou'}
                                   </div>
 
                                   <div className="pt-2">

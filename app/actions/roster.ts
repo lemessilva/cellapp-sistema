@@ -124,7 +124,7 @@ export async function upsertRoster(data: {
         { id: data.hostMemberId, roleName: 'Anfitrião' }
     ]
 
-    const formattedDate = new Date(data.date).toLocaleDateString('pt-BR')
+    const formattedDate = new Date(data.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 
     for (const role of roles) {
         if (role.id) {

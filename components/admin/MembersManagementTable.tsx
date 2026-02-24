@@ -603,7 +603,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                     <div className="mt-1 text-lg font-bold text-sky-900">
                       {selectedMember.lastPrayerDate
                         ? parseDate(selectedMember.lastPrayerDate)?.toLocaleDateString(
-                            'pt-BR'
+                            'pt-BR', { timeZone: 'UTC' }
                           )
                         : 'Sem registros'}
                     </div>

@@ -113,7 +113,7 @@ export default async function MeusIngressosPage() {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric'
-                })}
+                , timeZone: 'UTC' })}
               </div>
             </div>
           ))}
@@ -138,4 +138,3 @@ export default async function MeusIngressosPage() {
     </div>
   )
 }
-
