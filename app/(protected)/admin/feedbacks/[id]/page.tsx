@@ -163,7 +163,7 @@ export default async function FeedbackDetailPage({ params }: Props) {
                     defaultChecked={feedback.status === 'PENDING'}
                     className="text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm font-medium text-slate-700">Pendente</span>
+                  <span className="text-sm font-medium text-slate-700"></span>
                 </label>
                 
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100">

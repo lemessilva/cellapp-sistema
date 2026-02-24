@@ -60,7 +60,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
     user.role === 'LIDER' || 
     user.role === 'ADMIN' || 
     user.role === 'SUPERVISOR'
-  const isMemberOnly = user.role === 'MEMBRO'
+  const isMemberOnly = user.role === 'MEMBRO' && user.id !== cell?.secretarioId
 
   const canEditReport = isLeaderOrSecretary
   const canRegisterMember = isLeaderOrSecretary && !isMemberOnly
@@ -237,7 +237,7 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                        {member.categoria === 'CRIANCA' && <span className="bg-pink-100 text-pink-700 px-1.5 rounded text-[10px] font-bold">KIDS</span>}
                        {checkPrayedToday(member.prayerLogs) 
                          ? <span className="text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Orou hoje</span> 
-                         : <span className="text-slate-400">Pendente</span>}
+                         : <span className="text-slate-400">Ainda não orou</span>}
                     </p>
                  </div>
               </div>
@@ -332,14 +332,28 @@ export default function LeaderScreen({ user, members }: { user: any, members: an
                     <label className="block text-sm font-medium text-slate-700 mb-1">Data de Batismo (Opcional)</label>
                     <input name="dataBatismo" type="date" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Responsável (Pai/Mãe na Célula)</label>
-                    <select name="responsavelId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Selecione um responsável...</option>
-                        {potentialParents.map(p => (
-                            <option key={p.id} value={p.id}>{p.nome}</option>
-                        ))}
-                    </select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Selecionar Mãe</label>
+                      <select name="motherId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                          <option value="">Selecione a mãe...</option>
+                          {potentialParents.map(p => (
+                              <option key={p.id} value={p.id}>{p.nome}</option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Selecionar Pai</label>
+                      <select name="fatherId" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                          <option value="">Selecione o pai...</option>
+                          {potentialParents.map(p => (
+                              <option key={p.id} value={p.id}>{p.nome}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 text-slate-600 text-xs p-3 rounded-xl border border-slate-200">
+                    Endereço vinculado aos pais (herdado automaticamente no cadastro).
                   </div>
 
                   <div>

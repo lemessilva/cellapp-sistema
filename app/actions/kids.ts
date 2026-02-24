@@ -13,7 +13,9 @@ export async function getMyChildren() {
       where: {
         OR: [
           { parentId: user.id },
-          { responsavelId: user.id }
+          { responsavelId: user.id },
+          { motherId: user.id },
+          { fatherId: user.id }
         ],
         categoria: 'CRIANCA'
       },
@@ -50,7 +52,9 @@ export async function addKidOikos(kidId: string, name: string) {
         id: kidId,
         OR: [
           { parentId: user.id },
-          { responsavelId: user.id }
+          { responsavelId: user.id },
+          { motherId: user.id },
+          { fatherId: user.id }
         ]
       }
     })
@@ -83,7 +87,9 @@ export async function removeKidOikos(kidId: string, oikosId: string) {
           id: kidId,
           OR: [
             { parentId: user.id },
-            { responsavelId: user.id }
+            { responsavelId: user.id },
+            { motherId: user.id },
+            { fatherId: user.id }
           ]
         }
       })
@@ -116,7 +122,9 @@ export async function updateKidData(kidId: string, data: { data_nascimento?: str
         id: kidId,
         OR: [
           { parentId: user.id },
-          { responsavelId: user.id }
+          { responsavelId: user.id },
+          { motherId: user.id },
+          { fatherId: user.id }
         ]
       }
     })

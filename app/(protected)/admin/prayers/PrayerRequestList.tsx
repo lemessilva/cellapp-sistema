@@ -78,7 +78,7 @@ function PrayerRequestCard({ request }: { request: PrayerRequest }) {
             ? 'bg-green-100 text-green-700' 
             : 'bg-yellow-100 text-yellow-700'
         }`}>
-          {isPrayed ? 'Orado' : 'Pendente'}
+          {isPrayed ? 'Orado' : 'Ainda não orou'}
         </div>
       </div>
 

@@ -24,11 +24,13 @@ export default async function MemberCellPage() {
         OR: [
             { liderId: user.id },
             { lider2Id: user.id },
+            { secretarioId: user.id },
             { membros: { some: { id: user.id } } }
         ]
     },
     include: {
         lider: { select: { nome: true } },
+        secretario: { select: { id: true, nome: true } },
         membros: {
             where: { ativo: true },
             orderBy: { nome: 'asc' }
@@ -42,6 +44,7 @@ export default async function MemberCellPage() {
           orderBy: { nome: 'asc' },
           include: {
               lider: { select: { nome: true } },
+              secretario: { select: { id: true, nome: true } },
               membros: {
                   where: { ativo: true },
                   orderBy: { nome: 'asc' }
@@ -51,7 +54,8 @@ export default async function MemberCellPage() {
   }
 
   const celula = targetCell
-  const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN'].includes(user.role)
+  const isSecretary = celula?.secretarioId === user.id
+  const canStartMeeting = ['LIDER', 'SUPERVISOR', 'COORDENADOR', 'ADMIN'].includes(user.role) || isSecretary
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">

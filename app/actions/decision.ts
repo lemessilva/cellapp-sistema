@@ -67,3 +67,56 @@ export async function submitDecision(data: DecisionInput) {
     return { error: 'Falha ao registrar decisão.' }
   }
 }
+
+export async function updateDecisionStatus(id: string, status: 'PENDING' | 'EM_CONTATO' | 'CONSOLIDADO') {
+  try {
+    const data: any = { status }
+    if (status === 'EM_CONTATO') {
+      data.contactDate = new Date()
+    }
+    await prisma.decisionCard.update({
+      where: { id },
+      data
+    })
+    revalidatePath('/admin/decisoes')
+    return { success: true }
+  } catch (error) {
+    return { error: 'Falha ao atualizar status.' }
+  }
+}
+
+export async function assignDecision(id: string, userId: string) {
+  try {
+    const card = await prisma.decisionCard.update({
+      where: { id },
+      data: { assignedToId: userId }
+    })
+
+    await sendNotification({
+      userId,
+      title: '🫶 Nova vida para você cuidar',
+      message: `${card.name} foi atribuído a você.`,
+      type: 'ALERT',
+      link: '/admin/decisoes',
+      metaData: { decisionId: id }
+    })
+
+    revalidatePath('/admin/decisoes')
+    return { success: true }
+  } catch (error) {
+    return { error: 'Falha ao direcionar responsável.' }
+  }
+}
+
+export async function addDecisionNote(id: string, note: string) {
+  try {
+    await prisma.decisionCard.update({
+      where: { id },
+      data: { notes: note }
+    })
+    revalidatePath('/admin/decisoes')
+    return { success: true }
+  } catch (error) {
+    return { error: 'Falha ao salvar observações.' }
+  }
+}

@@ -134,6 +134,8 @@ interface MemberData {
   estadoCivil?: string | null
   profissao?: string | null
   escolaridade?: string | null
+  role?: string | null
+  memberSince?: string | Date | null
   
   // Address
   endereco?: string | null
@@ -144,16 +146,18 @@ interface MemberData {
   cep?: string | null
   
   // Church
-  role?: string | null
   funcoes?: string | null
   data_batismo?: string | Date | null
   dataConversao?: string | Date | null
-  celula?: { nome: string } | null
+  celula?: { nome: string, lider?: { nome: string } | null } | null
+  responsavel?: { nome: string } | null
+  parent?: { nome: string } | null
   
   // Family
   nomeConjuge?: string | null
   nomePai?: string | null
   nomeMae?: string | null
+  igrejaAnterior?: string | null
 }
 
 const formatDate = (date: string | Date | null | undefined) => {
@@ -178,6 +182,17 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
   const gender = member.sexo || member.genero
   const civilStatus = member.estadoCivil || member.estado_civil
   const phone = member.whatsapp || member.telefone
+  const age = (() => {
+    if (!birthDate) return null
+    try {
+      const d = new Date(birthDate as any)
+      const today = new Date()
+      let a = today.getFullYear() - d.getFullYear()
+      const m = today.getMonth() - d.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) a--
+      return a
+    } catch { return null }
+  })()
 
   return (
     <Document>
@@ -191,6 +206,10 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
                <Text style={styles.churchName}>CELL APP</Text>
                <Text style={{ fontSize: 10, color: '#64748b' }}>Sistema de Gestão de Células</Text>
             </View>
+          </View>
+          <View>
+            <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'right' }}>Cargo</Text>
+            <Text style={{ fontSize: 12, fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{(member.role || '').toString() || 'Não informado'}</Text>
           </View>
           <Text style={styles.docTitle}>Ficha Cadastral</Text>
         </View>
@@ -240,6 +259,10 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
                  </View>
 
                  <View style={styles.row}>
+                    <View style={[styles.col, styles.colThird]}>
+                       <Text style={styles.label}>Idade</Text>
+                       <Text style={styles.value}>{age !== null ? String(age) : '-'}</Text>
+                    </View>
                     <View style={[styles.col, styles.colHalf]}>
                        <Text style={styles.label}>Profissão</Text>
                        <Text style={styles.value}>{member.profissao || '-'}</Text>
@@ -249,6 +272,17 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
                        <Text style={styles.value}>{member.escolaridade || '-'}</Text>
                     </View>
                  </View>
+
+                <View style={styles.row}>
+                  <View style={[styles.col, styles.colHalf]}>
+                    <Text style={styles.label}>CPF</Text>
+                    <Text style={styles.value}>{'-'}</Text>
+                  </View>
+                  <View style={[styles.col, styles.colHalf]}>
+                    <Text style={styles.label}>RG</Text>
+                    <Text style={styles.value}>{'-'}</Text>
+                  </View>
+                </View>
               </View>
            </View>
         </View>
@@ -340,11 +374,36 @@ export default function MemberRegistrationPDF({ member }: { member: MemberData }
            </View>
 
            <View style={styles.row}>
+            <View style={[styles.col, styles.colThird]}>
+              <Text style={styles.label}>Membro Desde</Text>
+              <Text style={styles.value}>{formatDate(member.memberSince)}</Text>
+            </View>
+            <View style={[styles.col, styles.colThird]}>
+              <Text style={styles.label}>Líder da Célula</Text>
+              <Text style={styles.value}>{member.celula?.lider?.nome || '-'}</Text>
+            </View>
               <View style={styles.col}>
                  <Text style={styles.label}>Funções / Ministérios</Text>
                  <Text style={styles.value}>{member.funcoes || '-'}</Text>
               </View>
            </View>
+
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Discipulador / Responsável</Text>
+              <Text style={styles.value}>{member.responsavel?.nome || member.parent?.nome || '-'}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Observações */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Observações</Text>
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.value}>{member.igrejaAnterior || 'Não informado'}</Text>
+            </View>
+          </View>
         </View>
 
         {/* Footer */}

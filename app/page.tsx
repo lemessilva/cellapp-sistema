@@ -412,7 +412,15 @@ export default async function LandingPage() {
         churchName={churchName}
         logoUrl={logoUrl}
       />
-      
+      {!user && (
+        <Link
+          href="/decisao"
+          className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/30 transition-transform hover:scale-105"
+          aria-label="Tomei uma decisão hoje"
+        >
+          🙌 Tomei uma Decisão Hoje
+        </Link>
+      )}
       <FloatingPrayerButton />
     </div>
   )

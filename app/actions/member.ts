@@ -41,6 +41,8 @@ export async function createMember(formData: FormData) {
   const dataBatismoStr = formData.get('dataBatismo') as string
   
   const responsavelId = formData.get('responsavelId') as string || undefined
+  const motherId = (formData.get('motherId') as string) || undefined
+  const fatherId = (formData.get('fatherId') as string) || undefined
   const email = formData.get('email') as string
   const telefone = formData.get('telefone') as string
   const funcoes = formData.get('funcoes') as string
@@ -53,6 +55,25 @@ export async function createMember(formData: FormData) {
   }
 
   try {
+    // Herança de endereço dos pais
+    let inheritedAddress: any = {}
+    try {
+      const parentSourceId = motherId || fatherId || responsavelId
+      if (parentSourceId) {
+        const parent = await prisma.user.findUnique({ where: { id: parentSourceId } })
+        if (parent) {
+          inheritedAddress = {
+            endereco: parent.endereco || null,
+            numero: parent.numero || null,
+            bairro: parent.bairro || null,
+            cidade: parent.cidade || null,
+            estado: parent.estado || null,
+            cep: parent.cep || null,
+          }
+        }
+      }
+    } catch {}
+
     await prisma.user.create({
       data: {
         nome,
@@ -66,13 +87,18 @@ export async function createMember(formData: FormData) {
         genero: genero || null,
         data_batismo: dataBatismoStr ? new Date(dataBatismoStr) : null,
         
-        parentId: isChild ? responsavelId : null,
-        responsavelId: isChild ? responsavelId : null,
+        parentId: isChild ? (motherId || fatherId || responsavelId) : null,
+        responsavelId: isChild ? (responsavelId || motherId || fatherId) : null,
+        motherId: isChild ? motherId || null : null,
+        fatherId: isChild ? fatherId || null : null,
         
         // Email must be unique. If empty string (from form), treat as null to avoid uniqueness violation?
         // But for adults we require it.
         email: !isChild && email ? email : null, 
         telefone: !isChild && telefone ? telefone : null,
+
+        // Endereço herdado dos pais
+        ...inheritedAddress,
         
         // Password is null by default, so they can't login until they recover password or we set one.
         // Assuming this is acceptable for "Manual Registration".
@@ -159,5 +185,34 @@ export async function getMemberAttendanceHistory(memberId: string) {
   } catch (error) {
     console.error('Error fetching attendance:', error)
     return { error: 'Erro ao buscar histórico.' }
+  }
+}
+
+export async function getMemberForPdf(memberId: string) {
+  const user = await getUser()
+  if (!user || !['ADMIN', 'SUPERVISOR', 'LIDER'].includes(user.role)) {
+    return { error: 'Acesso negado.' }
+  }
+
+  try {
+    const member = await prisma.user.findUnique({
+      where: { id: memberId },
+      include: {
+        celula: {
+          include: {
+            lider: true,
+          }
+        },
+        parent: true,
+        responsavel: true,
+        children: true,
+      }
+    })
+
+    if (!member) return { error: 'Membro não encontrado.' }
+    return { data: member }
+  } catch (error) {
+    console.error('Erro ao buscar dados completos do membro:', error)
+    return { error: 'Erro ao buscar dados do membro.' }
   }
 }

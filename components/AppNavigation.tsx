@@ -2,17 +2,30 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink, CreditCard, Baby } from 'lucide-react'
+import { Home, Users, User, LogOut, Shield, FileText, Heart, Globe, BarChart3, Calendar, Ticket, Bug, LayoutGrid, ExternalLink, CreditCard, Baby, Music } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/app/actions/auth'
 import { useSidebar } from './providers/SidebarContext'
 
-export default function AppNavigation({ role, isSecretary, hasChildren }: { role: string; isSecretary?: boolean; hasChildren?: boolean }) {
+export default function AppNavigation({
+  role,
+  isSecretary,
+  hasChildren,
+  ministryTags,
+}: {
+  role: string
+  isSecretary?: boolean
+  hasChildren?: boolean
+  ministryTags?: string[]
+}) {
   const pathname = usePathname()
   const { isOpen, close } = useSidebar()
 
   // 1. Normalize a Role para garantir que maiúsculas/minúsculas não quebrem
   const userRole = (role || '').toUpperCase()
+  const tags = ministryTags || []
+  const isWorshipLeader = tags.includes('LOUVOR_LIDER') || userRole === 'ADMIN'
+  const isWorshipMember = tags.includes('LOUVOR_MEMBRO') || tags.includes('LOUVOR_LIDER')
 
   let links: { href: string; label: string; icon: any; header?: string }[] = []
 
@@ -56,6 +69,10 @@ export default function AppNavigation({ role, isSecretary, hasChildren }: { role
       links.push({ href: '/app/celula/reuniao', label: 'Relatórios', icon: FileText, header })
     }
 
+    if (isWorshipMember) {
+      links.push({ href: '/escalas', label: 'Minhas Escalas', icon: Music })
+    }
+
     // Perfil sempre por último na lista do usuário comum
     links.push({ href: '/app/perfil', label: 'Perfil', icon: User })
 
@@ -68,6 +85,14 @@ export default function AppNavigation({ role, isSecretary, hasChildren }: { role
       links.push({ href: '/admin/trilho', label: 'Trilho', icon: BarChart3 })
       links.push({ href: '/admin/calendar', label: 'Gestão Agenda', icon: Calendar })
       links.push({ href: '/admin/eventos', label: 'Gestão Eventos', icon: Ticket })
+      if (isWorshipLeader) {
+        links.push({ href: '/admin/louvor/repertorio', label: 'Repertório', icon: Music, header: 'Gestão de Louvor' })
+        links.push({ href: '/admin/louvor/escalas', label: 'Montar Escalas', icon: Calendar })
+      }
+    }
+    if (userRole !== 'ADMIN' && isWorshipLeader) {
+      links.push({ href: '/admin/louvor/repertorio', label: 'Repertório', icon: Music, header: 'Gestão de Louvor' })
+      links.push({ href: '/admin/louvor/escalas', label: 'Montar Escalas', icon: Calendar })
     }
   }
 

@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { getUser } from "@/lib/auth"
 import { ReportStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { sendNotification } from "./notifications"
@@ -44,6 +45,25 @@ export async function getWeeklyScheduledMeetings(cellId: string, currentReportId
 
 export async function startLiveMeeting(cellId: string, date: string) {
   try {
+    const user = await getUser()
+    if (!user) throw new Error('Não autorizado')
+
+    const cell = await prisma.cell.findUnique({
+      where: { id: cellId },
+      select: { id: true, liderId: true, lider2Id: true, secretarioId: true }
+    })
+
+    const isAllowed = 
+      user.role === 'ADMIN' || 
+      user.role === 'SUPERVISOR' || 
+      user.id === cell?.liderId || 
+      user.id === cell?.lider2Id || 
+      user.id === cell?.secretarioId
+
+    if (!isAllowed) {
+      throw new Error('Apenas o Líder ou Secretário podem iniciar a célula.')
+    }
+
     const now = new Date()
     // 1. Defina o intervalo da SEMANA ATUAL (Domingo a Sábado)
     const start = startOfWeek(now, { locale: ptBR })

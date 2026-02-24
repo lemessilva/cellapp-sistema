@@ -16,17 +16,20 @@ export default async function LeaderPage() {
     redirect('/app/oracao')
   }
 
-  // Buscar a célula onde o usuário é líder OU membro (Lógica Robusta + Fallback Admin)
+  // Buscar a célula onde o usuário é líder, membro OU secretário (Lógica Robusta + Fallback Admin)
   let targetCell = await prisma.cell.findFirst({
     where: {
         OR: [
             { liderId: user.id },
             { lider2Id: user.id },
+            { secretarioId: user.id },
             { membros: { some: { id: user.id } } }
         ]
     },
     include: {
-        lider: { select: { nome: true } },
+        lider: { select: { id: true, nome: true } },
+        lider2: { select: { id: true, nome: true } },
+        secretario: { select: { id: true, nome: true } },
         supervisor: { select: { nome: true } }
     }
   })

@@ -91,6 +91,7 @@ model User {
   ativo           Boolean   @default(true)
   mustChangePassword Boolean @default(false)
   funcoes         String?   // Funções múltiplas (ex: "Tesoureiro, Louvor")
+  ministryTags    String[]  @default([])
   
   // Relacionamentos Hierárquicos
   celulaLiderada  Cell[]    @relation("LiderCelula")
@@ -106,6 +107,15 @@ model User {
   responsavelId   String?
   responsavel     User?     @relation("Responsavel", fields: [responsavelId], references: [id])
   dependentes     User[]    @relation("Responsavel")
+
+  // Dupla Responsabilidade (Pais)
+  motherId        String?
+  mother          User?     @relation("UserMother", fields: [motherId], references: [id])
+  motherChildren  User[]    @relation("UserMother")
+
+  fatherId        String?
+  father          User?     @relation("UserFather", fields: [fatherId], references: [id])
+  fatherChildren  User[]    @relation("UserFather")
 
   // Cargos em Célula
   celulaTesoureiro Cell[] @relation("TesoureiroCelula")
@@ -161,6 +171,12 @@ model User {
 
   // Eventos
   registrations Registration[]
+  
+  // Decisões atribuídas para cuidado
+  decisionsAssigned DecisionCard[] @relation("DecisionAssignedTo")
+  
+  // Escalas de Louvor
+  worshipParticipations ScaleParticipant[]
   
   // Cartas de Correção criadas
   correctionsWritten ReportCorrection[]
@@ -790,6 +806,55 @@ model DecisionCard {
   decisionType  String   // 'Aceitou Jesus', 'Reconciliação', 'Visita', 'Batismo'
   prayerRequest String?  @db.Text
   status        String   @default("PENDING")
+  assignedToId  String?
+  assignedTo    User?    @relation("DecisionAssignedTo", fields: [assignedToId], references: [id])
+  notes         String?  @db.Text
+  contactDate   DateTime?
   createdAt     DateTime @default(now())
+}
+
+model Song {
+  id         String   @id @default(cuid())
+  title      String
+  artist     String
+  cipherLink String?
+  key        String?
+  coverUrl   String?
+  previewUrl String?
+  youtubeUrl String?
+  bpm        Int?
+  scaleSongs ScaleSong[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Scale {
+  id            String             @id @default(cuid())
+  title         String
+  date          DateTime
+  participants  ScaleParticipant[]
+  songs         ScaleSong[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ScaleParticipant {
+  id        String   @id @default(cuid())
+  scaleId   String
+  userId    String
+  role      String
+  status    String   @default("PENDING")
+  scale     Scale    @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ScaleSong {
+  id      String @id @default(cuid())
+  scaleId String
+  songId  String
+  order   Int    @default(0)
+  scale   Scale  @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  song    Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
 }
 

@@ -17,6 +17,7 @@ import { MemberAttendanceHistoryModal } from './MemberAttendanceHistoryModal'
 import MemberGrowthModal from '@/components/growth/MemberGrowthModal'
 import type { ReportData } from '@/components/reports/PrayerCalendarPDF'
 import { getPrayerReportData } from '@/app/actions/report'
+import { getMemberForPdf } from '@/app/actions/member'
 import { updateMemberCell } from '@/app/actions/member'
 import { toggleUserActiveStatus } from '@/app/(protected)/admin/actions'
 import { adminResetPassword } from '@/app/actions/auth-reset'
@@ -110,6 +111,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   const [resettingId, setResettingId] = useState<string | null>(null)
   const [tempPassword, setTempPassword] = useState<string | null>(null)
   const [showResetDialog, setShowResetDialog] = useState(false)
+  const [resetConfirmMember, setResetConfirmMember] = useState<Member | null>(null)
 
   const rows = useMemo(() => members, [members])
 
@@ -160,7 +162,9 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   const handleGeneratePDF = async (member: Member) => {
     try {
       setPdfGeneratingId(member.id)
-      const blob = await pdf(<MemberRegistrationPDF member={member as any} />).toBlob()
+      const res = await getMemberForPdf(member.id)
+      const data = (res as any)?.data || member
+      const blob = await pdf(<MemberRegistrationPDF member={data as any} />).toBlob()
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
     } catch (error) {
@@ -187,6 +191,13 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
     } finally {
       setResettingId(null)
     }
+  }
+
+  const confirmReset = async () => {
+    if (!resetConfirmMember) return
+    const id = resetConfirmMember.id
+    setResetConfirmMember(null)
+    await handleResetPassword(id)
   }
 
   return (
@@ -359,7 +370,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                           <TrendingUp className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleResetPassword(member.id)}
+                          onClick={() => setResetConfirmMember(member)}
                           disabled={resettingId === member.id}
                           className={`p-1.5 rounded-lg transition-colors ${
                             resettingId === member.id 
@@ -447,6 +458,35 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                 </>
               ) : (
                 'Confirmar Troca'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={!!resetConfirmMember} 
+        onOpenChange={(open) => {
+          if (!open) setResetConfirmMember(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Reset de Senha</DialogTitle>
+            <DialogDescription>
+              Tem certeza? Você está prestes a resetar a senha do membro {resetConfirmMember?.nome}. Isso irá gerar uma nova senha provisória imediatamente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetConfirmMember(null)}>Cancelar</Button>
+            <Button onClick={confirmReset} disabled={!!resettingId}>
+              {resettingId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Confirmar Reset'
               )}
             </Button>
           </DialogFooter>

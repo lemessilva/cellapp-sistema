@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import DecisionQRCode from '@/components/admin/DecisionQRCode'
+import DecisionAdminTable from '@/components/admin/DecisionAdminTable'
 
 function formatPhoneToWa(value: string) {
   const digits = (value || '').replace(/\D/g, '')
@@ -31,9 +32,25 @@ function QRCodePanel() {
 }
 
 export default async function AdminDecisionsPage() {
-  const items = await prisma.decisionCard.findMany({
-    orderBy: { createdAt: 'desc' }
-  })
+  const [items, leaders] = await Promise.all([
+    prisma.decisionCard.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { assignedTo: { select: { id: true, nome: true } } }
+    }),
+    prisma.user.findMany({
+      where: {
+        ativo: true,
+        OR: [
+          { role: 'ADMIN' },
+          { role: 'SUPERVISOR' },
+          { role: 'LIDER' },
+          { funcoes: { contains: 'Pastor', mode: 'insensitive' } }
+        ]
+      },
+      select: { id: true, nome: true },
+      orderBy: { nome: 'asc' }
+    })
+  ])
 
   return (
     <div className="p-6">
@@ -43,45 +60,13 @@ export default async function AdminDecisionsPage() {
 
       <QRCodePanel />
 
-      <div className="mt-6 border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="text-left p-3">Nome</th>
-              <th className="text-left p-3">WhatsApp</th>
-              <th className="text-left p-3">Decisão</th>
-              <th className="text-left p-3">Pedido de Oração</th>
-              <th className="text-left p-3">Status</th>
-              <th className="text-left p-3">Data</th>
-              <th className="text-left p-3">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => (
-              <tr key={item.id} className="border-t">
-                <td className="p-3 font-medium">{item.name}</td>
-                <td className="p-3">{item.phone}</td>
-                <td className="p-3">{item.decisionType}</td>
-                <td className="p-3 max-w-[320px] truncate" title={item.prayerRequest || ''}>
-                  {item.prayerRequest || '-'}
-                </td>
-                <td className="p-3">{item.status}</td>
-                <td className="p-3"><DateCell date={item.createdAt} /></td>
-                <td className="p-3">
-                  <WhatsAppButton phone={item.phone} name={item.name} />
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-gray-500">
-                  Nenhum cartão enviado ainda.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DecisionAdminTable
+        items={items.map(i => ({
+          ...i,
+          assignedTo: i.assignedTo ? { id: i.assignedTo.id, nome: i.assignedTo.nome } : null
+        }))}
+        leaders={leaders}
+      />
     </div>
   )
 }

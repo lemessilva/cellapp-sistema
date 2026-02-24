@@ -51,7 +51,8 @@ export default async function ProtectedLayout({
         <AppNavigation 
           role={currentUser.role} 
           isSecretary={isSecretary} 
-          hasChildren={childrenCount > 0} 
+          hasChildren={childrenCount > 0}
+          ministryTags={currentUser.ministryTags}
         />
         
         <MainLayout>

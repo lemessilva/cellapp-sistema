@@ -40,9 +40,21 @@ export async function submitMeetingReport(data: SubmitReportParams) {
     const user = await getUser()
     if (!user) return { error: 'Não autorizado' }
 
-    // Check permissions (Lider, Secretary, Admin)
-    // For now, assuming middleware or UI handles basic checks, but good to check relation.
-    // Simplifying for brevity as per instructions to "fix" not "overengineer security" right now.
+    const cell = await prisma.cell.findUnique({
+      where: { id: data.cellId },
+      select: { id: true, liderId: true, lider2Id: true, secretarioId: true }
+    })
+
+    const isAllowed = 
+      user.role === 'ADMIN' || 
+      user.role === 'SUPERVISOR' || 
+      user.id === cell?.liderId || 
+      user.id === cell?.lider2Id || 
+      user.id === cell?.secretarioId
+
+    if (!isAllowed) {
+      return { error: 'Apenas o Líder ou Secretário podem enviar o relatório.' }
+    }
 
     const reportDate = new Date(data.date)
     
