@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { User, Phone, MapPin, FileText, Heart, Calendar, Loader2, ArrowRightLeft, History, TrendingUp, Key, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -31,6 +33,7 @@ type Member = {
   foto_url: string | null
   dataNascimento: string | Date | null
   data_nascimento: string | Date | null
+  email?: string | null
   telefone: string | null
   whatsapp: string | null
   bairro: string | null
@@ -90,9 +93,12 @@ function formatPhone(phone: string | null | undefined) {
 type Props = {
   members: Member[]
   cells?: CellOption[]
+  totalCount?: number
+  totalPages?: number
+  currentPage?: number
 }
 
-export default function MembersManagementTable({ members, cells = [] }: Props) {
+export default function MembersManagementTable({ members, cells = [], totalCount, totalPages = 1, currentPage = 1 }: Props) {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
@@ -114,6 +120,17 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
   const [resetConfirmMember, setResetConfirmMember] = useState<Member | null>(null)
 
   const rows = useMemo(() => members, [members])
+
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const clientPage = Math.max(1, Number(searchParams.get('page') || String(currentPage)) || currentPage)
+  
+  const pageHref = (page: number) => {
+    const sp = new URLSearchParams(searchParams.toString())
+    sp.set('page', String(page))
+    return `${pathname}?${sp.toString()}`
+  }
 
   useEffect(() => {
     if (!selectedMember) {
@@ -205,7 +222,12 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h2 className="text-lg font-bold text-slate-800">Membros</h2>
-          <div className="text-sm text-slate-500">Total: {rows.length}</div>
+          <div className="text-sm text-slate-500">
+            Total: {totalCount ?? rows.length}
+            {typeof currentPage === 'number' && totalPages ? (
+              <span className="ml-3 text-slate-400">Página {currentPage} de {totalPages}</span>
+            ) : null}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -213,6 +235,7 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
               <tr>
                 <th className="p-4">Nome</th>
                 <th className="p-4">Idade</th>
+                <th className="p-4">Email</th>
                 <th className="p-4">Célula</th>
                 <th className="p-4">Telefone</th>
                 <th className="p-4">Bairro</th>
@@ -269,6 +292,13 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
                     <td className="p-4 text-slate-700">
                       {age !== null ? `${age} anos` : '-'}
                     </td>
+                  <td className="p-4 text-slate-600">
+                    {member.email ? (
+                      <span>{member.email}</span>
+                    ) : (
+                      <span className="text-slate-400">Não informado</span>
+                    )}
+                  </td>
                     <td className="p-4 text-slate-600">
                       {member.celula?.nome || '-'}
                     </td>
@@ -401,6 +431,34 @@ export default function MembersManagementTable({ members, cells = [] }: Props) {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-1 select-none">
+          <Link
+            href={pageHref(Math.max(1, clientPage - 1))}
+            scroll={false}
+            className={`px-3 py-2 rounded-lg border text-sm ${clientPage <= 1 ? 'pointer-events-none text-slate-300 border-slate-200' : 'text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+          >Anterior</Link>
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const p = i + 1
+            const active = p === clientPage
+            return (
+              <Link
+                key={p}
+                href={pageHref(p)}
+                scroll={false}
+                className={`w-10 h-10 rounded-lg border text-sm font-medium flex items-center justify-center ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+              >{p}</Link>
+            )
+          })}
+          <Link
+            href={pageHref(Math.min(totalPages, clientPage + 1))}
+            scroll={false}
+            className={`px-3 py-2 rounded-lg border text-sm ${clientPage >= totalPages ? 'pointer-events-none text-slate-300 border-slate-200' : 'text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+          >Próximo</Link>
+        </div>
+      )}
 
       {/* Move Member Dialog */}
       <Dialog 
