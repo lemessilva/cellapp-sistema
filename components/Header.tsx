@@ -13,7 +13,7 @@ export default function Header({ userId }: { userId?: string }) {
       <div className="flex items-center gap-4">
         <button 
           onClick={toggle}
-          className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors hidden md:block"
           title="Alternar menu"
         >
           <Menu className="w-6 h-6" />
@@ -29,7 +29,7 @@ export default function Header({ userId }: { userId?: string }) {
         
         <Link 
           href="/app" 
-          className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+          className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors hidden md:block"
           title="Início"
         >
           <Home className="w-6 h-6" />

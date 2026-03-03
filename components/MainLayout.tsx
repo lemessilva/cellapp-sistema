@@ -10,10 +10,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <main
       className={cn(
         "pt-16 min-h-screen transition-all duration-300 ease-in-out",
-        isOpen ? "md:pl-64" : "pl-0"
+        // Desktop: padding-left when sidebar is open
+        isOpen ? "md:pl-64" : "pl-0",
+        // Mobile: padding-bottom for BottomNav
+        "pb-20 md:pb-0"
       )}
     >
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {children}
       </div>
     </main>

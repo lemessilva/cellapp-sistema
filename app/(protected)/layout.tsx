@@ -3,6 +3,7 @@ import { getUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Header from '@/components/Header'
 import AppNavigation from '@/components/AppNavigation'
+import BottomNav from '@/components/BottomNav'
 import MainLayout from '@/components/MainLayout'
 import { SidebarProvider } from '@/components/providers/SidebarContext'
 import { Toaster } from 'sonner'
@@ -58,6 +59,8 @@ export default async function ProtectedLayout({
         <MainLayout>
           {children}
         </MainLayout>
+        
+        <BottomNav />
         
         <MandatoryPasswordModal isOpen={currentUser.mustChangePassword} />
         <PushNotificationManager />
