@@ -13,7 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         // Desktop: padding-left when sidebar is open
         isOpen ? "md:pl-64" : "pl-0",
         // Mobile: padding-bottom for BottomNav
-        "pb-20 md:pb-0"
+        "pb-24 md:pb-0"
       )}
     >
       <div className="p-4 md:p-6">
